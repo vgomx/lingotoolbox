@@ -1,0 +1,85 @@
+# Lingo Toolbox
+
+An open-source set of language-learning tools — not a course. Pick a language
+workspace and move between tools that practise and consolidate what you've
+already met elsewhere.
+
+**Live:** https://vgomx.github.io/lingotoolbox/
+**Design system:** [vgomx/lingo-ds](https://github.com/vgomx/lingo-ds) ·
+[component showcase](https://vgomx.github.io/lingo-ds/)
+
+Everything runs in the browser. There is no server, no account, and no paid
+tier; your cards live in IndexedDB on your own machine.
+
+## What works today
+
+| Tool | State |
+| --- | --- |
+| **Flashcards** | Built — decks, card CRUD, and a review session on a local SM-2 scheduler |
+| Etymology Explorer | Designed, empty state only |
+| Conjugation Drill | Designed, empty state only |
+| Phrasebook | Designed, empty state only |
+| Grammar Notes | Designed, empty state only |
+
+The marketing landing page at `/` and the dark product shell at `/app` are both
+complete, as is the light/dark theme parity across the whole shell.
+
+## Running it
+
+`lingo-ds` is consumed as a `file:` dependency rather than from a registry, so
+**check it out as a sibling directory and build it first**:
+
+```bash
+git clone https://github.com/vgomx/lingo-ds
+git clone https://github.com/vgomx/lingotoolbox
+cd lingo-ds && npm install && npm run build
+cd ../lingotoolbox && npm install && npm run dev
+```
+
+If `npm install` fails to resolve `lingo-ds`, it's because `lingo-ds/dist` is
+missing — build the design system again.
+
+| Script | Does |
+| --- | --- |
+| `npm run dev` | Vite dev server |
+| `npm run build` | Typecheck, build to `dist/`, copy `index.html` to `404.html` |
+| `npm run preview` | Serve the production build locally |
+| `npm run typecheck` | `tsc -b --noEmit` |
+
+## Layout
+
+```
+src/
+├─ data/       IndexedDB access, the scheduler, starter decks
+├─ state/      the one store the app reads from
+├─ shell/      rail, deck sidebar, top bar, language picker
+├─ tools/      Flashcards, plus empty states for the other four
+├─ marketing/  the light-theme landing page
+└─ styles/     app-level CSS (everything visual comes from lingo-ds tokens)
+```
+
+## The scheduler
+
+`src/data/scheduler.ts` is SM-2 adapted to the four grades the design's
+`ReviewRating` emits. New cards step `1m · 6m · 1d · 4d`; once a card graduates,
+intervals come from its ease factor and the labels under the grade buttons show
+the real numbers rather than fixed copy. Grading writes the card's new state and
+a review-log entry in a single IndexedDB transaction, so a card can never
+advance unrecorded.
+
+## Notes for future work
+
+- **PWA/offline.** The design brief recommends a service worker and self-hosted
+  `.woff2` files; today the fonts come from Google Fonts via `@import` in
+  `lingo-ds/tokens/fonts.css`, which breaks the offline story.
+- **Import/export.** There is a reset in Settings but no deck import or export
+  yet, so data is trapped in one browser.
+- **Routing on Pages.** `dist/404.html` is a copy of `index.html` so deep links
+  boot the SPA. Pages still returns a 404 status for them; the page renders.
+- **Vite + the linked package.** `vite.config.ts` sets `resolve.dedupe` for
+  react/react-dom and excludes `lingo-ds` from dependency optimisation. Both are
+  required — without dedupe the production build ships two copies of React and
+  renders a blank page.
+
+MIT licensed. Icons by [Lucide](https://lucide.dev) (ISC); illustration source
+is [OpenMoji](https://openmoji.org) (CC BY-SA 4.0).

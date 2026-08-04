@@ -1,0 +1,246 @@
+import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
+import type { Card, Deck, Grade, LanguageCode, Prefs, ReviewLogEntry } from './types';
+import { buildSeed } from './seed';
+import { schedule } from './scheduler';
+
+const DB_NAME = 'lingo-toolbox';
+const DB_VERSION = 1;
+const PREFS_KEY = 'lingo-toolbox:prefs';
+
+interface LingoDB extends DBSchema {
+  decks: {
+    key: string;
+    value: Deck;
+    indexes: { 'by-language': LanguageCode };
+  };
+  cards: {
+    key: string;
+    value: Card;
+    indexes: { 'by-deck': string; 'by-due': number };
+  };
+  reviews: {
+    key: string;
+    value: ReviewLogEntry;
+    indexes: { 'by-card': string; 'by-time': number };
+  };
+}
+
+let dbPromise: Promise<IDBPDatabase<LingoDB>> | null = null;
+
+function getDB() {
+  if (!dbPromise) {
+    dbPromise = openDB<LingoDB>(DB_NAME, DB_VERSION, {
+      upgrade(db) {
+        const decks = db.createObjectStore('decks', { keyPath: 'id' });
+        decks.createIndex('by-language', 'language');
+
+        const cards = db.createObjectStore('cards', { keyPath: 'id' });
+        cards.createIndex('by-deck', 'deckId');
+        cards.createIndex('by-due', 'due');
+
+        const reviews = db.createObjectStore('reviews', { keyPath: 'id' });
+        reviews.createIndex('by-card', 'cardId');
+        reviews.createIndex('by-time', 'reviewedAt');
+      },
+    });
+  }
+  return dbPromise;
+}
+
+/**
+ * Writes the starter decks the first time the app runs. Safe to call on every boot.
+ *
+ * Single-flighted: the emptiness check and the write are not atomic, so two
+ * concurrent callers would both see an empty database and both seed it. React's
+ * StrictMode double-invokes effects in development and does exactly that, which
+ * produced a duplicate of every starter card. Sharing one promise makes the
+ * second caller await the first instead of racing it.
+ */
+let seeding: Promise<void> | null = null;
+
+export function ensureSeeded(): Promise<void> {
+  if (!seeding) {
+    seeding = (async () => {
+      const db = await getDB();
+      if (await db.count('decks')) return;
+
+      const { decks, cards } = buildSeed();
+      const tx = db.transaction(['decks', 'cards'], 'readwrite');
+      await Promise.all([
+        ...decks.map((d) => tx.objectStore('decks').put(d)),
+        ...cards.map((c) => tx.objectStore('cards').put(c)),
+        tx.done,
+      ]);
+    })().catch((err) => {
+      // Let a failed seed be retried rather than caching the rejection forever.
+      seeding = null;
+      throw err;
+    });
+  }
+  return seeding;
+}
+
+// ── Decks ──────────────────────────────────────────────────────────
+
+export async function listDecks(language: LanguageCode): Promise<Deck[]> {
+  const db = await getDB();
+  const decks = await db.getAllFromIndex('decks', 'by-language', language);
+  return decks.sort((a, b) => a.createdAt - b.createdAt || a.name.localeCompare(b.name));
+}
+
+export async function getDeck(id: string): Promise<Deck | undefined> {
+  return (await getDB()).get('decks', id);
+}
+
+export async function putDeck(deck: Deck): Promise<void> {
+  await (await getDB()).put('decks', deck);
+}
+
+/** Removes a deck along with its cards and their review history. */
+export async function deleteDeck(id: string): Promise<void> {
+  const db = await getDB();
+  const cardIds = (await db.getAllFromIndex('cards', 'by-deck', id)).map((c) => c.id);
+  const tx = db.transaction(['decks', 'cards', 'reviews'], 'readwrite');
+  const reviews = tx.objectStore('reviews');
+  await Promise.all([
+    tx.objectStore('decks').delete(id),
+    ...cardIds.map((cid) => tx.objectStore('cards').delete(cid)),
+    ...cardIds.map(async (cid) => {
+      for (const r of await reviews.index('by-card').getAll(cid)) await reviews.delete(r.id);
+    }),
+    tx.done,
+  ]);
+}
+
+// ── Cards ──────────────────────────────────────────────────────────
+
+export async function listCards(deckId: string): Promise<Card[]> {
+  const db = await getDB();
+  return (await db.getAllFromIndex('cards', 'by-deck', deckId))
+    .sort((a, b) => a.createdAt - b.createdAt);
+}
+
+export async function listCardsForLanguage(language: LanguageCode): Promise<Card[]> {
+  const decks = await listDecks(language);
+  const perDeck = await Promise.all(decks.map((d) => listCards(d.id)));
+  return perDeck.flat();
+}
+
+export async function putCard(card: Card): Promise<void> {
+  await (await getDB()).put('cards', card);
+}
+
+export async function deleteCard(id: string): Promise<void> {
+  const db = await getDB();
+  const reviews = await db.getAllFromIndex('reviews', 'by-card', id);
+  const tx = db.transaction(['cards', 'reviews'], 'readwrite');
+  await Promise.all([
+    tx.objectStore('cards').delete(id),
+    ...reviews.map((r) => tx.objectStore('reviews').delete(r.id)),
+    tx.done,
+  ]);
+}
+
+// ── Reviewing ──────────────────────────────────────────────────────
+
+/**
+ * Applies a grade: advances the card's scheduler state and appends a log entry.
+ * Both writes share one transaction so a card can never advance unrecorded.
+ */
+export async function gradeCard(card: Card, grade: Grade, now: number = Date.now()): Promise<Card> {
+  const next = schedule(card, grade, now);
+  const updated: Card = { ...card, ...next };
+
+  const entry: ReviewLogEntry = {
+    id: `${card.id}:${now}`,
+    cardId: card.id,
+    deckId: card.deckId,
+    grade,
+    reviewedAt: now,
+    intervalBefore: card.interval,
+    intervalAfter: next.interval,
+  };
+
+  const db = await getDB();
+  const tx = db.transaction(['cards', 'reviews'], 'readwrite');
+  await Promise.all([
+    tx.objectStore('cards').put(updated),
+    tx.objectStore('reviews').put(entry),
+    tx.done,
+  ]);
+
+  return updated;
+}
+
+export async function reviewsSince(since: number): Promise<ReviewLogEntry[]> {
+  const db = await getDB();
+  return db.getAllFromIndex('reviews', 'by-time', IDBKeyRange.lowerBound(since));
+}
+
+const dayKey = (ms: number) => {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+};
+
+/**
+ * Consecutive days ending today (or yesterday, if today has no reviews yet) on
+ * which at least one card was graded. A gap of a full day ends the streak.
+ */
+export async function computeStreak(now: number = Date.now()): Promise<number> {
+  const db = await getDB();
+  const days = new Set((await db.getAll('reviews')).map((r) => dayKey(r.reviewedAt)));
+  if (!days.size) return 0;
+
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  // Reviewing today isn't required to hold a streak until the day is over, so
+  // start counting from today if it's there, otherwise from yesterday.
+  let cursor = days.has(dayKey(now)) ? now : now - DAY_MS;
+  if (!days.has(dayKey(cursor))) return 0;
+
+  let streak = 0;
+  while (days.has(dayKey(cursor))) {
+    streak += 1;
+    cursor -= DAY_MS;
+  }
+  return streak;
+}
+
+// ── Prefs (localStorage — small, synchronous, read on every render) ──
+
+const DEFAULT_PREFS: Prefs = {
+  language: 'ES',
+  theme: 'dark',
+  showShortcuts: true,
+  sessionLimit: 20,
+};
+
+export function loadPrefs(): Prefs {
+  try {
+    const raw = localStorage.getItem(PREFS_KEY);
+    return raw ? { ...DEFAULT_PREFS, ...JSON.parse(raw) } : DEFAULT_PREFS;
+  } catch {
+    return DEFAULT_PREFS;
+  }
+}
+
+export function savePrefs(prefs: Prefs): void {
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+  } catch {
+    // A full or blocked localStorage shouldn't take the app down; prefs just
+    // fall back to defaults next boot.
+  }
+}
+
+/** Clears every store — used by the "Reset local data" action in Settings. */
+export async function resetAll(): Promise<void> {
+  const db = await getDB();
+  const tx = db.transaction(['decks', 'cards', 'reviews'], 'readwrite');
+  await Promise.all([
+    tx.objectStore('decks').clear(),
+    tx.objectStore('cards').clear(),
+    tx.objectStore('reviews').clear(),
+    tx.done,
+  ]);
+  localStorage.removeItem(PREFS_KEY);
+}

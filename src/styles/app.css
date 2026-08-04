@@ -1,0 +1,18 @@
+/* App-level styles only. Everything visual comes from lingo-ds tokens — never
+   add a colour, radius or shadow literal here. */
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--surface-app);
+}
+
+/* The landing page manages its own background; the product shell fills the viewport. */
+a {
+  color: inherit;
+}

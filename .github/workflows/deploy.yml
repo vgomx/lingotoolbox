@@ -1,0 +1,67 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time; let an in-flight run finish rather than cancelling it.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # lingo-ds is a file: dependency, so it has to sit beside the app in the
+      # workspace and be built before npm install here can resolve it.
+      - name: Check out the app
+        uses: actions/checkout@v4
+        with:
+          path: lingotoolbox
+
+      - name: Check out the design system
+        uses: actions/checkout@v4
+        with:
+          repository: vgomx/lingo-ds
+          path: lingo-ds
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build lingo-ds
+        working-directory: lingo-ds
+        run: |
+          npm ci || npm install
+          npm run build
+
+      - name: Build the app
+        working-directory: lingotoolbox
+        env:
+          GITHUB_PAGES: 'true'
+        run: |
+          npm install
+          npm run build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: lingotoolbox/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
