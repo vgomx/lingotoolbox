@@ -210,12 +210,12 @@ export function DeckDetail() {
         }
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', paddingBottom: 'var(--space-4)' }}>
-          <Input label="Front" placeholder="sobremesa" value={front} onChange={(e) => setFront(e.target.value)} />
-          <Input label="Back" placeholder="the long talk after a meal" value={back} onChange={(e) => setBack(e.target.value)} />
+          <Input label="Front" placeholder="gezellig" value={front} onChange={(e) => setFront(e.target.value)} />
+          <Input label="Back" placeholder="warm, companionable, good to be in" value={back} onChange={(e) => setBack(e.target.value)} />
           <Input
             label="Phonetic"
             hint="Optional — IPA or romanisation, set in the mono face."
-            placeholder="/so.bɾeˈme.sa/"
+            placeholder="/ɣəˈzɛləx/"
             value={phonetic}
             onChange={(e) => setPhonetic(e.target.value)}
           />

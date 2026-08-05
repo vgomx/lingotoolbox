@@ -73,15 +73,25 @@ export function LanguageMenu() {
             </button>
           ))}
           <span style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
+          {/* Sits under the list because this is where someone looks for a
+              language that isn't here yet. */}
           <span
             style={{
-              display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px 8px',
+              display: 'flex', flexDirection: 'column', gap: 6, padding: '6px 8px 8px',
               fontFamily: 'var(--font-ui)', fontSize: 'var(--fs-11)', color: 'var(--text-faint)',
               lineHeight: 'var(--lh-normal)',
             }}
           >
-            <Badge tone="neutral">Local</Badge>
-            Every card stays in this browser.
+            {/* The two badges differ in width, so they are pinned to a common one
+                to keep the notes beside them reading as a column. */}
+            <span style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+              <Badge tone="neutral" style={{ minWidth: 46, justifyContent: 'center', flex: 'none' }}>Soon</Badge>
+              More languages are planned.
+            </span>
+            <span style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+              <Badge tone="neutral" style={{ minWidth: 46, justifyContent: 'center', flex: 'none' }}>Local</Badge>
+              Every card stays in this browser.
+            </span>
           </span>
         </div>
       )}

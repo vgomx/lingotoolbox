@@ -33,7 +33,7 @@ const TOOLS = [
   { icon: 'scroll-text', color: 'var(--tool-grammar)', name: 'Grammar Notes', copy: 'Short explanations you can pull up mid-review without losing your place.' },
 ];
 
-const LANGUAGES = ['Spanish', 'Japanese', 'Turkish'];
+const LANGUAGES = ['English', 'Portuguese', 'Dutch'];
 
 function Nav() {
   return (
@@ -113,16 +113,16 @@ function Hero() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
           <span style={{ flex: 1, fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
-            Kitchen Spanish · 12 due
+            Everyday phrases · 12 due
           </span>
           <StreakPill days={26} />
         </div>
 
         <Flashcard
-          front="sobremesa"
-          back="the long talk after a meal"
-          phonetic="/so.bɾeˈme.sa/"
-          language="Spanish"
+          front="saudade"
+          back="the presence of something absent"
+          phonetic="/sɐwˈdaðɨ/"
+          language="Portuguese"
           height={220}
           flipped={flipped}
           onFlip={setFlipped}
@@ -180,9 +180,9 @@ function EtymologyBand() {
         </p>
       </div>
       <Card padding="var(--space-8)">
-        <EtymologyNode word="sobremesa" language="Spanish" era="c. 1600" gloss="the time spent at the table after eating" current />
-        <EtymologyNode word="super mensam" language="Latin" era="classical" gloss="over the table" />
-        <EtymologyNode word="*mens-" language="Proto-Indo-European" era="reconstructed" gloss="to measure out — also month, moon" connector={false} />
+        <EtymologyNode word="saudade" language="Portuguese" era="c. 1200s" gloss="the presence of something absent" current />
+        <EtymologyNode word="soidade" language="Old Portuguese" era="13th c." gloss="solitude — longing for what is gone" />
+        <EtymologyNode word="sōlitātem" language="Latin" era="classical" gloss="loneliness, from sōlus — alone" connector={false} />
       </Card>
     </section>
   );
@@ -191,7 +191,7 @@ function EtymologyBand() {
 function FlashcardsBand() {
   return (
     <section style={{ ...section, display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 'var(--space-10)', alignItems: 'center' }}>
-      <Card title="Today · Kitchen Spanish" padding="var(--space-8)">
+      <Card title="Today · Everyday phrases" padding="var(--space-8)">
         <ProgressBar label="Session" valueLabel="18 / 40" value={18} max={40} />
         <ProgressBar
           label="Mastery mix"

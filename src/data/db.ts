@@ -1,6 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { Card, Deck, Grade, LanguageCode, Prefs, ReviewLogEntry } from './types';
-import { buildSeed } from './seed';
+import { buildSeed, WORKSPACES } from './seed';
 import { schedule } from './scheduler';
 
 const DB_NAME = 'lingo-toolbox';
@@ -208,7 +208,7 @@ export async function computeStreak(now: number = Date.now()): Promise<number> {
 // ── Prefs (localStorage — small, synchronous, read on every render) ──
 
 const DEFAULT_PREFS: Prefs = {
-  language: 'ES',
+  language: 'NL',
   theme: 'dark',
   showShortcuts: true,
   sessionLimit: 20,
@@ -218,7 +218,13 @@ const DEFAULT_PREFS: Prefs = {
 export function loadPrefs(): Prefs {
   try {
     const raw = localStorage.getItem(PREFS_KEY);
-    return raw ? { ...DEFAULT_PREFS, ...JSON.parse(raw) } : DEFAULT_PREFS;
+    if (!raw) return DEFAULT_PREFS;
+    const prefs: Prefs = { ...DEFAULT_PREFS, ...JSON.parse(raw) };
+    // A stored language can outlive the workspace it named — the set changed
+    // once already. Falling back beats pointing the whole shell at a workspace
+    // that no longer exists.
+    if (!WORKSPACES.some((w) => w.code === prefs.language)) prefs.language = DEFAULT_PREFS.language;
+    return prefs;
   } catch {
     return DEFAULT_PREFS;
   }
