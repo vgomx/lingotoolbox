@@ -65,6 +65,33 @@ favicon, which has to be a real file at a fixed URL: `npm run sync:assets`
 copies it into `public/` and runs automatically before `dev` and `build`, so it
 is generated rather than committed.
 
+## Illustrations
+
+Cards can carry an OpenMoji glyph. The design system holds an 18-glyph sample as
+an example of the treatment and says the full set is vendored in the product
+repo; `public/openmoji/` is that — 526 glyphs, 1.4 MB.
+
+The set is curated in `scripts/openmoji-selection.mjs`: the **entire**
+`smileys-emotion` group, plus about 360 hand-picked concrete nouns. Expressions
+are taken whole because "annoyed" and "furious" are a vocabulary distinction a
+set of eight faces cannot draw, and because the boundary is then Unicode's rather
+than one we would keep re-drawing. Run `npm run build:illustrations` after
+editing it: the script downloads from jsDelivr, writes the SVGs and regenerates
+`src/data/openmojiCatalog.ts`. The output is committed, so a clone with no
+network still builds.
+
+A card stores the **codepoint** (`1F436`), not the filename, so renaming a file
+or a revised OpenMoji annotation cannot orphan somebody's card.
+`npm run check:illustrations` runs on every build and fails if a codepoint in the
+seed has no glyph, if the catalogue names a file that is missing, or if a file on
+disk is not in the catalogue — none of which TypeScript can see, since the file
+is fetched at runtime.
+
+They are **not** precached: 526 files would more than double a first visit to
+show pictures most people never open the picker to see. A Workbox `CacheFirst`
+rule caches them as they are fetched, and a glyph can only be on a card if the
+picker was opened, which is what puts it in the cache.
+
 ## The scheduler
 
 `src/data/scheduler.ts` is SM-2 adapted to the four grades the design's
@@ -117,6 +144,7 @@ Icons are [Lucide](https://lucide.dev) (ISC; 22 of the 76 are Feather-derived
 and additionally MIT, © Cole Bemis). Typefaces are Baloo 2, Nunito Sans and
 JetBrains Mono, requested from Google Fonts at runtime rather than
 redistributed — self-hosting them makes the OFL text a shipping requirement.
-[OpenMoji](https://openmoji.org) (CC BY-SA 4.0) is *not* currently bundled; if
-illustrations get used, its attribution becomes an obligation and belongs in
-`legalNotices.ts`.
+Illustrations are [OpenMoji](https://openmoji.org) (CC BY-SA 4.0), used
+unmodified — 526 of its glyphs ship in `public/openmoji/`, so its attribution is
+a real obligation and is carried in `legalNotices.ts` alongside the full licence
+text.

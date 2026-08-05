@@ -1,11 +1,12 @@
 import * as React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Badge, Button, Card, Dialog, Icon, IconButton, Input, Tag, Tooltip } from 'lingo-ds';
+import { Badge, Button, Card, Dialog, Icon, IconButton, IllustrationPicker, Input, Tag, Tooltip } from 'lingo-ds';
 import { AppShell } from '../../shell/AppShell';
 import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
 import { formatDue } from '../../data/scheduler';
 import { START_EASE } from '../../data/scheduler';
+import { ILLUSTRATION_GROUPS, ILLUSTRATION_ITEMS, findIllustration, illustrationUrl } from '../../data/illustrations';
 import type { Card as CardModel } from '../../data/types';
 
 const page: React.CSSProperties = {
@@ -29,18 +30,21 @@ export function DeckDetail() {
   const deck = decks.find((d) => d.id === deckId);
   const cards = cardsInDeck(deckId);
   const due = dueInDeck(deckId).length;
+  const anyIllustrated = cards.some((c) => c.illustration);
 
   const [editing, setEditing] = React.useState<CardModel | null>(null);
   const [adding, setAdding] = React.useState(false);
   const [front, setFront] = React.useState('');
   const [back, setBack] = React.useState('');
   const [phonetic, setPhonetic] = React.useState('');
+  const [illustration, setIllustration] = React.useState<string | null>(null);
 
   const openAdd = () => {
-    setEditing(null); setFront(''); setBack(''); setPhonetic(''); setAdding(true);
+    setEditing(null); setFront(''); setBack(''); setPhonetic(''); setIllustration(null); setAdding(true);
   };
   const openEdit = (card: CardModel) => {
-    setEditing(card); setFront(card.front); setBack(card.back); setPhonetic(card.phonetic ?? ''); setAdding(true);
+    setEditing(card); setFront(card.front); setBack(card.back); setPhonetic(card.phonetic ?? '');
+    setIllustration(card.illustration ?? null); setAdding(true);
   };
   const close = () => setAdding(false);
 
@@ -48,7 +52,13 @@ export function DeckDetail() {
     if (!front.trim() || !back.trim()) return;
     const now = Date.now();
     if (editing) {
-      await saveCard({ ...editing, front: front.trim(), back: back.trim(), phonetic: phonetic.trim() || undefined });
+      await saveCard({
+        ...editing,
+        front: front.trim(),
+        back: back.trim(),
+        phonetic: phonetic.trim() || undefined,
+        illustration: illustration ?? undefined,
+      });
     } else {
       await saveCard({
         id: `card-${now.toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
@@ -56,6 +66,7 @@ export function DeckDetail() {
         front: front.trim(),
         back: back.trim(),
         phonetic: phonetic.trim() || undefined,
+        illustration: illustration ?? undefined,
         tags: [],
         createdAt: now,
         state: 'new',
@@ -153,6 +164,25 @@ export function DeckDetail() {
             {cards.map((card) => (
               <Card key={card.id} padding="14px 16px">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-5)' }}>
+                  {/* The gutter is reserved for the whole deck as soon as one
+                      card has an illustration, so a deck that uses them keeps a
+                      straight left edge instead of jumping in and out by 44px
+                      down the list. Decks with none reserve nothing and keep
+                      their tighter rows. 44px is the design system's floor for
+                      an illustration on a card. */}
+                  {anyIllustrated && (
+                    <span style={{ flex: 'none', width: 44, height: 44, display: 'grid', placeItems: 'center' }}>
+                      {card.illustration && (
+                        <img
+                          src={illustrationUrl(card.illustration)}
+                          alt={findIllustration(card.illustration)?.name ?? ''}
+                          width={44}
+                          height={44}
+                          style={{ display: 'block' }}
+                        />
+                      )}
+                    </span>
+                  )}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
                       <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-18)', fontWeight: 800, color: 'var(--text-strong)' }}>
@@ -218,6 +248,15 @@ export function DeckDetail() {
             placeholder="/ɣəˈzɛləx/"
             value={phonetic}
             onChange={(e) => setPhonetic(e.target.value)}
+          />
+          <IllustrationPicker
+            label="Illustration"
+            hint="Optional. Shows with the answer when you flip the card."
+            items={ILLUSTRATION_ITEMS}
+            groups={ILLUSTRATION_GROUPS}
+            value={illustration}
+            onChange={setIllustration}
+            height={196}
           />
         </div>
       </Dialog>

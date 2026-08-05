@@ -5,6 +5,7 @@ import { AppShell } from '../../shell/AppShell';
 import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
 import { gradePreview, sortForSession } from '../../data/scheduler';
+import { findIllustration, illustrationUrl } from '../../data/illustrations';
 import type { Card as CardModel, Grade } from '../../data/types';
 
 const GRADE_KEYS: Grade[] = ['again', 'hard', 'good', 'easy'];
@@ -190,6 +191,16 @@ export function ReviewSession() {
             front={current.front}
             back={current.back}
             phonetic={current.phonetic}
+            // Answer side only. A picture of the answer sitting on the prompt
+            // turns recall into reading — you name the picture, not the word.
+            illustration={current.illustration && (
+              <img
+                src={illustrationUrl(current.illustration)}
+                alt={findIllustration(current.illustration)?.name ?? ''}
+                width={56}
+                height={56}
+              />
+            )}
             language={workspace.name}
             flipped={flipped}
             onFlip={setFlipped}

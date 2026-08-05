@@ -9,7 +9,9 @@
     "predev": "npm run sync:assets",
     "prebuild": "npm run sync:assets",
     "dev": "vite",
-    "build": "tsc -b && vite build && cp dist/index.html dist/404.html",
+    "build": "tsc -b && npm run check:illustrations && vite build && cp dist/index.html dist/404.html",
+    "check:illustrations": "node scripts/check-illustrations.mjs",
+    "build:illustrations": "node scripts/build-openmoji.mjs",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "build:icons": "node scripts/build-icons.mjs"
