@@ -120,10 +120,10 @@ export function AppShell({ title, titleIcon, topRight, sidebar = true, children 
               />
             </Tooltip>
             {!t.released && (
-              // Sized down from the Badge default so it sits under the 10px rail
-              // label without outweighing it. --fs-10 is the smallest type token;
-              // anything below it would be an off-scale literal.
-              <Badge tone="neutral" style={{ height: 14, padding: '0 5px', fontSize: 'var(--fs-10)' }}>
+              // Sized down from the Badge default so it sits under the rail label
+              // without outweighing it — at --fs-9, the scale's floor, added for
+              // exactly this kind of micro-label on narrow chrome.
+              <Badge tone="neutral" style={{ height: 12, padding: '0 4px', fontSize: 'var(--fs-9)' }}>
                 Soon
               </Badge>
             )}
