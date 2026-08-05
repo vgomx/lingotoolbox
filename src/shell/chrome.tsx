@@ -20,6 +20,15 @@ export interface Chrome {
   title?: string;
   titleIcon?: string;
   /**
+   * One step back up, rendered as a link before the title. A deck opened from
+   * the list had no way back to the list except the rail icon, which is a thing
+   * you have to already know rather than something the screen tells you.
+   *
+   * Only one level: this is a two-deep tool, and a full breadcrumb trail for
+   * two items is ceremony.
+   */
+  parent?: { label: string; to: string };
+  /**
    * The deck sidebar. Off unless a screen asks for it, because decks belong to
    * Flashcards — listing them beside a screen that cannot act on them is chrome
    * pretending to be navigation. Opt in rather than opt out, so a tool added
@@ -45,9 +54,12 @@ const ChromeContext = React.createContext<ChromeContextValue | null>(null);
 
 export const ChromeProvider = ChromeContext.Provider;
 
+// Compared field by field, including inside `parent` — the caller passes a fresh
+// object literal every render, so identity says nothing about whether it changed.
 const same = (a: Chrome, b: Chrome) =>
   a.title === b.title && a.titleIcon === b.titleIcon
-  && a.sidebar === b.sidebar && a.streakInTopBar === b.streakInTopBar;
+  && a.sidebar === b.sidebar && a.streakInTopBar === b.streakInTopBar
+  && a.parent?.label === b.parent?.label && a.parent?.to === b.parent?.to;
 
 /** Used by AppShell to hold the current screen's chrome without looping. */
 export function useChromeState() {
@@ -73,10 +85,19 @@ export function useChrome(chrome: Partial<Chrome>) {
   const { title, titleIcon } = chrome;
   const sidebar = chrome.sidebar ?? DEFAULT_CHROME.sidebar;
   const streakInTopBar = chrome.streakInTopBar ?? DEFAULT_CHROME.streakInTopBar;
+  // Depended on as two primitives rather than as the object, which is new each render.
+  const parentLabel = chrome.parent?.label;
+  const parentTo = chrome.parent?.to;
 
   React.useLayoutEffect(() => {
-    ctx?.set({ title, titleIcon, sidebar, streakInTopBar });
-  }, [ctx, title, titleIcon, sidebar, streakInTopBar]);
+    ctx?.set({
+      title,
+      titleIcon,
+      sidebar,
+      streakInTopBar,
+      parent: parentLabel && parentTo ? { label: parentLabel, to: parentTo } : undefined,
+    });
+  }, [ctx, title, titleIcon, sidebar, streakInTopBar, parentLabel, parentTo]);
 }
 
 /**

@@ -23,7 +23,11 @@ const styles: Record<string, React.CSSProperties> = {
   userBar: { height: 56, flex: 'none', background: 'var(--surface-rail)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: '0 8px 0 10px' },
   main: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' },
   topbar: { height: 'var(--topbar-height)', flex: 'none', display: 'flex', alignItems: 'center', gap: 'var(--space-4)', padding: '0 16px', boxShadow: 'var(--shadow-xs)', position: 'sticky', top: 0, zIndex: 20, backdropFilter: 'var(--blur-overlay)', background: 'color-mix(in oklab, var(--surface-app) 82%, transparent)' },
-  topTitle: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--fs-15)', fontWeight: 800, color: 'var(--text-strong)' },
+  // minWidth:0 so the title can shrink inside the flex row, and nowrap so a long
+  // deck name truncates instead of wrapping the top bar onto two lines.
+  topTitle: { display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, fontSize: 'var(--fs-15)', fontWeight: 800, color: 'var(--text-strong)', whiteSpace: 'nowrap' },
+  crumb: { flex: 'none', color: 'var(--text-muted)', textDecoration: 'none', fontWeight: 700, borderRadius: 'var(--radius-xs)' },
+  topTitleText: { minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' },
   body: { flex: 1, minHeight: 0, overflowY: 'auto' },
 };
 
@@ -39,7 +43,7 @@ const styles: Record<string, React.CSSProperties> = {
  */
 export function AppShell() {
   const { chrome, set } = useChromeState();
-  const { title, titleIcon, sidebar, streakInTopBar } = chrome;
+  const { title, titleIcon, parent, sidebar, streakInTopBar } = chrome;
   // Callback ref rather than useRef: <TopRight> portals into this node, and a
   // ref object's mutation would not re-render the consumers waiting for it.
   const [topRightSlot, setTopRightSlot] = React.useState<HTMLElement | null>(null);
@@ -243,8 +247,17 @@ export function AppShell() {
             </Tooltip>
           )}
           <span style={styles.topTitle}>
-            {titleIcon && <Icon name={titleIcon} size={18} style={{ color: 'var(--text-muted)' }} />}
-            {title}
+            {titleIcon && <Icon name={titleIcon} size={18} style={{ color: 'var(--text-muted)', flex: 'none' }} />}
+            {/* The way back up. Muted so the current screen stays the loudest
+                thing in the bar, and a real link so it is keyboard-reachable and
+                opens in a new tab like any other. */}
+            {parent && (
+              <>
+                <NavLink to={parent.to} style={styles.crumb}>{parent.label}</NavLink>
+                <Icon name="chevron-right" size={15} style={{ color: 'var(--text-muted)', margin: '0 -2px', flex: 'none' }} aria-hidden="true" />
+              </>
+            )}
+            <span style={styles.topTitleText}>{title}</span>
           </span>
           <span style={{ flex: 1 }} />
           {/* Filled by whichever screen renders <TopRight>; empty otherwise. */}

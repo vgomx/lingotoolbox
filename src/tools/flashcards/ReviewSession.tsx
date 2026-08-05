@@ -104,7 +104,15 @@ export function ReviewSession() {
   }, [toast]);
 
   const title = deck ? `Review · ${deck.name}` : 'Review';
-  useChrome({ title, titleIcon: 'layers', sidebar: true });
+  // Back to the deck being reviewed when there is one, otherwise to the list.
+  useChrome({
+    title: deck ? 'Review' : title,
+    titleIcon: 'layers',
+    parent: deck
+      ? { label: deck.name, to: `/app/cards/${deck.id}` }
+      : { label: 'Flashcards', to: '/app/cards' },
+    sidebar: true,
+  });
 
   if (!queue) {
     return <div style={page} />;

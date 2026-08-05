@@ -34,7 +34,12 @@ export function DeckDetail() {
 
   // Above the not-found return, because hooks cannot be conditional. A missing
   // deck falls back to the tool's own name rather than an empty title bar.
-  useChrome({ title: deck?.name ?? 'Flashcards', titleIcon: 'layers', sidebar: true });
+  useChrome({
+    title: deck?.name ?? 'Flashcards',
+    titleIcon: 'layers',
+    parent: { label: 'Flashcards', to: '/app/cards' },
+    sidebar: true,
+  });
 
   const [editing, setEditing] = React.useState<CardModel | null>(null);
   const [adding, setAdding] = React.useState(false);
