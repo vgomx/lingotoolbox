@@ -2,70 +2,37 @@ import { Button, Icon } from 'lingo-ds';
 import { Link } from 'react-router-dom';
 import { AppShell } from '../shell/AppShell';
 import { EmptyTool } from './EmptyTool';
+import { TOOLS, type ToolId } from '../data/seed';
 
 /**
- * The four tools beyond Flashcards are designed but not built yet. Each gets a
- * real empty state rather than a dead route, and points at the tool that works.
+ * The four tools that are designed but not built. Each gets a real screen rather
+ * than a dead route, and each says what it will do for the learner and where to
+ * go meanwhile — not what state the codebase is in, which is no use to them.
+ *
+ * All of it comes off the TOOLS entry so the label, icon, accent and blurb can
+ * never drift from the rail and the home screen.
  */
+function ComingSoon({ id }: { id: ToolId }) {
+  const tool = TOOLS.find((t) => t.id === id)!;
 
-const toFlashcards = (
-  <Link to="/app/cards" style={{ textDecoration: 'none' }}>
-    <Button variant="secondary" iconLeft={<Icon name="layers" size={16} />}>Open Flashcards</Button>
-  </Link>
-);
-
-export function EtymologyScreen() {
   return (
-    <AppShell title="Etymology Explorer" titleIcon="git-branch">
+    <AppShell title={tool.label} titleIcon={tool.icon} sidebar={false}>
       <EmptyTool
-        icon="git-branch"
-        accent="var(--tool-etymology)"
-        title="Not built yet"
-        description="Word-origin chains are designed but not wired up. Flashcards is the tool that works today."
-        action={toFlashcards}
+        icon={tool.icon}
+        accent={tool.accent}
+        title="Coming soon"
+        description={`${tool.blurb} Flashcards is ready to use today.`}
+        action={
+          <Link to="/app/cards" style={{ textDecoration: 'none' }}>
+            <Button variant="secondary" iconLeft={<Icon name="layers" size={16} />}>Open Flashcards</Button>
+          </Link>
+        }
       />
     </AppShell>
   );
 }
 
-export function ConjugationScreen() {
-  return (
-    <AppShell title="Conjugation Drill" titleIcon="spell-check">
-      <EmptyTool
-        icon="spell-check"
-        accent="var(--tool-conjugation)"
-        title="Not built yet"
-        description="Verb drills need a conjugation table per language. Flashcards is the tool that works today."
-        action={toFlashcards}
-      />
-    </AppShell>
-  );
-}
-
-export function PhrasebookScreen() {
-  return (
-    <AppShell title="Phrasebook" titleIcon="message-square-quote">
-      <EmptyTool
-        icon="message-square-quote"
-        accent="var(--tool-phrasebook)"
-        title="Not built yet"
-        description="Saved phrases will share the deck your cards already live in. Flashcards is the tool that works today."
-        action={toFlashcards}
-      />
-    </AppShell>
-  );
-}
-
-export function GrammarScreen() {
-  return (
-    <AppShell title="Grammar Notes" titleIcon="scroll-text">
-      <EmptyTool
-        icon="scroll-text"
-        accent="var(--tool-grammar)"
-        title="Not built yet"
-        description="Short explanations you can pull up mid-review. Flashcards is the tool that works today."
-        action={toFlashcards}
-      />
-    </AppShell>
-  );
-}
+export const EtymologyScreen = () => <ComingSoon id="etymology" />;
+export const ConjugationScreen = () => <ComingSoon id="conjugation" />;
+export const PhrasebookScreen = () => <ComingSoon id="phrasebook" />;
+export const GrammarScreen = () => <ComingSoon id="grammar" />;

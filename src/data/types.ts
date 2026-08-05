@@ -1,4 +1,4 @@
-export type LanguageCode = 'ES' | 'JA' | 'TR';
+export type LanguageCode = 'EN' | 'PT' | 'NL' | 'ES';
 
 export interface Workspace {
   code: LanguageCode;
@@ -18,6 +18,27 @@ export interface Deck {
   createdAt: number;
 }
 
+/**
+ * One vendored OpenMoji glyph. The catalogue in `openmojiCatalog.ts` is generated
+ * from OpenMoji's own metadata by `scripts/build-openmoji.mjs`.
+ */
+export interface Illustration {
+  /** Unicode codepoint(s), e.g. `1F602` — the stable identity, stored on the card. */
+  hex: string;
+  /** Filename under `public/openmoji/`, e.g. `face-with-tears-of-joy-1F602.svg`. */
+  file: string;
+  /** OpenMoji's annotation, e.g. "face with tears of joy". Used as alt text. */
+  name: string;
+  group: string;
+  /** Search terms beyond the words already in `name`. */
+  keywords: string[];
+}
+
+export interface IllustrationGroup {
+  id: string;
+  label: string;
+}
+
 /** Where a card sits in the scheduler's lifecycle. */
 export type CardState = 'new' | 'learning' | 'review' | 'relearning';
 
@@ -27,6 +48,11 @@ export interface Card {
   front: string;
   back: string;
   phonetic?: string;
+  /**
+   * OpenMoji codepoint, e.g. `1F436`. The codepoint rather than the filename, so
+   * a renamed asset — or a revised OpenMoji annotation — cannot orphan the card.
+   */
+  illustration?: string;
   tags: string[];
   createdAt: number;
 
@@ -61,4 +87,6 @@ export interface Prefs {
   showShortcuts: boolean;
   /** Cap on how many cards one session will serve. */
   sessionLimit: number;
+  /** Deck sidebar hidden to give the content pane the width back. */
+  sidebarCollapsed: boolean;
 }

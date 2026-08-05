@@ -1,6 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { Card, Deck, Grade, LanguageCode, Prefs, ReviewLogEntry } from './types';
-import { buildSeed } from './seed';
+import { buildSeed, WORKSPACES } from './seed';
 import { schedule } from './scheduler';
 
 const DB_NAME = 'lingo-toolbox';
@@ -205,19 +205,51 @@ export async function computeStreak(now: number = Date.now()): Promise<number> {
   return streak;
 }
 
+/**
+ * Reviews graded per calendar day, oldest first, ending today.
+ *
+ * The design's reference home screen shows "this week" as hours spent. We do not
+ * track time and inventing it would be a lie, but the review log does record when
+ * every grade happened — so the same shape of chart can be drawn from something
+ * that actually is true.
+ */
+export async function reviewsPerDay(days = 7, now: number = Date.now()): Promise<number[]> {
+  const db = await getDB();
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  const from = start.getTime() - (days - 1) * DAY_MS;
+
+  const counts = new Map<string, number>();
+  for (const r of await db.getAllFromIndex('reviews', 'by-time', IDBKeyRange.lowerBound(from))) {
+    const k = dayKey(r.reviewedAt);
+    counts.set(k, (counts.get(k) ?? 0) + 1);
+  }
+
+  return Array.from({ length: days }, (_, i) => counts.get(dayKey(from + i * DAY_MS)) ?? 0);
+}
+
 // ── Prefs (localStorage — small, synchronous, read on every render) ──
 
 const DEFAULT_PREFS: Prefs = {
-  language: 'ES',
+  language: 'NL',
   theme: 'dark',
   showShortcuts: true,
   sessionLimit: 20,
+  sidebarCollapsed: false,
 };
 
 export function loadPrefs(): Prefs {
   try {
     const raw = localStorage.getItem(PREFS_KEY);
-    return raw ? { ...DEFAULT_PREFS, ...JSON.parse(raw) } : DEFAULT_PREFS;
+    if (!raw) return DEFAULT_PREFS;
+    const prefs: Prefs = { ...DEFAULT_PREFS, ...JSON.parse(raw) };
+    // A stored language can outlive the workspace it named — the set changed
+    // once already. Falling back beats pointing the whole shell at a workspace
+    // that no longer exists.
+    if (!WORKSPACES.some((w) => w.code === prefs.language)) prefs.language = DEFAULT_PREFS.language;
+    return prefs;
   } catch {
     return DEFAULT_PREFS;
   }

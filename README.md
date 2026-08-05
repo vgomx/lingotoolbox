@@ -58,6 +58,40 @@ src/
 └─ styles/     app-level CSS (everything visual comes from lingo-ds tokens)
 ```
 
+There is no `src/assets/`. Brand artwork is imported straight from the package —
+`import mark from 'lingo-ds/assets/logo/mark-violet.svg'` — so the app cannot
+drift from the design system by holding a stale copy. The one exception is the
+favicon, which has to be a real file at a fixed URL: `npm run sync:assets`
+copies it into `public/` and runs automatically before `dev` and `build`, so it
+is generated rather than committed.
+
+## Illustrations
+
+Cards can carry an OpenMoji glyph. The design system holds an 18-glyph sample as
+an example of the treatment and says the full set is vendored in the product
+repo; `public/openmoji/` is that — 526 glyphs, 1.4 MB.
+
+The set is curated in `scripts/openmoji-selection.mjs`: the **entire**
+`smileys-emotion` group, plus about 360 hand-picked concrete nouns. Expressions
+are taken whole because "annoyed" and "furious" are a vocabulary distinction a
+set of eight faces cannot draw, and because the boundary is then Unicode's rather
+than one we would keep re-drawing. Run `npm run build:illustrations` after
+editing it: the script downloads from jsDelivr, writes the SVGs and regenerates
+`src/data/openmojiCatalog.ts`. The output is committed, so a clone with no
+network still builds.
+
+A card stores the **codepoint** (`1F436`), not the filename, so renaming a file
+or a revised OpenMoji annotation cannot orphan somebody's card.
+`npm run check:illustrations` runs on every build and fails if a codepoint in the
+seed has no glyph, if the catalogue names a file that is missing, or if a file on
+disk is not in the catalogue — none of which TypeScript can see, since the file
+is fetched at runtime.
+
+They are **not** precached: 526 files would more than double a first visit to
+show pictures most people never open the picker to see. A Workbox `CacheFirst`
+rule caches them as they are fetched, and a glyph can only be on a card if the
+picker was opened, which is what puts it in the cache.
+
 ## The scheduler
 
 `src/data/scheduler.ts` is SM-2 adapted to the four grades the design's
@@ -67,11 +101,29 @@ the real numbers rather than fixed copy. Grading writes the card's new state and
 a review-log entry in a single IndexedDB transaction, so a card can never
 advance unrecorded.
 
+## Installing it
+
+The app is a PWA: `vite-plugin-pwa` generates a manifest and a Workbox service
+worker that precaches the build, so it can be added to a home screen or dock and
+opened in its own window with no connection.
+
+Icons are generated from the design system's app-icon lockup by
+`npm run build:icons`, committed as a script rather than as binaries dropped in
+by hand. `registerType` is `autoUpdate`: a new deploy simply becomes the app on
+the next visit, since a static build has no versioning story worth prompting
+about.
+
+The one gap is type. The fonts still come from Google Fonts via `@import` in
+`lingo-ds/tokens/fonts.css`, so they are cached at runtime rather than
+precached — offline works from the **second** visit. Self-hosting the `.woff2`
+files, which the design brief already recommends, would make it work from the
+first, and is the remaining piece.
+
 ## Notes for future work
 
-- **PWA/offline.** The design brief recommends a service worker and self-hosted
-  `.woff2` files; today the fonts come from Google Fonts via `@import` in
-  `lingo-ds/tokens/fonts.css`, which breaks the offline story.
+- **Self-hosted fonts.** See above — the last thing standing between this and a
+  genuinely offline first load. Also fixes the licence question, since OFL text
+  must ship alongside redistributed font files.
 - **Import/export.** There is a reset in Settings but no deck import or export
   yet, so data is trapped in one browser.
 - **Routing on Pages.** `dist/404.html` is a copy of `index.html` so deep links
@@ -81,5 +133,18 @@ advance unrecorded.
   required — without dedupe the production build ships two copies of React and
   renders a blank page.
 
-MIT licensed. Icons by [Lucide](https://lucide.dev) (ISC); illustration source
-is [OpenMoji](https://openmoji.org) (CC BY-SA 4.0).
+## Licences
+
+MIT licensed. The full notices for everything the app ships are in
+`src/legalNotices.ts` and surfaced in the app under Settings → Legal. Only
+things that actually reach the browser are listed — build tooling never ships,
+so it carries no obligation to end users.
+
+Icons are [Lucide](https://lucide.dev) (ISC; 22 of the 76 are Feather-derived
+and additionally MIT, © Cole Bemis). Typefaces are Baloo 2, Nunito Sans and
+JetBrains Mono, requested from Google Fonts at runtime rather than
+redistributed — self-hosting them makes the OFL text a shipping requirement.
+Illustrations are [OpenMoji](https://openmoji.org) (CC BY-SA 4.0), used
+unmodified — 526 of its glyphs ship in `public/openmoji/`, so its attribution is
+a real obligation and is carried in `legalNotices.ts` alongside the full licence
+text.

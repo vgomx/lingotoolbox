@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { Badge, Button, Card, EtymologyNode, Flashcard, Icon, ProgressBar, ReviewRating, StreakPill, Tag } from 'lingo-ds';
-import wordmarkViolet from '../assets/logo-wordmark-violet.svg';
-import wordmarkWhite from '../assets/logo-wordmark-white.svg';
+import wordmarkViolet from 'lingo-ds/assets/logo/logo-wordmark-violet.svg';
+import wordmarkWhite from 'lingo-ds/assets/logo/logo-wordmark-white.svg';
 
 /**
  * The light-theme landing page. There is deliberately no pricing surface anywhere —
@@ -33,7 +33,7 @@ const TOOLS = [
   { icon: 'scroll-text', color: 'var(--tool-grammar)', name: 'Grammar Notes', copy: 'Short explanations you can pull up mid-review without losing your place.' },
 ];
 
-const LANGUAGES = ['Spanish', 'Japanese', 'Turkish'];
+const LANGUAGES = ['English', 'Portuguese', 'Dutch', 'Spanish'];
 
 function Nav() {
   return (
@@ -64,7 +64,7 @@ function Hero() {
   return (
     <section style={{ ...section, paddingTop: 72, display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 'var(--space-10)', alignItems: 'center' }}>
       <div>
-        <span style={eyebrow}>Open source · five tools · three languages</span>
+        <span style={eyebrow}>Open source · five tools · four languages</span>
         <h1
           style={{
             margin: '12px 0 0', fontFamily: 'var(--font-display)', fontSize: 'var(--fs-56, 56px)',
@@ -90,8 +90,8 @@ function Hero() {
         <div style={{ display: 'flex', gap: 'var(--space-9)', marginTop: 'var(--space-9)', flexWrap: 'wrap' }}>
           {[
             { n: 'Local', l: 'every card stays in your browser' },
-            { n: '3', l: 'starter languages' },
-            { n: 'MIT', l: 'licensed, self-hostable' },
+            { n: '4', l: 'starter languages' },
+            { n: 'Offline', l: 'no connection needed' },
           ].map((s) => (
             <div key={s.n} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-32)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1 }}>{s.n}</span>
@@ -113,16 +113,16 @@ function Hero() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
           <span style={{ flex: 1, fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
-            Kitchen Spanish · 12 due
+            Everyday phrases · 12 due
           </span>
-          <StreakPill days={26} />
+          <StreakPill days={26} size="sm" />
         </div>
 
         <Flashcard
-          front="sobremesa"
-          back="the long talk after a meal"
-          phonetic="/so.bɾeˈme.sa/"
-          language="Spanish"
+          front="saudade"
+          back="the presence of something absent"
+          phonetic="/sɐwˈdaðɨ/"
+          language="Portuguese"
           height={220}
           flipped={flipped}
           onFlip={setFlipped}
@@ -180,9 +180,9 @@ function EtymologyBand() {
         </p>
       </div>
       <Card padding="var(--space-8)">
-        <EtymologyNode word="sobremesa" language="Spanish" era="c. 1600" gloss="the time spent at the table after eating" current />
-        <EtymologyNode word="super mensam" language="Latin" era="classical" gloss="over the table" />
-        <EtymologyNode word="*mens-" language="Proto-Indo-European" era="reconstructed" gloss="to measure out — also month, moon" connector={false} />
+        <EtymologyNode word="saudade" language="Portuguese" era="c. 1200s" gloss="the presence of something absent" current />
+        <EtymologyNode word="soidade" language="Old Portuguese" era="13th c." gloss="solitude — longing for what is gone" />
+        <EtymologyNode word="sōlitātem" language="Latin" era="classical" gloss="loneliness, from sōlus — alone" connector={false} />
       </Card>
     </section>
   );
@@ -191,7 +191,7 @@ function EtymologyBand() {
 function FlashcardsBand() {
   return (
     <section style={{ ...section, display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 'var(--space-10)', alignItems: 'center' }}>
-      <Card title="Today · Kitchen Spanish" padding="var(--space-8)">
+      <Card title="Today · Everyday phrases" padding="var(--space-8)">
         <ProgressBar label="Session" valueLabel="18 / 40" value={18} max={40} />
         <ProgressBar
           label="Mastery mix"
@@ -230,22 +230,23 @@ function OpenSource() {
   const columns = [
     {
       badge: 'Easiest',
-      title: 'Run it hosted',
-      copy: 'Use the public build. Nothing to install, every tool unlocked.',
+      title: 'Use it now',
+      copy: 'Open it in a browser. Nothing to install, every tool unlocked.',
       points: ['All five tools as they ship', 'Unlimited decks and cards', 'Your data never leaves the browser'],
       cta: <Link to="/app" style={{ textDecoration: 'none' }}><Button size="sm">Open the app</Button></Link>,
     },
     {
-      title: 'Self-host',
-      copy: 'It’s a static site. Clone it, build it, serve it anywhere.',
-      points: ['No server, no accounts service', 'No telemetry of any kind', 'Fork it and change what you like'],
-      cta: <a href="https://github.com/vgomx/lingotoolbox" style={{ textDecoration: 'none' }}><Button size="sm" variant="secondary">Read the repo</Button></a>,
+      badge: 'Offline',
+      title: 'Install it',
+      copy: 'Add it to your home screen or dock and it opens like any other app.',
+      points: ['Works with no connection', 'Opens in its own window', 'Still just a web page underneath'],
+      cta: <Link to="/app" style={{ textDecoration: 'none' }}><Button size="sm" variant="secondary">Open, then install</Button></Link>,
     },
     {
-      title: 'Contribute',
-      copy: 'Add a tool, a language pack, or a better scheduler.',
-      points: ['MIT licensed', 'Design system is open too', 'Issues and PRs are public'],
-      cta: <a href="https://github.com/vgomx/lingo-ds" style={{ textDecoration: 'none' }}><Button size="sm" variant="secondary">See the design system</Button></a>,
+      title: 'Fork it',
+      copy: 'Add a tool, a language pack, or a better scheduler — or run your own copy.',
+      points: ['MIT licensed', 'A static site you can host anywhere', 'Design system is open too'],
+      cta: <a href="https://github.com/vgomx/lingotoolbox" style={{ textDecoration: 'none' }}><Button size="sm" variant="secondary">Read the repo</Button></a>,
     },
   ];
 
@@ -255,8 +256,8 @@ function OpenSource() {
         <span style={eyebrow}>Open source</span>
         <h2 style={h2}>Free, and yours to fork.</h2>
         <p style={lede}>
-          Lingo Toolbox is built in the open under the MIT licence. Use the public build,
-          run your own, or send a pull request — there is no paid tier to unlock.
+          Lingo Toolbox is built in the open under the MIT licence. Open it in a browser,
+          install it, or fork it — there is no paid tier to unlock.
         </p>
       </div>
 

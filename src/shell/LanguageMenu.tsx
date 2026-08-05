@@ -73,15 +73,18 @@ export function LanguageMenu() {
             </button>
           ))}
           <span style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
+          {/* Sits under the list because this is where someone looks for a
+              language that isn't here yet. Storage is answered in the deck
+              sidebar's footer and in Settings, so it isn't repeated here. */}
           <span
             style={{
-              display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px 8px',
+              display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 8px 8px',
               fontFamily: 'var(--font-ui)', fontSize: 'var(--fs-11)', color: 'var(--text-faint)',
               lineHeight: 'var(--lh-normal)',
             }}
           >
-            <Badge tone="neutral">Local</Badge>
-            Every card stays in this browser.
+            <Badge tone="neutral" style={{ flex: 'none' }}>Soon</Badge>
+            More languages are planned.
           </span>
         </div>
       )}
