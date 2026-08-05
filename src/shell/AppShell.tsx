@@ -4,7 +4,7 @@ import { Badge, Icon, IconButton, Input, SidebarItem, RailTile, StreakPill, Tool
 import { useStore } from '../state/store';
 import { TOOLS } from '../data/seed';
 import { LanguageMenu } from './LanguageMenu';
-import markUrl from '../assets/mark-violet.svg';
+import stackUrl from '../assets/stack-violet.svg';
 
 const styles: Record<string, React.CSSProperties> = {
   frame: { display: 'flex', height: '100vh', background: 'var(--surface-app)', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' },
@@ -101,7 +101,7 @@ export function AppShell({ title, titleIcon, topRight, sidebar = true, children 
     <div style={styles.frame}>
       <nav className="lt-rail" style={styles.rail} aria-label="Tools">
         <Link to="/" title="Lingo Toolbox home" style={{ display: 'block' }}>
-          <img src={markUrl} alt="Lingo Toolbox" style={{ height: 43, width: 38 }} />
+          <img src={stackUrl} alt="Lingo Toolbox" style={{ height: 63, width: 44 }} />
         </Link>
         <span style={{ width: 32, height: 2, background: 'var(--border)', borderRadius: 2, margin: '4px 0 6px' }} />
 
