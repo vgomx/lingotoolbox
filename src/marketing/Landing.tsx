@@ -33,7 +33,7 @@ const TOOLS = [
   { icon: 'scroll-text', color: 'var(--tool-grammar)', name: 'Grammar Notes', copy: 'Short explanations you can pull up mid-review without losing your place.' },
 ];
 
-const LANGUAGES = ['English', 'Portuguese', 'Dutch'];
+const LANGUAGES = ['English', 'Portuguese', 'Dutch', 'Spanish'];
 
 function Nav() {
   return (
@@ -64,7 +64,7 @@ function Hero() {
   return (
     <section style={{ ...section, paddingTop: 72, display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 'var(--space-10)', alignItems: 'center' }}>
       <div>
-        <span style={eyebrow}>Open source · five tools · three languages</span>
+        <span style={eyebrow}>Open source · five tools · four languages</span>
         <h1
           style={{
             margin: '12px 0 0', fontFamily: 'var(--font-display)', fontSize: 'var(--fs-56, 56px)',
@@ -90,7 +90,7 @@ function Hero() {
         <div style={{ display: 'flex', gap: 'var(--space-9)', marginTop: 'var(--space-9)', flexWrap: 'wrap' }}>
           {[
             { n: 'Local', l: 'every card stays in your browser' },
-            { n: '3', l: 'starter languages' },
+            { n: '4', l: 'starter languages' },
             { n: 'MIT', l: 'licensed, self-hostable' },
           ].map((s) => (
             <div key={s.n} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>

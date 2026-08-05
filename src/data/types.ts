@@ -1,4 +1,4 @@
-export type LanguageCode = 'EN' | 'PT' | 'NL';
+export type LanguageCode = 'EN' | 'PT' | 'NL' | 'ES';
 
 export interface Workspace {
   code: LanguageCode;

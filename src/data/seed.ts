@@ -5,6 +5,7 @@ export const WORKSPACES: Workspace[] = [
   { code: 'EN', name: 'English', flag: '🇬🇧', color: 'var(--cyan-500)' },
   { code: 'PT', name: 'Portuguese', flag: '🇵🇹', color: 'var(--mint-500)' },
   { code: 'NL', name: 'Dutch', flag: '🇳🇱', color: 'var(--amber-500)' },
+  { code: 'ES', name: 'Spanish', flag: '🇪🇸', color: 'var(--coral-500)' },
 ];
 
 /** `released: false` marks a tool that is designed but not built — the rail
@@ -144,6 +145,53 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
         { front: 'uitgaan', back: 'to go out — ik ga uit', phonetic: '/ˈœytɣaːn/', tags: ['verb', 'A2'] },
         { front: 'afspreken', back: 'to arrange to meet — ik spreek af', phonetic: '/ˈɑfspreːkə(n)/', tags: ['verb', 'B1'] },
         { front: 'meevallen', back: 'to turn out better than feared', tags: ['verb', 'B1'] },
+      ],
+    },
+  ],
+  ES: [
+    {
+      id: 'es-kitchen',
+      name: 'Kitchen Spanish',
+      accent: 'var(--tool-flashcards)',
+      tags: ['food', 'A2'],
+      cards: [
+        { front: 'sobremesa', back: 'the long talk after a meal', phonetic: '/so.bɾeˈme.sa/', tags: ['noun', 'B1'] },
+        { front: 'la sartén', back: 'the frying pan', phonetic: '/la saɾˈten/', tags: ['noun', 'A1'] },
+        { front: 'hervir', back: 'to boil', phonetic: '/eɾˈβiɾ/', tags: ['verb', 'A2'] },
+        { front: 'el fregadero', back: 'the kitchen sink', phonetic: '/el fɾe.ɣaˈðe.ɾo/', tags: ['noun', 'A2'] },
+        { front: 'picar', back: 'to chop, or to snack', phonetic: '/piˈkaɾ/', tags: ['verb', 'A2'] },
+        { front: 'a fuego lento', back: 'on a low heat', phonetic: '/a ˈfwe.ɣo ˈlen.to/', tags: ['phrase', 'B1'] },
+        { front: 'el aliño', back: 'the dressing', phonetic: '/el aˈli.ɲo/', tags: ['noun', 'B1'] },
+        { front: 'soso', back: 'bland, under-salted', phonetic: '/ˈso.so/', tags: ['adj', 'B1'] },
+      ],
+    },
+    {
+      id: 'es-idioms',
+      name: 'Idioms that lie',
+      accent: 'var(--coral-500)',
+      tags: ['idiom', 'B2'],
+      cards: [
+        { front: 'estar en las nubes', back: 'to be daydreaming', phonetic: '/esˈtaɾ en las ˈnu.βes/', tags: ['idiom', 'B2'] },
+        { front: 'ser pan comido', back: 'to be very easy', phonetic: '/seɾ pan koˈmi.ðo/', tags: ['idiom', 'B2'] },
+        { front: 'tomar el pelo', back: 'to pull someone’s leg', phonetic: '/toˈmaɾ el ˈpe.lo/', tags: ['idiom', 'B2'] },
+        { front: 'no tener pelos en la lengua', back: 'to speak bluntly', phonetic: '/no teˈneɾ ˈpe.los/', tags: ['idiom', 'C1'] },
+        { front: 'echar de menos', back: 'to miss someone', phonetic: '/eˈtʃaɾ de ˈme.nos/', tags: ['idiom', 'B1'] },
+        { front: 'dar en el clavo', back: 'to hit the nail on the head', phonetic: '/daɾ en el ˈkla.βo/', tags: ['idiom', 'B2'] },
+      ],
+    },
+    {
+      id: 'es-verbs',
+      name: 'Irregular verbs',
+      accent: 'var(--pink-500)',
+      tags: ['verbs', 'B1'],
+      cards: [
+        { front: 'caber', back: 'to fit — yo quepo', phonetic: '/kaˈβeɾ/', tags: ['verb', 'B1'] },
+        { front: 'oír', back: 'to hear — yo oigo', phonetic: '/oˈiɾ/', tags: ['verb', 'A2'] },
+        { front: 'traer', back: 'to bring — yo traigo', phonetic: '/tɾaˈeɾ/', tags: ['verb', 'A2'] },
+        { front: 'saber', back: 'to know — yo sé', phonetic: '/saˈβeɾ/', tags: ['verb', 'A1'] },
+        { front: 'poder', back: 'to be able — yo puedo', phonetic: '/poˈðeɾ/', tags: ['verb', 'A1'] },
+        { front: 'huir', back: 'to flee — yo huyo', phonetic: '/wiɾ/', tags: ['verb', 'B1'] },
+        { front: 'valer', back: 'to be worth — yo valgo', phonetic: '/baˈleɾ/', tags: ['verb', 'B1'] },
       ],
     },
   ],
