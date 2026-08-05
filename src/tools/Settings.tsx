@@ -21,7 +21,7 @@ export function Settings() {
   const [legalOpen, setLegalOpen] = React.useState(false);
 
   return (
-    <AppShell title="Settings" titleIcon="settings">
+    <AppShell title="Settings" titleIcon="settings" sidebar={false}>
       <div style={page}>
         <header>
           <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 'var(--fs-32)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.15 }}>

@@ -16,7 +16,7 @@ const toFlashcards = (
 
 export function EtymologyScreen() {
   return (
-    <AppShell title="Etymology Explorer" titleIcon="git-branch">
+    <AppShell title="Etymology Explorer" titleIcon="git-branch" sidebar={false}>
       <EmptyTool
         icon="git-branch"
         accent="var(--tool-etymology)"
@@ -30,7 +30,7 @@ export function EtymologyScreen() {
 
 export function ConjugationScreen() {
   return (
-    <AppShell title="Conjugation Drill" titleIcon="spell-check">
+    <AppShell title="Conjugation Drill" titleIcon="spell-check" sidebar={false}>
       <EmptyTool
         icon="spell-check"
         accent="var(--tool-conjugation)"
@@ -44,7 +44,7 @@ export function ConjugationScreen() {
 
 export function PhrasebookScreen() {
   return (
-    <AppShell title="Phrasebook" titleIcon="message-square-quote">
+    <AppShell title="Phrasebook" titleIcon="message-square-quote" sidebar={false}>
       <EmptyTool
         icon="message-square-quote"
         accent="var(--tool-phrasebook)"
@@ -58,7 +58,7 @@ export function PhrasebookScreen() {
 
 export function GrammarScreen() {
   return (
-    <AppShell title="Grammar Notes" titleIcon="scroll-text">
+    <AppShell title="Grammar Notes" titleIcon="scroll-text" sidebar={false}>
       <EmptyTool
         icon="scroll-text"
         accent="var(--tool-grammar)"

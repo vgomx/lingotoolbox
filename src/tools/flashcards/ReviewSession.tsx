@@ -76,6 +76,8 @@ export function ReviewSession() {
       if (!current) return;
       const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      // Without this, Cmd+1 graded a card on its way to switching browser tab.
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
 
       if (!flipped && (e.key === ' ' || e.key === 'Enter')) {
         e.preventDefault();

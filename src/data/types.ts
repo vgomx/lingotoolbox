@@ -61,4 +61,6 @@ export interface Prefs {
   showShortcuts: boolean;
   /** Cap on how many cards one session will serve. */
   sessionLimit: number;
+  /** Deck sidebar hidden to give the content pane the width back. */
+  sidebarCollapsed: boolean;
 }

@@ -212,6 +212,7 @@ const DEFAULT_PREFS: Prefs = {
   theme: 'dark',
   showShortcuts: true,
   sessionLimit: 20,
+  sidebarCollapsed: false,
 };
 
 export function loadPrefs(): Prefs {
