@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Button, Flashcard, Icon, ProgressBar, ReviewRating, Tag, Toast, playSound } from 'lingo-ds';
+import { Button, Flashcard, Icon, IconButton, ProgressBar, ReviewRating, Tag, Toast, playSound, useIsMobile } from 'lingo-ds';
 import { TopRight, useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
@@ -38,6 +38,7 @@ export function ReviewSession() {
   const { deckId } = useParams();
   const navigate = useNavigate();
   const { decks, cards, dueInDeck, prefs, grade, workspace } = useStore();
+  const isMobile = useIsMobile();
 
   const deck = deckId ? decks.find((d) => d.id === deckId) : undefined;
 
@@ -192,9 +193,17 @@ export function ReviewSession() {
   return (
     <>
       <TopRight>
-        <Button variant="ghost" size="sm" onClick={() => navigate(deck ? `/app/cards/${deck.id}` : '/app/cards')}>
-          End session
-        </Button>
+        {/* Icon-only on a phone: the words cost ~100px of a 375px bar and
+            squeezed the title down to "Re…". */}
+        {isMobile ? (
+          <IconButton label="End session" onClick={() => navigate(deck ? `/app/cards/${deck.id}` : '/app/cards')}>
+            <Icon name="x" size={18} />
+          </IconButton>
+        ) : (
+          <Button variant="ghost" size="sm" onClick={() => navigate(deck ? `/app/cards/${deck.id}` : '/app/cards')}>
+            End session
+          </Button>
+        )}
       </TopRight>
       <div style={page}>
         <ProgressBar

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Badge, Icon, IconButton, Input, SidebarItem, RailTile, StreakPill, Tooltip } from 'lingo-ds';
+import { Badge, Icon, IconButton, Input, SidebarItem, RailTile, StreakPill, Tooltip, useBreakpoint } from 'lingo-ds';
 import { useStore } from '../state/store';
 import { TOOLS } from '../data/seed';
 import { LanguageMenu } from './LanguageMenu';
@@ -8,7 +8,10 @@ import { ChromeProvider, useChromeState } from './chrome';
 import stackUrl from 'lingo-ds/assets/logo/stack-violet.svg';
 
 const styles: Record<string, React.CSSProperties> = {
-  frame: { display: 'flex', height: '100vh', background: 'var(--surface-app)', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' },
+  // dvh, not vh: on a phone the URL bar is counted into vh, so a 100vh frame is
+  // taller than the visible viewport and the bottom of every screen sits under
+  // browser chrome until you scroll.
+  frame: { display: 'flex', height: '100dvh', background: 'var(--surface-app)', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' },
   // --space-5, not --space-2: a rail item is a stack of tile, label and — on the
   // unreleased tools — a "Soon" badge, whose internal gaps are 4px and 2px. At
   // --space-2 the space *between* items was also 4px, so a badge sat as close to
@@ -33,7 +36,11 @@ const styles: Record<string, React.CSSProperties> = {
   topTitle: { display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, fontSize: 'var(--fs-15)', fontWeight: 800, color: 'var(--text-strong)', whiteSpace: 'nowrap' },
   crumb: { flex: 'none', color: 'var(--text-muted)', textDecoration: 'none', fontWeight: 700, borderRadius: 'var(--radius-xs)' },
   topTitleText: { minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' },
-  body: { flex: 1, minHeight: 0, overflowY: 'auto' },
+  body: { flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' },
+  scrim: {
+    position: 'fixed', inset: 0, zIndex: 40, border: 'none', padding: 0,
+    background: 'var(--scrim, rgba(0,0,0,.5))', cursor: 'pointer',
+  },
 };
 
 /**
@@ -58,6 +65,28 @@ export function AppShell() {
   const location = useLocation();
   const [search, setSearch] = React.useState('');
 
+  const bp = useBreakpoint();
+  const isMobile = bp === 'mobile';
+  // The rail is 72px — a fifth of a 375px phone, spent on chrome. On mobile it
+  // becomes a drawer instead; everywhere else it stays put.
+  const [navOpen, setNavOpen] = React.useState(false);
+  // The deck sidebar is a desktop convenience. On a phone the Flashcards screen
+  // *is* the deck list, and the breadcrumb already goes there, so a second copy
+  // of it in a drawer would be the same list twice.
+  const showSidebar = sidebar && !isMobile;
+
+  // Closing on navigation is the whole contract of a drawer: it covers the thing
+  // you are trying to reach, so following a link inside it has to put it away.
+  React.useEffect(() => { setNavOpen(false); }, [location.pathname]);
+
+  // Escape closes it, as with any overlay.
+  React.useEffect(() => {
+    if (!navOpen) return undefined;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setNavOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [navOpen]);
+
   // /app/review belongs to Flashcards — it has no rail tile of its own.
   const path = location.pathname.replace('/app/review', '/app/cards');
   const activeTool = TOOLS.find((t) => t.path !== 'home' && path.startsWith(`/app/${t.path}`)) ?? TOOLS[0];
@@ -78,7 +107,7 @@ export function AppShell() {
   // mid-flow, so it is global rather than a button you have to go and find —
   // except while typing, where the browser's own bold would be the expectation.
   React.useEffect(() => {
-    if (!sidebar) return undefined;
+    if (!showSidebar) return undefined;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'b' && e.key !== 'B') return;
       if (!e.metaKey && !e.ctrlKey) return;
@@ -89,7 +118,7 @@ export function AppShell() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [sidebar, toggleSidebar]);
+  }, [showSidebar, toggleSidebar]);
 
   const isMac = typeof navigator !== 'undefined' && /mac/i.test(navigator.platform || navigator.userAgent);
   const toggleShortcut = isMac ? '⌘B' : 'Ctrl+B';
@@ -120,7 +149,31 @@ export function AppShell() {
           white on near-white paper at 1.07:1. Declaring the rail a dark island
           settles it in one place — the design system supports either scope nesting
           inside the other, and this is what that is for. */}
-      <nav className="lt-rail" data-theme="dark" style={styles.rail} aria-label="Tools">
+      {/* One rail, two placements. On mobile it slides in over the content and a
+          scrim closes it; elsewhere it is a column in the flex row. Same markup
+          either way, so the active pip, the badges and the tooltips do not have
+          to be built twice. */}
+      {isMobile && navOpen && (
+        <button type="button" style={styles.scrim} aria-label="Close menu" onClick={() => setNavOpen(false)} />
+      )}
+      <nav
+        className="lt-rail"
+        data-theme="dark"
+        aria-label="Tools"
+        aria-hidden={isMobile && !navOpen}
+        style={{
+          ...styles.rail,
+          ...(isMobile ? {
+            position: 'fixed', insetBlock: 0, left: 0, zIndex: 50,
+            transform: navOpen ? 'none' : 'translateX(-100%)',
+            transition: 'transform var(--dur-base) var(--ease-standard)',
+            boxShadow: navOpen ? 'var(--shadow-xl)' : 'none',
+            // Not just off-screen: a hidden nav must not be tabbable, or the
+            // first Tab on a phone lands in a menu nobody can see.
+            visibility: navOpen ? 'visible' : 'hidden',
+          } : null),
+        }}
+      >
         <Link to="/" title="Lingo Toolbox home" style={{ display: 'block' }}>
           <img src={stackUrl} alt="Lingo Toolbox" style={{ height: 63, width: 44 }} />
         </Link>
@@ -133,7 +186,7 @@ export function AppShell() {
                 label={t.short}
                 icon={<Icon name={t.icon} size={18} />}
                 color="var(--surface-raised)"
-                size={38}
+                size={isMobile ? 44 : 38}
                 quiet
                 showLabel
                 active={activeTool.id === t.id && !settingsActive}
@@ -153,13 +206,13 @@ export function AppShell() {
 
         <span style={{ flex: 1 }} />
         <Tooltip label="Settings" side="right">
-          <IconButton label="Settings" active={settingsActive} onClick={() => navigate('/app/settings')}>
+          <IconButton label="Settings" size={isMobile ? 'lg' : 'md'} active={settingsActive} onClick={() => navigate('/app/settings')}>
             <Icon name="settings" size={20} />
           </IconButton>
         </Tooltip>
       </nav>
 
-      {sidebar && (
+      {showSidebar && (
       <aside
         style={{ ...styles.sidebar, width: collapsed ? 0 : 'var(--sidebar-width)' }}
         aria-label="Decks"
@@ -244,9 +297,15 @@ export function AppShell() {
 
       <main style={styles.main}>
         <header style={styles.topbar}>
-          {sidebar && (
+          {isMobile ? (
+            // flex:none — the top bar is a flex row and was shrinking the menu
+            // button to 20px wide to make room for the title beside it.
+            <IconButton label="Menu" size="lg" style={{ flex: 'none' }} onClick={() => setNavOpen(true)}>
+              <Icon name="list" size={20} />
+            </IconButton>
+          ) : showSidebar && (
             <Tooltip label={collapsed ? 'Show decks' : 'Hide decks'} shortcut={toggleShortcut}>
-              <IconButton label={collapsed ? 'Show decks' : 'Hide decks'} onClick={toggleSidebar}>
+              <IconButton label={collapsed ? 'Show decks' : 'Hide decks'} style={{ flex: 'none' }} onClick={toggleSidebar}>
                 <Icon name="panel-left" size={18} />
               </IconButton>
             </Tooltip>
@@ -256,7 +315,7 @@ export function AppShell() {
             {/* The way back up. Muted so the current screen stays the loudest
                 thing in the bar, and a real link so it is keyboard-reachable and
                 opens in a new tab like any other. */}
-            {parent && (
+            {parent && !isMobile && (
               <>
                 <NavLink to={parent.to} style={styles.crumb}>{parent.label}</NavLink>
                 <Icon name="chevron-right" size={15} style={{ color: 'var(--text-muted)', margin: '0 -2px', flex: 'none' }} aria-hidden="true" />
@@ -268,15 +327,21 @@ export function AppShell() {
           {/* Filled by whichever screen renders <TopRight>; empty otherwise. */}
           <span ref={setTopRightSlot} style={{ display: 'contents' }} />
           <span style={{ width: 4 }} />
-          <LanguageMenu />
-          {streakInTopBar && <StreakPill days={streak} active={streak > 0} size="sm" />}
-          <Tooltip label="Marketing site">
-            <NavLink to="/" style={{ display: 'grid' }} aria-label="Marketing site">
-              <IconButton label="About Lingo Toolbox">
-                <Icon name="circle-question-mark" size={18} />
-              </IconButton>
-            </NavLink>
-          </Tooltip>
+          <LanguageMenu compact={isMobile} />
+          {/* Both are secondary to the screen's own actions, and on a phone the
+              top bar has room for the title and about two controls. The streak is
+              on Home's hero anyway, and the marketing link lives in the rail's
+              logo, which the menu opens. */}
+          {streakInTopBar && !isMobile && <StreakPill days={streak} active={streak > 0} size="sm" />}
+          {!isMobile && (
+            <Tooltip label="Marketing site">
+              <NavLink to="/" style={{ display: 'grid' }} aria-label="Marketing site">
+                <IconButton label="About Lingo Toolbox">
+                  <Icon name="circle-question-mark" size={18} />
+                </IconButton>
+              </NavLink>
+            </Tooltip>
+          )}
         </header>
         <div style={styles.body}><Outlet /></div>
       </main>

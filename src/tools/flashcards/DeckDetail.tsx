@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Badge, Button, Card, Dialog, Icon, IconButton, IllustrationPicker, Input, Tag, Tooltip, playSound } from 'lingo-ds';
+import { Badge, Button, Card, Dialog, Icon, IconButton, IllustrationPicker, Input, Tag, Tooltip, playSound, useIsMobile } from 'lingo-ds';
 import { TopRight, useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
@@ -31,6 +31,7 @@ export function DeckDetail() {
   const cards = cardsInDeck(deckId);
   const due = dueInDeck(deckId).length;
   const anyIllustrated = cards.some((c) => c.illustration);
+  const isMobile = useIsMobile();
 
   // Above the not-found return, because hooks cannot be conditional. A missing
   // deck falls back to the tool's own name rather than an empty title bar.
@@ -110,14 +111,21 @@ export function DeckDetail() {
         <Tooltip label="Add a card" shortcut="N">
           <IconButton label="Add a card" onClick={openAdd}><Icon name="plus" size={18} /></IconButton>
         </Tooltip>
-        {due > 0 && (
+        {due > 0 && (isMobile ? (
+          // Icon-only on a phone: "Review 6" plus a 44px add button plus the
+          // language pill does not fit a 375px bar, and the count is already in
+          // the header line right below.
+          <IconButton label={`Review ${due} cards`} size="lg" variant="brand" onClick={() => navigate(`/app/review/${deck.id}`)}>
+            <Icon name="play" size={18} />
+          </IconButton>
+        ) : (
           <Button size="sm" iconLeft={<Icon name="play" size={15} />} onClick={() => navigate(`/app/review/${deck.id}`)}>
             Review {due}
           </Button>
-        )}
+        ))}
       </TopRight>
       <div style={page}>
-        <header style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
+        <header style={{ display: 'flex', alignItems: isMobile ? 'stretch' : 'flex-start', flexDirection: isMobile ? 'column' : 'row', gap: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <span style={{ fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
               {cards.length} cards · {due} due
@@ -133,7 +141,7 @@ export function DeckDetail() {
           </div>
           <Button
             variant="ghost"
-            size="sm"
+            size={isMobile ? 'lg' : 'sm'}
             iconLeft={<Icon name="pencil" size={15} />}
             onClick={async () => {
               const name = window.prompt('Rename deck', deck.name);
@@ -144,7 +152,7 @@ export function DeckDetail() {
           </Button>
           <Button
             variant="ghost"
-            size="sm"
+            size={isMobile ? 'lg' : 'sm'}
             iconLeft={<Icon name="trash-2" size={15} />}
             onClick={async () => {
               if (!window.confirm(`Delete "${deck.name}" and its ${cards.length} cards? This cannot be undone.`)) return;
@@ -202,10 +210,12 @@ export function DeckDetail() {
                     <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>{card.back}</span>
                   </div>
 
-                  <Badge tone={STATE_TONE[card.state]}>{card.state}</Badge>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-11)', color: 'var(--text-muted)', minWidth: 44, textAlign: 'right' }}>
-                    {card.due <= Date.now() ? 'due' : formatDue(card.due - Date.now())}
-                  </span>
+                  {!isMobile && <Badge tone={STATE_TONE[card.state]}>{card.state}</Badge>}
+                  {!isMobile && (
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-11)', color: 'var(--text-muted)', minWidth: 44, textAlign: 'right' }}>
+                      {card.due <= Date.now() ? 'due' : formatDue(card.due - Date.now())}
+                    </span>
+                  )}
 
                   <Tooltip label="Edit card">
                     <IconButton label="Edit card" size="sm" onClick={() => openEdit(card)}>
