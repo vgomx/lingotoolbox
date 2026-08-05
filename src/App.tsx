@@ -1,4 +1,6 @@
+import * as React from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { Splash, SPLASH_EXIT_MS, SPLASH_MIN_MS, prefersReducedMotion } from './shell/Splash';
 import { Landing } from './marketing/Landing';
 import { Home } from './tools/Home';
 import { Settings } from './tools/Settings';
@@ -8,24 +10,42 @@ import { ReviewSession } from './tools/flashcards/ReviewSession';
 import { ConjugationScreen, EtymologyScreen, GrammarScreen, PhrasebookScreen } from './tools/Placeholders';
 import { useStore } from './state/store';
 
+/**
+ * Holds the splash over the app until IndexedDB has opened and seeded.
+ *
+ * `ready` flips once for the whole session, so this is a page-load moment, not
+ * something that replays as you move between tools. The children mount as soon
+ * as they can and the splash fades off them, rather than the two swapping — so
+ * the app is already painted by the time it is uncovered.
+ */
 function Boot({ children }: { children: React.ReactNode }) {
   const { ready } = useStore();
-  // IndexedDB opens and seeds before the first paint of any product screen; the
-  // marketing page doesn't wait on it.
-  if (!ready) {
-    return (
-      <div
-        style={{
-          height: '100vh', display: 'grid', placeItems: 'center',
-          background: 'var(--surface-app)', color: 'var(--text-faint)',
-          fontFamily: 'var(--font-ui)', fontSize: 'var(--fs-13)',
-        }}
-      >
-        Loading your decks…
-      </div>
-    );
-  }
-  return <>{children}</>;
+  const reduced = React.useRef(prefersReducedMotion()).current;
+
+  const [minElapsed, setMinElapsed] = React.useState(reduced);
+  const [gone, setGone] = React.useState(false);
+
+  React.useEffect(() => {
+    if (reduced) return undefined;
+    const t = setTimeout(() => setMinElapsed(true), SPLASH_MIN_MS);
+    return () => clearTimeout(t);
+  }, [reduced]);
+
+  const leaving = ready && minElapsed;
+
+  React.useEffect(() => {
+    if (!leaving) return undefined;
+    // Unmount only after the fade, or the app would jump into place mid-exit.
+    const t = setTimeout(() => setGone(true), reduced ? 0 : SPLASH_EXIT_MS);
+    return () => clearTimeout(t);
+  }, [leaving, reduced]);
+
+  return (
+    <>
+      {ready && children}
+      {!gone && <Splash leaving={leaving} />}
+    </>
+  );
 }
 
 export function App() {
