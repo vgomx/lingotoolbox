@@ -1,7 +1,11 @@
+import * as React from 'react';
 import { Button, Card, Icon, Select, Switch } from 'lingo-ds';
 import { AppShell } from '../shell/AppShell';
 import { useStore } from '../state/store';
 import { WORKSPACES } from '../data/seed';
+import { APP_VERSION } from '../legalNotices';
+import { LegalDialog } from './LegalDialog';
+import markUrl from '../assets/mark-violet.svg';
 
 const page: React.CSSProperties = {
   maxWidth: 720,
@@ -14,6 +18,7 @@ const page: React.CSSProperties = {
 
 export function Settings() {
   const { prefs, setPrefs, reset, cards, decks } = useStore();
+  const [legalOpen, setLegalOpen] = React.useState(false);
 
   return (
     <AppShell title="Settings" titleIcon="settings">
@@ -77,12 +82,53 @@ export function Settings() {
         </Card>
 
         <Card title="About">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-5)' }}>
+            <img src={markUrl} alt="" width={44} height={50} style={{ flex: 'none' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-18)', fontWeight: 800, color: 'var(--text-strong)' }}>
+                Lingo Toolbox
+              </span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-11)', color: 'var(--text-faint)' }}>
+                Version {APP_VERSION}
+              </span>
+            </div>
+          </div>
+
           <p style={{ margin: 0, fontSize: 'var(--fs-13)', color: 'var(--text-muted)', lineHeight: 'var(--lh-relaxed)' }}>
-            Lingo Toolbox is open source under the MIT licence. The interface is built from{' '}
+            A set of tools for practising a language you are already learning, rather than a
+            course. Open source under the MIT licence, and built on{' '}
             <a href="https://github.com/vgomx/lingo-ds" style={{ color: 'var(--text-link)' }}>lingo-ds</a>,
-            its design system. Icons are Lucide (ISC).
+            its design system.
           </p>
+
+          <p style={{ margin: 0, fontSize: 'var(--fs-12)', color: 'var(--text-faint)', lineHeight: 'var(--lh-relaxed)' }}>
+            Made by <a href="https://vitorgomes.design" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-link)' }}>Vitor Gomes</a>.
+            {' '}© 2026, MIT licensed.
+          </p>
+
+          <div style={{ display: 'flex', gap: 'var(--gap-inline)', flexWrap: 'wrap' }}>
+            <a href="https://github.com/vgomx/lingotoolbox" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+              <Button variant="secondary" size="sm" iconLeft={<Icon name="git-branch" size={15} />}>Source</Button>
+            </a>
+            <a href="https://vgomx.github.io/lingo-ds/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+              <Button variant="ghost" size="sm">Design system</Button>
+            </a>
+          </div>
         </Card>
+
+        <Card title="Legal" subtitle="Licences of the software this app ships">
+          <p style={{ margin: 0, fontSize: 'var(--fs-13)', color: 'var(--text-muted)', lineHeight: 'var(--lh-relaxed)' }}>
+            Lingo Toolbox stands on other people's work. Their licences require their notices to
+            travel with it, so they are reproduced in full here.
+          </p>
+          <div>
+            <Button variant="secondary" size="sm" iconLeft={<Icon name="scroll-text" size={15} />} onClick={() => setLegalOpen(true)}>
+              Open-source acknowledgements
+            </Button>
+          </div>
+        </Card>
+
+        <LegalDialog open={legalOpen} onClose={() => setLegalOpen(false)} />
       </div>
     </AppShell>
   );

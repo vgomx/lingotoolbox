@@ -81,5 +81,17 @@ advance unrecorded.
   required — without dedupe the production build ships two copies of React and
   renders a blank page.
 
-MIT licensed. Icons by [Lucide](https://lucide.dev) (ISC); illustration source
-is [OpenMoji](https://openmoji.org) (CC BY-SA 4.0).
+## Licences
+
+MIT licensed. The full notices for everything the app ships are in
+`src/legalNotices.ts` and surfaced in the app under Settings → Legal. Only
+things that actually reach the browser are listed — build tooling never ships,
+so it carries no obligation to end users.
+
+Icons are [Lucide](https://lucide.dev) (ISC; 22 of the 76 are Feather-derived
+and additionally MIT, © Cole Bemis). Typefaces are Baloo 2, Nunito Sans and
+JetBrains Mono, requested from Google Fonts at runtime rather than
+redistributed — self-hosting them makes the OFL text a shipping requirement.
+[OpenMoji](https://openmoji.org) (CC BY-SA 4.0) is *not* currently bundled; if
+illustrations get used, its attribution becomes an obligation and belongs in
+`legalNotices.ts`.
