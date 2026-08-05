@@ -74,24 +74,17 @@ export function LanguageMenu() {
           ))}
           <span style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
           {/* Sits under the list because this is where someone looks for a
-              language that isn't here yet. */}
+              language that isn't here yet. Storage is answered in the deck
+              sidebar's footer and in Settings, so it isn't repeated here. */}
           <span
             style={{
-              display: 'flex', flexDirection: 'column', gap: 6, padding: '6px 8px 8px',
+              display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 8px 8px',
               fontFamily: 'var(--font-ui)', fontSize: 'var(--fs-11)', color: 'var(--text-faint)',
               lineHeight: 'var(--lh-normal)',
             }}
           >
-            {/* The two badges differ in width, so they are pinned to a common one
-                to keep the notes beside them reading as a column. */}
-            <span style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-              <Badge tone="neutral" style={{ minWidth: 46, justifyContent: 'center', flex: 'none' }}>Soon</Badge>
-              More languages are planned.
-            </span>
-            <span style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-              <Badge tone="neutral" style={{ minWidth: 46, justifyContent: 'center', flex: 'none' }}>Local</Badge>
-              Every card stays in this browser.
-            </span>
+            <Badge tone="neutral" style={{ flex: 'none' }}>Soon</Badge>
+            More languages are planned.
           </span>
         </div>
       )}
