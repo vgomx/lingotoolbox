@@ -1,14 +1,23 @@
 import * as React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Button, Flashcard, Icon, ProgressBar, ReviewRating, Tag, Toast } from 'lingo-ds';
-import { AppShell } from '../../shell/AppShell';
+import { Button, Flashcard, Icon, IconButton, ProgressBar, ReviewRating, Tag, Toast, playSound, useIsMobile } from 'lingo-ds';
+import { TopRight, useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
 import { gradePreview, sortForSession } from '../../data/scheduler';
 import { findIllustration, illustrationUrl } from '../../data/illustrations';
+import type { SoundName } from 'lingo-ds';
 import type { Card as CardModel, Grade } from '../../data/types';
 
 const GRADE_KEYS: Grade[] = ['again', 'hard', 'good', 'easy'];
+
+/** Rising in brightness with the grade. `again` is the softest sound in the set. */
+const GRADE_SOUND: Record<Grade, SoundName> = {
+  again: 'gradeAgain',
+  hard: 'gradeHard',
+  good: 'gradeGood',
+  easy: 'gradeEasy',
+};
 const GRADE_META: Record<Grade, { label: string; variant: 'danger' | 'secondary' | 'success' | 'primary'; shortcut: string }> = {
   again: { label: 'Again', variant: 'danger', shortcut: '1' },
   hard: { label: 'Hard', variant: 'secondary', shortcut: '2' },
@@ -29,6 +38,7 @@ export function ReviewSession() {
   const { deckId } = useParams();
   const navigate = useNavigate();
   const { decks, cards, dueInDeck, prefs, grade, workspace } = useStore();
+  const isMobile = useIsMobile();
 
   const deck = deckId ? decks.find((d) => d.id === deckId) : undefined;
 
@@ -58,8 +68,16 @@ export function ReviewSession() {
   const current = queue?.[index];
   const done = !!queue && index >= queue.length;
 
+  // The one celebration, and only on the edge into done — not on every render of
+  // the completed screen, which a re-render would otherwise replay.
+  React.useEffect(() => {
+    if (done) playSound('sessionComplete');
+  }, [done]);
+
   const answer = React.useCallback(async (key: Grade) => {
     if (!current) return;
+    // Before the await, so the sound answers the keypress rather than the write.
+    playSound(GRADE_SOUND[key]);
     await grade(current, key);
     setGraded((n) => n + 1);
     if (key === 'again') {
@@ -82,6 +100,7 @@ export function ReviewSession() {
 
       if (!flipped && (e.key === ' ' || e.key === 'Enter')) {
         e.preventDefault();
+        playSound('flip');
         setFlipped(true);
         return;
       }
@@ -104,15 +123,23 @@ export function ReviewSession() {
   }, [toast]);
 
   const title = deck ? `Review · ${deck.name}` : 'Review';
+  // Back to the deck being reviewed when there is one, otherwise to the list.
+  useChrome({
+    title: deck ? 'Review' : title,
+    titleIcon: 'layers',
+    parent: deck
+      ? { label: deck.name, to: `/app/cards/${deck.id}` }
+      : { label: 'Flashcards', to: '/app/cards' },
+    sidebar: true,
+  });
 
   if (!queue) {
-    return <AppShell title={title} titleIcon="layers"><div style={page} /></AppShell>;
+    return <div style={page} />;
   }
 
   if (!queue.length) {
     return (
-      <AppShell title={title} titleIcon="layers">
-        <EmptyTool
+      <EmptyTool
           icon="circle-check"
           accent="var(--success)"
           title="Nothing due"
@@ -124,15 +151,13 @@ export function ReviewSession() {
               <Button variant="secondary">Back to {deck ? 'deck' : 'decks'}</Button>
             </Link>
           }
-        />
-      </AppShell>
+      />
     );
   }
 
   if (done) {
     return (
-      <AppShell title={title} titleIcon="layers">
-        <div style={page}>
+      <div style={page}>
           <EmptyTool
             icon="circle-check"
             accent="var(--success)"
@@ -152,8 +177,7 @@ export function ReviewSession() {
               </div>
             }
           />
-        </div>
-      </AppShell>
+      </div>
     );
   }
 
@@ -167,15 +191,20 @@ export function ReviewSession() {
   }));
 
   return (
-    <AppShell
-      title={title}
-      titleIcon="layers"
-      topRight={
-        <Button variant="ghost" size="sm" onClick={() => navigate(deck ? `/app/cards/${deck.id}` : '/app/cards')}>
-          End session
-        </Button>
-      }
-    >
+    <>
+      <TopRight>
+        {/* Icon-only on a phone: the words cost ~100px of a 375px bar and
+            squeezed the title down to "Re…". */}
+        {isMobile ? (
+          <IconButton label="End session" onClick={() => navigate(deck ? `/app/cards/${deck.id}` : '/app/cards')}>
+            <Icon name="x" size={18} />
+          </IconButton>
+        ) : (
+          <Button variant="ghost" size="sm" onClick={() => navigate(deck ? `/app/cards/${deck.id}` : '/app/cards')}>
+            End session
+          </Button>
+        )}
+      </TopRight>
       <div style={page}>
         <ProgressBar
           label="Session"
@@ -203,10 +232,12 @@ export function ReviewSession() {
             )}
             language={workspace.name}
             flipped={flipped}
-            onFlip={setFlipped}
+            onFlip={(next) => { if (next) playSound('flip'); setFlipped(next); }}
             height={320}
             hint={flipped ? undefined : 'Click or press Space to flip'}
-            tags={current.tags.map((t) => <Tag key={t} color="var(--violet-300)">{t}</Tag>)}
+            // --violet-100, not 300: on the violet back face, where the tag's own 18%
+            // tint lifts the backdrop further — 300 measured 3.19, 200 still 4.32.
+            tags={current.tags.map((t) => <Tag key={t} color="var(--violet-100)">{t}</Tag>)}
           />
         )}
 
@@ -217,7 +248,7 @@ export function ReviewSession() {
             onGrade={(key) => void answer(key as Grade)}
           />
         ) : (
-          <Button block size="lg" variant="secondary" onClick={() => setFlipped(true)}>
+          <Button block size="lg" variant="secondary" onClick={() => { playSound('flip'); setFlipped(true); }}>
             Show answer
           </Button>
         )}
@@ -228,6 +259,6 @@ export function ReviewSession() {
           <Toast title={toast} onClose={() => setToast(null)} />
         </div>
       )}
-    </AppShell>
+    </>
   );
 }

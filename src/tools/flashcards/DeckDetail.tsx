@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Badge, Button, Card, Dialog, Icon, IconButton, IllustrationPicker, Input, Tag, Tooltip } from 'lingo-ds';
-import { AppShell } from '../../shell/AppShell';
+import { Badge, Button, Card, Dialog, Icon, IconButton, IllustrationPicker, Input, Tag, Tooltip, playSound, useIsMobile } from 'lingo-ds';
+import { TopRight, useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
 import { formatDue } from '../../data/scheduler';
@@ -31,6 +31,16 @@ export function DeckDetail() {
   const cards = cardsInDeck(deckId);
   const due = dueInDeck(deckId).length;
   const anyIllustrated = cards.some((c) => c.illustration);
+  const isMobile = useIsMobile();
+
+  // Above the not-found return, because hooks cannot be conditional. A missing
+  // deck falls back to the tool's own name rather than an empty title bar.
+  useChrome({
+    title: deck?.name ?? 'Flashcards',
+    titleIcon: 'layers',
+    parent: { label: 'Flashcards', to: '/app/cards' },
+    sidebar: true,
+  });
 
   const [editing, setEditing] = React.useState<CardModel | null>(null);
   const [adding, setAdding] = React.useState(false);
@@ -77,12 +87,13 @@ export function DeckDetail() {
         lapses: 0,
       });
     }
+    playSound('cardAdded');
     close();
   };
 
   if (!deck) {
     return (
-      <AppShell title="Flashcards" titleIcon="layers">
+      <>
         <EmptyTool
           icon="circle-alert"
           accent="var(--danger)"
@@ -90,31 +101,33 @@ export function DeckDetail() {
           description="That deck no longer exists. It may have been deleted from this browser."
           action={<Link to="/app/cards" style={{ textDecoration: 'none' }}><Button variant="secondary">Back to decks</Button></Link>}
         />
-      </AppShell>
+      </>
     );
   }
 
   return (
-    <AppShell
-      title={deck.name}
-      titleIcon="layers"
-      topRight={
-        <>
-          <Tooltip label="Add a card" shortcut="N">
-            <IconButton label="Add a card" onClick={openAdd}><Icon name="plus" size={18} /></IconButton>
-          </Tooltip>
-          {due > 0 && (
-            <Button size="sm" iconLeft={<Icon name="play" size={15} />} onClick={() => navigate(`/app/review/${deck.id}`)}>
-              Review {due}
-            </Button>
-          )}
-        </>
-      }
-    >
+    <>
+      <TopRight>
+        <Tooltip label="Add a card" shortcut="N">
+          <IconButton label="Add a card" onClick={openAdd}><Icon name="plus" size={18} /></IconButton>
+        </Tooltip>
+        {due > 0 && (isMobile ? (
+          // Icon-only on a phone: "Review 6" plus a 44px add button plus the
+          // language pill does not fit a 375px bar, and the count is already in
+          // the header line right below.
+          <IconButton label={`Review ${due} cards`} size="lg" variant="brand" onClick={() => navigate(`/app/review/${deck.id}`)}>
+            <Icon name="play" size={18} />
+          </IconButton>
+        ) : (
+          <Button size="sm" iconLeft={<Icon name="play" size={15} />} onClick={() => navigate(`/app/review/${deck.id}`)}>
+            Review {due}
+          </Button>
+        ))}
+      </TopRight>
       <div style={page}>
-        <header style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
+        <header style={{ display: 'flex', alignItems: isMobile ? 'stretch' : 'flex-start', flexDirection: isMobile ? 'column' : 'row', gap: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
+            <span style={{ fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
               {cards.length} cards · {due} due
             </span>
             <h1 style={{ margin: '6px 0 0', fontFamily: 'var(--font-display)', fontSize: 'var(--fs-32)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.15 }}>
@@ -128,7 +141,7 @@ export function DeckDetail() {
           </div>
           <Button
             variant="ghost"
-            size="sm"
+            size={isMobile ? 'lg' : 'sm'}
             iconLeft={<Icon name="pencil" size={15} />}
             onClick={async () => {
               const name = window.prompt('Rename deck', deck.name);
@@ -139,7 +152,7 @@ export function DeckDetail() {
           </Button>
           <Button
             variant="ghost"
-            size="sm"
+            size={isMobile ? 'lg' : 'sm'}
             iconLeft={<Icon name="trash-2" size={15} />}
             onClick={async () => {
               if (!window.confirm(`Delete "${deck.name}" and its ${cards.length} cards? This cannot be undone.`)) return;
@@ -189,7 +202,7 @@ export function DeckDetail() {
                         {card.front}
                       </span>
                       {card.phonetic && (
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-12)', color: 'var(--text-faint)' }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-12)', color: 'var(--text-muted)' }}>
                           {card.phonetic}
                         </span>
                       )}
@@ -197,10 +210,12 @@ export function DeckDetail() {
                     <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>{card.back}</span>
                   </div>
 
-                  <Badge tone={STATE_TONE[card.state]}>{card.state}</Badge>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-11)', color: 'var(--text-faint)', minWidth: 44, textAlign: 'right' }}>
-                    {card.due <= Date.now() ? 'due' : formatDue(card.due - Date.now())}
-                  </span>
+                  {!isMobile && <Badge tone={STATE_TONE[card.state]}>{card.state}</Badge>}
+                  {!isMobile && (
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-11)', color: 'var(--text-muted)', minWidth: 44, textAlign: 'right' }}>
+                      {card.due <= Date.now() ? 'due' : formatDue(card.due - Date.now())}
+                    </span>
+                  )}
 
                   <Tooltip label="Edit card">
                     <IconButton label="Edit card" size="sm" onClick={() => openEdit(card)}>
@@ -212,7 +227,11 @@ export function DeckDetail() {
                       label="Delete card"
                       size="sm"
                       variant="danger"
-                      onClick={() => { if (window.confirm(`Delete "${card.front}"?`)) removeCard(card.id); }}
+                      onClick={() => {
+                        if (!window.confirm(`Delete "${card.front}"?`)) return;
+                        playSound('cardRemoved');
+                        void removeCard(card.id);
+                      }}
                     >
                       <Icon name="trash-2" size={15} />
                     </IconButton>
@@ -260,6 +279,6 @@ export function DeckDetail() {
           />
         </div>
       </Dialog>
-    </AppShell>
+    </>
   );
 }

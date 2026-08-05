@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Link } from 'react-router-dom';
+import { useIsMobile } from 'lingo-ds';
 import { Badge, Button, Card, EtymologyNode, Flashcard, Icon, ProgressBar, ReviewRating, StreakPill, Tag } from 'lingo-ds';
 import wordmarkViolet from 'lingo-ds/assets/logo/logo-wordmark-violet.svg';
 import wordmarkWhite from 'lingo-ds/assets/logo/logo-wordmark-white.svg';
@@ -12,6 +13,14 @@ import wordmarkWhite from 'lingo-ds/assets/logo/logo-wordmark-white.svg';
 const SHELL = 'var(--content-max, 1120px)';
 
 const section: React.CSSProperties = { maxWidth: SHELL, margin: '0 auto', padding: '64px 24px' };
+const pageGutter = (mobile: boolean): React.CSSProperties => (mobile ? { padding: '40px 20px' } : {});
+/** Two-up on a real screen, stacked on a phone. */
+const twoUp = (mobile: boolean): React.CSSProperties => ({
+  display: 'grid',
+  gridTemplateColumns: mobile ? 'minmax(0,1fr)' : 'minmax(0,1fr) minmax(0,1fr)',
+  gap: mobile ? 'var(--space-8)' : 'var(--space-10)',
+  alignItems: 'center',
+});
 const eyebrow: React.CSSProperties = {
   fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)',
   textTransform: 'uppercase', color: 'var(--brand)',
@@ -36,6 +45,7 @@ const TOOLS = [
 const LANGUAGES = ['English', 'Portuguese', 'Dutch', 'Spanish'];
 
 function Nav() {
+  const isMobile = useIsMobile();
   return (
     <header
       style={{
@@ -45,11 +55,18 @@ function Nav() {
         boxShadow: 'inset 0 -1px 0 var(--divider)',
       }}
     >
-      <div style={{ maxWidth: SHELL, margin: '0 auto', padding: '0 24px', height: 64, display: 'flex', alignItems: 'center', gap: 'var(--space-6)' }}>
+      <div style={{ maxWidth: SHELL, margin: '0 auto', padding: isMobile ? '0 20px' : '0 24px', height: 64, display: 'flex', alignItems: 'center', gap: 'var(--space-6)' }}>
         <img src={wordmarkViolet} alt="Lingo Toolbox" style={{ height: 30 }} />
         <span style={{ flex: 1 }} />
-        <a href="#toolbox" style={{ fontSize: 'var(--fs-14)', fontWeight: 700, color: 'var(--text-body)', textDecoration: 'none' }}>Tools</a>
-        <a href="#open-source" style={{ fontSize: 'var(--fs-14)', fontWeight: 700, color: 'var(--text-body)', textDecoration: 'none' }}>Open source</a>
+        {/* Two in-page anchors, 35px wide on a phone and sitting between the
+            wordmark and the only thing anyone came here to press. The sections
+            they point at are the next two screens down. */}
+        {!isMobile && (
+          <>
+            <a href="#toolbox" style={{ fontSize: 'var(--fs-14)', fontWeight: 700, color: 'var(--text-body)', textDecoration: 'none' }}>Tools</a>
+            <a href="#open-source" style={{ fontSize: 'var(--fs-14)', fontWeight: 700, color: 'var(--text-body)', textDecoration: 'none' }}>Open source</a>
+          </>
+        )}
         <Link to="/app" style={{ textDecoration: 'none' }}>
           <Button size="sm" iconRight={<Icon name="arrow-right" size={15} />}>Open the app</Button>
         </Link>
@@ -59,15 +76,16 @@ function Nav() {
 }
 
 function Hero() {
+  const isMobile = useIsMobile();
   const [flipped, setFlipped] = React.useState(false);
 
   return (
-    <section style={{ ...section, paddingTop: 72, display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 'var(--space-10)', alignItems: 'center' }}>
+    <section style={{ ...section, ...pageGutter(isMobile), paddingTop: isMobile ? 32 : 72, ...twoUp(isMobile) }}>
       <div>
         <span style={eyebrow}>Open source · five tools · four languages</span>
         <h1
           style={{
-            margin: '12px 0 0', fontFamily: 'var(--font-display)', fontSize: 'var(--fs-56, 56px)',
+            margin: '12px 0 0', fontFamily: 'var(--font-display)', fontSize: isMobile ? 'var(--fs-40)' : 'var(--fs-56, 56px)',
             fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.05, letterSpacing: 'var(--ls-tight)',
           }}
         >
@@ -78,7 +96,7 @@ function Hero() {
           flashcards that know when to ask, and an etymology explorer that makes a word stick for good.
         </p>
 
-        <div style={{ display: 'flex', gap: 'var(--gap-inline)', marginTop: 'var(--space-8)', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 'var(--gap-inline)', marginTop: 'var(--space-8)', flexWrap: 'wrap', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center' }}>
           <Link to="/app" style={{ textDecoration: 'none' }}>
             <Button size="lg" pill iconRight={<Icon name="arrow-right" size={17} />}>Open the app</Button>
           </Link>
@@ -95,7 +113,7 @@ function Hero() {
           ].map((s) => (
             <div key={s.n} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-32)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1 }}>{s.n}</span>
-              <span style={{ fontSize: 'var(--fs-12)', color: 'var(--text-faint)' }}>{s.l}</span>
+              <span style={{ fontSize: 'var(--fs-12)', color: 'var(--text-muted)' }}>{s.l}</span>
             </div>
           ))}
         </div>
@@ -112,7 +130,7 @@ function Hero() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-          <span style={{ flex: 1, fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
+          <span style={{ flex: 1, fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
             Everyday phrases · 12 due
           </span>
           <StreakPill days={26} size="sm" />
@@ -127,7 +145,9 @@ function Hero() {
           flipped={flipped}
           onFlip={setFlipped}
           hint={flipped ? undefined : 'Click to flip'}
-          tags={[<Tag key="n" color="var(--violet-300)">noun</Tag>, <Tag key="b1" color="var(--violet-300)">B1</Tag>]}
+          // 100, not 300 — on the violet back face, and the tag's own 18% tint lifts the
+          // backdrop further, so 200 still measured 4.32. See ReviewSession.
+          tags={[<Tag key="n" color="var(--violet-100)">noun</Tag>, <Tag key="b1" color="var(--violet-100)">B1</Tag>]}
         />
 
         <ReviewRating onGrade={() => setFlipped(false)} />
@@ -137,6 +157,7 @@ function Hero() {
 }
 
 function Toolbox() {
+  const isMobile = useIsMobile();
   return (
     <section id="toolbox" style={section}>
       <div style={{ maxWidth: 640, marginBottom: 'var(--space-9)' }}>
@@ -148,7 +169,7 @@ function Toolbox() {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-5)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${isMobile ? 180 : 240}px, 1fr))`, gap: 'var(--space-5)' }}>
         {TOOLS.map((t) => (
           <Card key={t.name} accent={t.color} style={{ height: '100%' }}>
             <span style={{ color: t.color, display: 'grid', width: 28 }}>
@@ -169,8 +190,9 @@ function Toolbox() {
 }
 
 function EtymologyBand() {
+  const isMobile = useIsMobile();
   return (
-    <section style={{ ...section, display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 'var(--space-10)', alignItems: 'center' }}>
+    <section style={{ ...section, ...pageGutter(isMobile), ...twoUp(isMobile) }}>
       <div>
         <span style={eyebrow}>Etymology Explorer</span>
         <h2 style={h2}>A word sticks once you know where it’s been.</h2>
@@ -189,8 +211,9 @@ function EtymologyBand() {
 }
 
 function FlashcardsBand() {
+  const isMobile = useIsMobile();
   return (
-    <section style={{ ...section, display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 'var(--space-10)', alignItems: 'center' }}>
+    <section style={{ ...section, ...pageGutter(isMobile), ...twoUp(isMobile) }}>
       <Card title="Today · Everyday phrases" padding="var(--space-8)">
         <ProgressBar label="Session" valueLabel="18 / 40" value={18} max={40} />
         <ProgressBar
@@ -227,6 +250,7 @@ function FlashcardsBand() {
 }
 
 function OpenSource() {
+  const isMobile = useIsMobile();
   const columns = [
     {
       badge: 'Easiest',
@@ -261,7 +285,7 @@ function OpenSource() {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--space-5)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${isMobile ? 180 : 280}px, 1fr))`, gap: 'var(--space-5)' }}>
         {columns.map((c) => (
           <Card key={c.title} style={{ height: '100%' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -286,9 +310,10 @@ function OpenSource() {
 }
 
 function Footer() {
+  const isMobile = useIsMobile();
   return (
     <footer data-theme="dark" style={{ background: 'var(--ink-900)' }}>
-      <div style={{ maxWidth: SHELL, margin: '0 auto', padding: '56px 24px 24px', display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr', gap: 'var(--space-9)' }}>
+      <div style={{ maxWidth: SHELL, margin: '0 auto', padding: isMobile ? '40px 20px 24px' : '56px 24px 24px', display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0,1fr)' : '1.4fr 1fr 1fr', gap: 'var(--space-9)' }}>
         <div>
           <img src={wordmarkWhite} alt="Lingo Toolbox" style={{ height: 36 }} />
           <p style={{ margin: '16px 0 0', fontSize: 'var(--fs-14)', lineHeight: 'var(--lh-relaxed)', color: 'var(--text-muted)', maxWidth: 300 }}>
@@ -300,7 +325,7 @@ function Footer() {
         </div>
 
         <div>
-          <div style={{ fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 'var(--space-5)' }}>
+          <div style={{ fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 'var(--space-5)' }}>
             Tools
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -311,7 +336,7 @@ function Footer() {
         </div>
 
         <div>
-          <div style={{ fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 'var(--space-5)' }}>
+          <div style={{ fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 'var(--space-5)' }}>
             Project
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -323,7 +348,7 @@ function Footer() {
       </div>
 
       <div style={{ maxWidth: SHELL, margin: '0 auto', padding: '20px 24px 40px', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.06)' }}>
-        <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-faint)' }}>
+        <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>
           MIT licence · Icons by Lucide (ISC) · Illustration by OpenMoji (CC BY-SA 4.0)
         </span>
       </div>

@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Badge, Button, Card, Icon, ProgressBar, Tag } from 'lingo-ds';
-import { AppShell } from '../../shell/AppShell';
+import { TopRight, useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
 
@@ -16,12 +16,12 @@ export function DeckList() {
 
   const totalCards = decks.reduce((n, d) => n + cardsInDeck(d.id).length, 0);
 
+  useChrome({ title: 'Flashcards', titleIcon: 'layers', sidebar: true });
+
   return (
-    <AppShell
-      title="Flashcards"
-      titleIcon="layers"
-      topRight={
-        dueCount > 0 ? (
+    <>
+      {dueCount > 0 && (
+        <TopRight>
           <Button
             size="sm"
             iconLeft={<Icon name="play" size={15} />}
@@ -29,15 +29,14 @@ export function DeckList() {
           >
             Start review
           </Button>
-        ) : undefined
-      }
-    >
+        </TopRight>
+      )}
       <div style={page}>
         <header style={{ marginBottom: 'var(--space-8)' }}>
           <span
             style={{
               fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)',
-              textTransform: 'uppercase', color: 'var(--text-faint)',
+              textTransform: 'uppercase', color: 'var(--text-muted)',
             }}
           >
             {workspace.name} · {decks.length} {decks.length === 1 ? 'deck' : 'decks'} · {totalCards} cards
@@ -105,6 +104,6 @@ export function DeckList() {
           </div>
         )}
       </div>
-    </AppShell>
+    </>
   );
 }

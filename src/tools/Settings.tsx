@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { Button, Card, Icon, Select, Switch } from 'lingo-ds';
-import { AppShell } from '../shell/AppShell';
+import { Button, Card, Icon, Select, Switch, playSound, setSoundEnabled } from 'lingo-ds';
+import { useChrome } from '../shell/chrome';
 import { useStore } from '../state/store';
 import { WORKSPACES } from '../data/seed';
 import { APP_VERSION } from '../legalNotices';
@@ -20,8 +20,10 @@ export function Settings() {
   const { prefs, setPrefs, reset, cards, decks } = useStore();
   const [legalOpen, setLegalOpen] = React.useState(false);
 
+  useChrome({ title: 'Settings', titleIcon: 'settings' });
+
   return (
-    <AppShell title="Settings" titleIcon="settings" sidebar={false}>
+    <>
       <div style={page}>
         <header>
           <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 'var(--fs-32)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.15 }}>
@@ -60,6 +62,17 @@ export function Settings() {
             checked={prefs.showShortcuts}
             onChange={(next) => setPrefs({ showShortcuts: next })}
           />
+          <Switch
+            label="Sound"
+            hint="Short tones when a card flips and when you grade it."
+            checked={prefs.sound}
+            onChange={(next) => {
+              setPrefs({ sound: next });
+              // Switching it on is the one moment a sound is worth playing
+              // unprompted — it is the answer to "what will this sound like?".
+              if (next) { setSoundEnabled(true); playSound('toggle'); }
+            }}
+          />
         </Card>
 
         <Card title="Local data" subtitle={`${decks.length} decks · ${cards.length} cards in this workspace`}>
@@ -88,7 +101,7 @@ export function Settings() {
               <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-18)', fontWeight: 800, color: 'var(--text-strong)' }}>
                 Lingo Toolbox
               </span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-11)', color: 'var(--text-faint)' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-11)', color: 'var(--text-muted)' }}>
                 Version {APP_VERSION}
               </span>
             </div>
@@ -101,7 +114,7 @@ export function Settings() {
             its design system.
           </p>
 
-          <p style={{ margin: 0, fontSize: 'var(--fs-12)', color: 'var(--text-faint)', lineHeight: 'var(--lh-relaxed)' }}>
+          <p style={{ margin: 0, fontSize: 'var(--fs-12)', color: 'var(--text-muted)', lineHeight: 'var(--lh-relaxed)' }}>
             Made by <a href="https://vitorgomes.design" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-link)' }}>Vitor Gomes</a>.
             {' '}© 2026, MIT licensed.
           </p>
@@ -130,6 +143,6 @@ export function Settings() {
 
         <LegalDialog open={legalOpen} onClose={() => setLegalOpen(false)} />
       </div>
-    </AppShell>
+    </>
   );
 }

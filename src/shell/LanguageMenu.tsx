@@ -7,7 +7,17 @@ import { WORKSPACES } from '../data/seed';
  * The language picker, top right of the content pane. Flags never appear alone —
  * always beside the language name written out in full.
  */
-export function LanguageMenu() {
+export interface LanguageMenuProps {
+  /**
+   * Tightens the trigger for a narrow top bar: less padding, no chevron. The
+   * flag and the language name both stay — "a flag is never the only
+   * identifier" is a content rule, not a layout preference, so it survives the
+   * phone.
+   */
+  compact?: boolean;
+}
+
+export function LanguageMenu({ compact = false }: LanguageMenuProps) {
   const { workspace, setLanguage } = useStore();
   const [open, setOpen] = React.useState(false);
 
@@ -26,7 +36,9 @@ export function LanguageMenu() {
         aria-label="Switch language"
         aria-expanded={open}
         style={{
-          display: 'flex', alignItems: 'center', gap: 8, height: 34, padding: '0 10px 0 8px',
+          display: 'flex', alignItems: 'center', gap: compact ? 6 : 8, flex: 'none',
+          // 44 on touch: the guide's floor for anything touchable.
+          height: compact ? 44 : 34, padding: compact ? '0 8px' : '0 10px 0 8px',
           borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)',
           background: open ? 'var(--surface-card)' : 'transparent', color: 'var(--text-strong)',
           cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: 'var(--fs-13)', fontWeight: 800,
@@ -34,7 +46,7 @@ export function LanguageMenu() {
       >
         <span style={{ fontSize: 18, lineHeight: 1 }}>{workspace.flag}</span>
         {workspace.name}
-        <Icon name="chevron-down" size={14} style={{ color: 'var(--text-muted)' }} />
+        {!compact && <Icon name="chevron-down" size={14} style={{ color: 'var(--text-muted)' }} />}
       </button>
 
       {open && (
@@ -49,7 +61,7 @@ export function LanguageMenu() {
           <span
             style={{
               fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)',
-              textTransform: 'uppercase', color: 'var(--text-faint)', padding: '6px 8px 2px',
+              textTransform: 'uppercase', color: 'var(--text-muted)', padding: '6px 8px 2px',
             }}
           >
             Language track
@@ -79,7 +91,7 @@ export function LanguageMenu() {
           <span
             style={{
               display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 8px 8px',
-              fontFamily: 'var(--font-ui)', fontSize: 'var(--fs-11)', color: 'var(--text-faint)',
+              fontFamily: 'var(--font-ui)', fontSize: 'var(--fs-11)', color: 'var(--text-muted)',
               lineHeight: 'var(--lh-normal)',
             }}
           >
