@@ -104,7 +104,7 @@ export function ReviewSession() {
   }, [toast]);
 
   const title = deck ? `Review · ${deck.name}` : 'Review';
-  useChrome({ title, titleIcon: 'layers' });
+  useChrome({ title, titleIcon: 'layers', sidebar: true });
 
   if (!queue) {
     return <div style={page} />;

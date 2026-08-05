@@ -15,7 +15,7 @@ import { TOOLS, type ToolId } from '../data/seed';
 function ComingSoon({ id }: { id: ToolId }) {
   const tool = TOOLS.find((t) => t.id === id)!;
 
-  useChrome({ title: tool.label, titleIcon: tool.icon, sidebar: false });
+  useChrome({ title: tool.label, titleIcon: tool.icon });
 
   return (
     <>

@@ -16,7 +16,7 @@ export function DeckList() {
 
   const totalCards = decks.reduce((n, d) => n + cardsInDeck(d.id).length, 0);
 
-  useChrome({ title: 'Flashcards', titleIcon: 'layers' });
+  useChrome({ title: 'Flashcards', titleIcon: 'layers', sidebar: true });
 
   return (
     <>

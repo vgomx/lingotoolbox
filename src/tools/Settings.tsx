@@ -20,7 +20,7 @@ export function Settings() {
   const { prefs, setPrefs, reset, cards, decks } = useStore();
   const [legalOpen, setLegalOpen] = React.useState(false);
 
-  useChrome({ title: 'Settings', titleIcon: 'settings', sidebar: false });
+  useChrome({ title: 'Settings', titleIcon: 'settings' });
 
   return (
     <>

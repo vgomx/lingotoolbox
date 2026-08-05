@@ -20,8 +20,10 @@ export interface Chrome {
   title?: string;
   titleIcon?: string;
   /**
-   * The deck sidebar. Tools that have nothing to do with decks pass `false` —
-   * chrome that lists decks beside a screen which cannot use them is noise.
+   * The deck sidebar. Off unless a screen asks for it, because decks belong to
+   * Flashcards — listing them beside a screen that cannot act on them is chrome
+   * pretending to be navigation. Opt in rather than opt out, so a tool added
+   * later doesn't inherit a deck list by saying nothing.
    */
   sidebar: boolean;
   /**
@@ -31,7 +33,7 @@ export interface Chrome {
   streakInTopBar: boolean;
 }
 
-export const DEFAULT_CHROME: Chrome = { sidebar: true, streakInTopBar: true };
+export const DEFAULT_CHROME: Chrome = { sidebar: false, streakInTopBar: true };
 
 interface ChromeContextValue {
   set: (next: Chrome) => void;
