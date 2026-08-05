@@ -115,7 +115,7 @@ function Hero() {
           <span style={{ flex: 1, fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
             Everyday phrases · 12 due
           </span>
-          <StreakPill days={26} />
+          <StreakPill days={26} size="sm" />
         </div>
 
         <Flashcard

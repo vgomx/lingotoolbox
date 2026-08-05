@@ -116,7 +116,15 @@ export function Home() {
             than pushing both into the top bar. */}
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 'var(--space-8)', flexWrap: 'wrap' }}>
           <div>
-            <span style={eyebrow}>{workspace.name} workspace</span>
+            {/* The streak sits with the other context rather than beside the CTA.
+                It is status, not an action, and pairing them made two very
+                differently weighted things compete for the same corner. Hidden at
+                zero — "0 days" is a fact nobody needs, and the guide is explicit
+                about not nagging about streaks. */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
+              <span style={eyebrow}>{workspace.name} workspace</span>
+              {streak > 0 && <StreakPill days={streak} size="sm" />}
+            </div>
             <h1 style={{ margin: '6px 0 0', fontFamily: 'var(--font-display)', fontSize: 'var(--fs-40)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.05, letterSpacing: 'var(--ls-tight)' }}>
               {dueCount ? `${dueCount} due today` : 'All caught up'}
             </h1>
@@ -126,14 +134,13 @@ export function Home() {
                 : 'Nothing is due. Add cards to a deck, or come back tomorrow.'}
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flex: 'none' }}>
-            <StreakPill days={streak} active={streak > 0} size="lg" />
-            {dueCount > 0 && (
+          {dueCount > 0 && (
+            <div style={{ flex: 'none' }}>
               <Button size="xl" iconLeft={<Icon name="play" size={18} />} onClick={() => navigate('/app/review')}>
                 Start review
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         <div style={grid3}>

@@ -251,7 +251,7 @@ export function AppShell({ title, titleIcon, topRight, sidebar = true, streakInT
           {topRight}
           <span style={{ width: 4 }} />
           <LanguageMenu />
-          {streakInTopBar && <StreakPill days={streak} active={streak > 0} />}
+          {streakInTopBar && <StreakPill days={streak} active={streak > 0} size="sm" />}
           <Tooltip label="Marketing site">
             <NavLink to="/" style={{ display: 'grid' }} aria-label="Marketing site">
               <IconButton label="About Lingo Toolbox">
