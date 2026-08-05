@@ -9,7 +9,12 @@ import stackUrl from 'lingo-ds/assets/logo/stack-violet.svg';
 
 const styles: Record<string, React.CSSProperties> = {
   frame: { display: 'flex', height: '100vh', background: 'var(--surface-app)', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' },
-  rail: { width: 'var(--rail-width)', flex: 'none', background: 'var(--surface-rail)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-2)', padding: '10px 0 12px' },
+  // --space-5, not --space-2: a rail item is a stack of tile, label and — on the
+  // unreleased tools — a "Soon" badge, whose internal gaps are 4px and 2px. At
+  // --space-2 the space *between* items was also 4px, so a badge sat as close to
+  // the next tool as to its own, and the column read as one list of fifteen
+  // things rather than six items. The outer gap is now 16px against an inner 4.
+  rail: { width: 'var(--rail-width)', flex: 'none', background: 'var(--surface-rail)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-5)', padding: '10px 0 12px' },
   // The aside is the clipper that animates; the inner column keeps its full width
   // throughout so the deck list doesn't reflow on its way out.
   sidebar: { flex: 'none', background: 'var(--surface-sidebar)', overflow: 'hidden', transition: 'width var(--dur-base) var(--ease-standard)' },
