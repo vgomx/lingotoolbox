@@ -205,6 +205,31 @@ export async function computeStreak(now: number = Date.now()): Promise<number> {
   return streak;
 }
 
+/**
+ * Reviews graded per calendar day, oldest first, ending today.
+ *
+ * The design's reference home screen shows "this week" as hours spent. We do not
+ * track time and inventing it would be a lie, but the review log does record when
+ * every grade happened — so the same shape of chart can be drawn from something
+ * that actually is true.
+ */
+export async function reviewsPerDay(days = 7, now: number = Date.now()): Promise<number[]> {
+  const db = await getDB();
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  const from = start.getTime() - (days - 1) * DAY_MS;
+
+  const counts = new Map<string, number>();
+  for (const r of await db.getAllFromIndex('reviews', 'by-time', IDBKeyRange.lowerBound(from))) {
+    const k = dayKey(r.reviewedAt);
+    counts.set(k, (counts.get(k) ?? 0) + 1);
+  }
+
+  return Array.from({ length: days }, (_, i) => counts.get(dayKey(from + i * DAY_MS)) ?? 0);
+}
+
 // ── Prefs (localStorage — small, synchronous, read on every render) ──
 
 const DEFAULT_PREFS: Prefs = {

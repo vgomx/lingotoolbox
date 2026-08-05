@@ -23,6 +23,8 @@ interface StoreValue {
   dueCount: number;
   /** Consecutive days with at least one card graded. */
   streak: number;
+  /** Reviews graded per day over the last week, oldest first, ending today. */
+  weeklyReviews: number[];
 
   grade: (card: Card, grade: Grade) => Promise<Card>;
   saveCard: (card: Card) => Promise<void>;
@@ -40,6 +42,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [decks, setDecks] = React.useState<Deck[]>([]);
   const [cards, setCards] = React.useState<Card[]>([]);
   const [streak, setStreak] = React.useState(0);
+  const [weeklyReviews, setWeeklyReviews] = React.useState<number[]>(() => Array(7).fill(0));
 
   // `tick` exists only to re-run the due derivations as minute-scale cards come
   // back around. Due-ness itself is always measured against Date.now() at call
@@ -53,14 +56,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refresh = React.useCallback(async (language: LanguageCode) => {
-    const [nextDecks, nextCards, nextStreak] = await Promise.all([
+    const [nextDecks, nextCards, nextStreak, nextWeek] = await Promise.all([
       db.listDecks(language),
       db.listCardsForLanguage(language),
       db.computeStreak(),
+      db.reviewsPerDay(),
     ]);
     setDecks(nextDecks);
     setCards(nextCards);
     setStreak(nextStreak);
+    setWeeklyReviews(nextWeek);
   }, []);
 
   React.useEffect(() => {
@@ -107,7 +112,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const grade = React.useCallback(async (card: Card, g: Grade) => {
     const updated = await db.gradeCard(card, g);
     setCards((cs) => cs.map((c) => (c.id === updated.id ? updated : c)));
-    setStreak(await db.computeStreak());
+    const [nextStreak, nextWeek] = await Promise.all([db.computeStreak(), db.reviewsPerDay()]);
+    setStreak(nextStreak);
+    setWeeklyReviews(nextWeek);
     return updated;
   }, []);
 
@@ -157,6 +164,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     dueInDeck,
     dueCount,
     streak,
+    weeklyReviews,
     grade,
     saveCard,
     removeCard,

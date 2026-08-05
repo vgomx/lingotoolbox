@@ -1,132 +1,267 @@
 import * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Badge, Button, Card, Icon, ProgressBar } from 'lingo-ds';
+import { Badge, Button, Card, Icon, ProgressBar, StreakPill, Tag } from 'lingo-ds';
 import { AppShell } from '../shell/AppShell';
 import { useStore } from '../state/store';
 import { TOOLS } from '../data/seed';
+
+/**
+ * The dashboard, following ui_kits/app/HomeScreen.jsx.
+ *
+ * Two things in the reference are backed by data this app does not keep, and are
+ * substituted rather than faked: "this week" is hours spent there and reviews
+ * graded here, since nothing tracks time; and "Browse all tools" is dropped,
+ * since there is no all-tools page for it to lead to.
+ */
 
 const page: React.CSSProperties = {
   maxWidth: 'var(--content-max, 1120px)',
   margin: '0 auto',
   padding: 'var(--space-8) var(--space-7) var(--space-10)',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 'var(--gap-section, 32px)',
 };
 
-const statCard: React.CSSProperties = { flex: 1, minWidth: 180 };
+const eyebrow: React.CSSProperties = {
+  fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)',
+  textTransform: 'uppercase', color: 'var(--text-faint)',
+};
 
-function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
+const stat: React.CSSProperties = {
+  fontFamily: 'var(--font-display)', fontSize: 'var(--fs-32)', fontWeight: 800,
+  color: 'var(--text-strong)', lineHeight: 1,
+};
+
+const sectionHeading: React.CSSProperties = {
+  margin: 0, fontFamily: 'var(--font-display)', fontSize: 'var(--fs-24)',
+  fontWeight: 800, color: 'var(--text-strong)',
+};
+
+const grid3: React.CSSProperties = {
+  display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-5)',
+};
+
+/** Three across at content width, as the kit has it — 240px would fit four and
+ *  leave the fifth tool stranded on its own row. */
+const toolGrid: React.CSSProperties = {
+  display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-5)',
+};
+
+/** Reviews graded per day for the last week. Today is the last bar. */
+function WeekChart({ counts }: { counts: number[] }) {
+  const peak = Math.max(1, ...counts);
   return (
-    <Card style={statCard} padding="16px 18px">
-      <span style={{ fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
-        {label}
-      </span>
-      <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-32)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.1 }}>
-        {value}
-      </span>
-      {sub && <span style={{ fontSize: 'var(--fs-12)', color: 'var(--text-muted)' }}>{sub}</span>}
-    </Card>
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: 34 }} aria-hidden="true">
+      {counts.map((n, i) => (
+        <span
+          key={i}
+          style={{
+            flex: 1,
+            // A day with no reviews still shows a sliver, so the week reads as
+            // seven days rather than as a gap in the chart.
+            height: `${n === 0 ? 6 : Math.max(12, (n / peak) * 100)}%`,
+            background: i === counts.length - 1 && n > 0 ? 'var(--brand)' : 'var(--surface-raised)',
+            borderRadius: 3,
+            display: 'block',
+          }}
+        />
+      ))}
+    </div>
   );
 }
 
 export function Home() {
-  const { decks, cards, dueCount, streak, workspace } = useStore();
+  const { decks, cards, dueCount, streak, weeklyReviews, workspace, cardsInDeck, dueInDeck } = useStore();
   const navigate = useNavigate();
 
   const mastered = cards.filter((c) => c.state === 'review' && c.interval >= 21).length;
   const learning = cards.filter((c) => c.state === 'learning' || c.state === 'relearning').length;
   const fresh = cards.filter((c) => c.state === 'new').length;
 
-  const topDeck = React.useMemo(
+  const doneToday = weeklyReviews[weeklyReviews.length - 1] ?? 0;
+  const weekTotal = weeklyReviews.reduce((a, b) => a + b, 0);
+
+  /** The decks with the most waiting, so the list leads with what to do next. */
+  const topDecks = React.useMemo(
     () => decks
-      .map((d) => ({ deck: d, due: cards.filter((c) => c.deckId === d.id && c.due <= Date.now()).length }))
-      .sort((a, b) => b.due - a.due)[0],
-    [decks, cards],
+      .map((deck) => ({ deck, due: dueInDeck(deck.id).length, cards: cardsInDeck(deck.id) }))
+      .filter((d) => d.cards.length > 0)
+      .sort((a, b) => b.due - a.due)
+      .slice(0, 3),
+    [decks, dueInDeck, cardsInDeck],
   );
 
-  return (
-    <AppShell
-      topRight={dueCount > 0 ? (
-        <Button size="sm" iconLeft={<Icon name="play" size={15} />} onClick={() => navigate('/app/review')}>
-          Start review
-        </Button>
-      ) : undefined}
-    >
-      <div style={page}>
-        <header style={{ marginBottom: 'var(--space-8)' }}>
-          <span style={{ fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
-            {workspace.name} workspace
-          </span>
-          <h1 style={{ margin: '6px 0 0', fontFamily: 'var(--font-display)', fontSize: 'var(--fs-40)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.1, letterSpacing: 'var(--ls-tight)' }}>
-            {dueCount ? `${dueCount} due today` : 'All caught up'}
-          </h1>
-          <p style={{ margin: '10px 0 0', fontSize: 'var(--fs-15)', color: 'var(--text-muted)', maxWidth: 520, lineHeight: 'var(--lh-relaxed)' }}>
-            {dueCount
-              ? `Across ${decks.length} ${decks.length === 1 ? 'deck' : 'decks'}. Grade each card and the schedule adjusts.`
-              : 'Nothing is due. Add cards to a deck, or come back tomorrow.'}
-          </p>
-        </header>
+  /**
+   * One of your own cards, held steady for the day rather than reshuffling on
+   * every render — the point is that it is the same word each time you come back.
+   */
+  const word = React.useMemo(() => {
+    if (!cards.length) return null;
+    const d = new Date();
+    const dayIndex = Math.floor(d.getTime() / 86_400_000);
+    return cards[dayIndex % cards.length];
+  }, [cards]);
+  const wordDeck = word ? decks.find((d) => d.id === word.deckId) : undefined;
 
-        <div style={{ display: 'flex', gap: 'var(--space-5)', flexWrap: 'wrap', marginBottom: 'var(--space-8)' }}>
-          <Stat label="Due today" value={String(dueCount)} sub={`${cards.length} cards total`} />
-          <Stat label="Streak" value={String(streak)} sub={streak === 1 ? 'day' : 'days'} />
-          <Stat label="Mastered" value={String(mastered)} sub="scheduled 3 weeks out or more" />
+  const masteryOf = (deckCards: typeof cards) => {
+    if (!deckCards.length) return 0;
+    return Math.round((deckCards.filter((c) => c.state === 'review' && c.interval >= 21).length / deckCards.length) * 100);
+  };
+
+  return (
+    <AppShell streakInTopBar={false}>
+      <div style={page}>
+        {/* Heading left, the two things you act on right — as in the kit, rather
+            than pushing both into the top bar. */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 'var(--space-8)', flexWrap: 'wrap' }}>
+          <div>
+            <span style={eyebrow}>{workspace.name} workspace</span>
+            <h1 style={{ margin: '6px 0 0', fontFamily: 'var(--font-display)', fontSize: 'var(--fs-40)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.05, letterSpacing: 'var(--ls-tight)' }}>
+              {dueCount ? `${dueCount} due today` : 'All caught up'}
+            </h1>
+            <p style={{ margin: '8px 0 0', fontSize: 'var(--fs-16)', color: 'var(--text-muted)', maxWidth: 460, lineHeight: 'var(--lh-relaxed)' }}>
+              {dueCount
+                ? `Across ${decks.length} ${decks.length === 1 ? 'deck' : 'decks'}. Grade each card and the schedule adjusts.`
+                : 'Nothing is due. Add cards to a deck, or come back tomorrow.'}
+            </p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flex: 'none' }}>
+            <StreakPill days={streak} active={streak > 0} size="lg" />
+            {dueCount > 0 && (
+              <Button size="xl" iconLeft={<Icon name="play" size={18} />} onClick={() => navigate('/app/review')}>
+                Start review
+              </Button>
+            )}
+          </div>
         </div>
 
-        {cards.length > 0 && (
-          <Card title="Mastery mix" subtitle={`${cards.length} cards`} style={{ marginBottom: 'var(--space-8)' }}>
+        <div style={grid3}>
+          <Card>
+            <span style={eyebrow}>Due today</span>
+            <span style={stat}>{dueCount}</span>
             <ProgressBar
-              height={10}
+              label="Session progress"
+              valueLabel={`${doneToday} done`}
+              value={doneToday}
+              max={Math.max(1, doneToday + dueCount)}
+            />
+          </Card>
+
+          <Card>
+            <span style={eyebrow}>Words mastered</span>
+            <span style={stat}>{mastered.toLocaleString()}</span>
+            <ProgressBar
+              label="Mastery mix"
               value={0}
-              segments={[
+              segments={cards.length ? [
                 { weight: mastered || 0.001, color: 'var(--success)' },
                 { weight: learning || 0.001, color: 'var(--warning)' },
                 { weight: fresh || 0.001, color: 'var(--surface-raised)' },
-              ]}
+              ] : undefined}
             />
-            <div style={{ display: 'flex', gap: 'var(--space-6)', flexWrap: 'wrap', fontSize: 'var(--fs-12)', color: 'var(--text-muted)' }}>
-              <span>{mastered} mastered</span>
-              <span>{learning} learning</span>
-              <span>{fresh} new</span>
-            </div>
           </Card>
-        )}
 
-        <h2 style={{ margin: '0 0 var(--space-6)', fontFamily: 'var(--font-display)', fontSize: 'var(--fs-24)', fontWeight: 800, color: 'var(--text-strong)' }}>
-          Your toolbox
-        </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-5)' }}>
-          {TOOLS.filter((t) => t.id !== 'home').map((t) => (
-            <Link key={t.id} to={`/app/${t.path}`} style={{ textDecoration: 'none' }}>
-              <Card interactive accent={t.accent} style={{ height: '100%' }}>
-                <span style={{ color: t.accent, display: 'grid', width: 28 }}>
-                  <Icon name={t.icon} size={26} />
-                </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontFamily: 'var(--font-display)', fontSize: 'var(--fs-18)', fontWeight: 800, color: 'var(--text-strong)' }}>
-                  {t.label}
-                  {!t.released && <Badge tone="neutral">Soon</Badge>}
-                </span>
-                <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>
-                  {/* A tool that is ready reports its own state; one that isn't
-                      says what it will do, not where we are with building it. */}
-                  {t.released
-                    ? `${dueCount} due · ${decks.length} ${decks.length === 1 ? 'deck' : 'decks'}`
-                    : t.blurb}
-                </span>
-              </Card>
-            </Link>
-          ))}
+          <Card>
+            <span style={eyebrow}>This week</span>
+            <span style={stat}>{weekTotal}</span>
+            <span style={{ fontSize: 'var(--fs-12)', color: 'var(--text-muted)' }}>
+              {weekTotal === 1 ? 'review' : 'reviews'}
+            </span>
+            <WeekChart counts={weeklyReviews} />
+          </Card>
         </div>
 
-        {topDeck && topDeck.due > 0 && (
-          <>
-            <h2 style={{ margin: 'var(--space-9) 0 var(--space-6)', fontFamily: 'var(--font-display)', fontSize: 'var(--fs-24)', fontWeight: 800, color: 'var(--text-strong)' }}>
-              Pick up where you left off
-            </h2>
-            <Link to={`/app/review/${topDeck.deck.id}`} style={{ textDecoration: 'none' }}>
-              <Card interactive accent={topDeck.deck.accent} title={topDeck.deck.name} subtitle={`${topDeck.due} due`}>
-                <Button size="sm" variant="secondary" iconLeft={<Icon name="play" size={14} />}>Start review</Button>
+        <div>
+          <h2 style={{ ...sectionHeading, marginBottom: 'var(--space-5)' }}>Your toolbox</h2>
+          <div style={toolGrid}>
+            {TOOLS.filter((t) => t.id !== 'home').map((t) => (
+              <Link key={t.id} to={`/app/${t.path}`} style={{ textDecoration: 'none' }}>
+                <Card interactive style={{ height: '100%' }}>
+                  {/* Icon in a tinted well of its own accent, as the kit has it —
+                      the accent identifies the tool without a full-width stripe. */}
+                  <span
+                    style={{
+                      width: 38, height: 38, borderRadius: 'var(--radius-md)', display: 'grid', placeItems: 'center',
+                      background: `color-mix(in oklab, ${t.accent} 18%, transparent)`, color: t.accent,
+                    }}
+                  >
+                    <Icon name={t.icon} size={20} />
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 'var(--fs-16)', fontWeight: 800, color: 'var(--text-strong)' }}>
+                    {t.label}
+                    {!t.released && <Badge tone="neutral">Soon</Badge>}
+                  </span>
+                  <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>
+                    {t.released
+                      ? `${dueCount} due · ${decks.length} ${decks.length === 1 ? 'deck' : 'decks'}`
+                      : t.blurb}
+                  </span>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {(topDecks.length > 0 || word) && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr)', gap: 'var(--space-5)', alignItems: 'start' }}>
+            {topDecks.length > 0 && (
+              <div>
+                <h2 style={{ ...sectionHeading, marginBottom: 'var(--space-5)' }}>Pick up where you left off</h2>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                  {topDecks.map(({ deck, due, cards: deckCards }) => (
+                    <Link key={deck.id} to={due > 0 ? `/app/review/${deck.id}` : `/app/cards/${deck.id}`} style={{ textDecoration: 'none' }}>
+                      <Card accent={deck.accent} interactive padding="16px">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-5)' }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                              <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-18)', fontWeight: 800, color: 'var(--text-strong)' }}>
+                                {deck.name}
+                              </span>
+                              {due > 0 && <Badge tone="warning">{due} due</Badge>}
+                            </div>
+                            <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>
+                              {deckCards.length} cards · {masteryOf(deckCards)}% mastered
+                            </span>
+                          </div>
+                          <div style={{ width: 120, flex: 'none' }}>
+                            <ProgressBar value={masteryOf(deckCards)} height={6} color={deck.accent} />
+                          </div>
+                          <Icon name="chevron-right" size={18} style={{ color: 'var(--text-faint)' }} />
+                        </div>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {word && (
+              <Card title="Word of the day" accent="var(--tool-etymology)">
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-32)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.05 }}>
+                  {word.front}
+                </span>
+                {word.phonetic && (
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>{word.phonetic}</span>
+                )}
+                <p style={{ margin: 0, fontSize: 'var(--fs-14)', color: 'var(--text-body)', lineHeight: 'var(--lh-relaxed)' }}>
+                  {word.back}
+                </p>
+                {word.tags.length > 0 && (
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {word.tags.map((t) => <Tag key={t} color="var(--tool-etymology)">{t}</Tag>)}
+                  </div>
+                )}
+                {wordDeck && (
+                  <Link to={`/app/cards/${wordDeck.id}`} style={{ textDecoration: 'none' }}>
+                    <Button variant="secondary" size="sm" block iconLeft={<Icon name="layers" size={14} />}>
+                      Open {wordDeck.name}
+                    </Button>
+                  </Link>
+                )}
               </Card>
-            </Link>
-          </>
+            )}
+          </div>
         )}
       </div>
     </AppShell>

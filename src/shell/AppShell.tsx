@@ -37,10 +37,15 @@ export interface AppShellProps {
    * hiding it shouldn't be left to the reader to do by hand every time.
    */
   sidebar?: boolean;
+  /**
+   * The streak in the top bar. Home sets this false because it shows the streak
+   * large in its own hero, and one screen does not need to say it twice.
+   */
+  streakInTopBar?: boolean;
   children: React.ReactNode;
 }
 
-export function AppShell({ title, titleIcon, topRight, sidebar = true, children }: AppShellProps) {
+export function AppShell({ title, titleIcon, topRight, sidebar = true, streakInTopBar = true, children }: AppShellProps) {
   const { decks, dueInDeck, streak, saveDeck, language, prefs, setPrefs } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -246,7 +251,7 @@ export function AppShell({ title, titleIcon, topRight, sidebar = true, children 
           {topRight}
           <span style={{ width: 4 }} />
           <LanguageMenu />
-          <StreakPill days={streak} active={streak > 0} />
+          {streakInTopBar && <StreakPill days={streak} active={streak > 0} />}
           <Tooltip label="Marketing site">
             <NavLink to="/" style={{ display: 'grid' }} aria-label="Marketing site">
               <IconButton label="About Lingo Toolbox">
