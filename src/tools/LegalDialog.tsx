@@ -82,14 +82,14 @@ export function LegalDialog({ open, onClose }: LegalDialogProps) {
                 <span style={{ flex: 1, minWidth: 0, fontSize: 'var(--fs-14)', fontWeight: 800, color: 'var(--text-strong)' }}>
                   {notice.name}
                 </span>
-                <span style={{ flex: 'none', fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-10)', color: 'var(--text-faint)' }}>
+                <span style={{ flex: 'none', fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-10)', color: 'var(--text-muted)' }}>
                   {notice.license}
                 </span>
               </button>
 
               {isOpen && (
                 <div id={`legal-${notice.name}`} style={{ padding: '0 12px 12px 38px' }}>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-10)', color: 'var(--text-faint)', marginBottom: 8 }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-10)', color: 'var(--text-muted)', marginBottom: 8 }}>
                     {notice.packages}
                   </div>
                   {/* No height cap here on purpose — the licence runs its full

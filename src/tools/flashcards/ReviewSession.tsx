@@ -206,7 +206,9 @@ export function ReviewSession() {
             onFlip={setFlipped}
             height={320}
             hint={flipped ? undefined : 'Click or press Space to flip'}
-            tags={current.tags.map((t) => <Tag key={t} color="var(--violet-300)">{t}</Tag>)}
+            // --violet-100, not 300: on the violet back face, where the tag's own 18%
+            // tint lifts the backdrop further — 300 measured 3.19, 200 still 4.32.
+            tags={current.tags.map((t) => <Tag key={t} color="var(--violet-100)">{t}</Tag>)}
           />
         )}
 

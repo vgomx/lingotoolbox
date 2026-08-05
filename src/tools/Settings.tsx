@@ -88,7 +88,7 @@ export function Settings() {
               <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-18)', fontWeight: 800, color: 'var(--text-strong)' }}>
                 Lingo Toolbox
               </span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-11)', color: 'var(--text-faint)' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-11)', color: 'var(--text-muted)' }}>
                 Version {APP_VERSION}
               </span>
             </div>
@@ -101,7 +101,7 @@ export function Settings() {
             its design system.
           </p>
 
-          <p style={{ margin: 0, fontSize: 'var(--fs-12)', color: 'var(--text-faint)', lineHeight: 'var(--lh-relaxed)' }}>
+          <p style={{ margin: 0, fontSize: 'var(--fs-12)', color: 'var(--text-muted)', lineHeight: 'var(--lh-relaxed)' }}>
             Made by <a href="https://vitorgomes.design" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-link)' }}>Vitor Gomes</a>.
             {' '}© 2026, MIT licensed.
           </p>

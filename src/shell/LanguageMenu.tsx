@@ -49,7 +49,7 @@ export function LanguageMenu() {
           <span
             style={{
               fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)',
-              textTransform: 'uppercase', color: 'var(--text-faint)', padding: '6px 8px 2px',
+              textTransform: 'uppercase', color: 'var(--text-muted)', padding: '6px 8px 2px',
             }}
           >
             Language track
@@ -79,7 +79,7 @@ export function LanguageMenu() {
           <span
             style={{
               display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 8px 8px',
-              fontFamily: 'var(--font-ui)', fontSize: 'var(--fs-11)', color: 'var(--text-faint)',
+              fontFamily: 'var(--font-ui)', fontSize: 'var(--fs-11)', color: 'var(--text-muted)',
               lineHeight: 'var(--lh-normal)',
             }}
           >

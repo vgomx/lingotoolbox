@@ -25,7 +25,7 @@ const page: React.CSSProperties = {
 
 const eyebrow: React.CSSProperties = {
   fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)',
-  textTransform: 'uppercase', color: 'var(--text-faint)',
+  textTransform: 'uppercase', color: 'var(--text-muted)',
 };
 
 const stat: React.CSSProperties = {

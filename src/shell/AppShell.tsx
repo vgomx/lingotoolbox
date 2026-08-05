@@ -14,8 +14,12 @@ const styles: Record<string, React.CSSProperties> = {
   sidebar: { flex: 'none', background: 'var(--surface-sidebar)', overflow: 'hidden', transition: 'width var(--dur-base) var(--ease-standard)' },
   sidebarInner: { width: 'var(--sidebar-width)', height: '100%', display: 'flex', flexDirection: 'column' },
   sidebarHead: { height: 'var(--topbar-height)', display: 'flex', alignItems: 'center', padding: '0 8px', boxShadow: 'var(--shadow-xs)', flex: 'none' },
-  sectionLabel: { fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-faint)', padding: '0 8px', marginBottom: 4 },
-  userBar: { height: 56, flex: 'none', background: 'var(--ink-900)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: '0 8px 0 10px' },
+  sectionLabel: { fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-muted)', padding: '0 8px', marginBottom: 4 },
+  // --surface-rail, not a raw --ink-900: this bar is a dark island by design, and
+  // the raw step kept it dark in light mode while its text followed the light
+  // theme — ink on ink at 3.15. Pairing the token with data-theme="dark" below
+  // makes the foregrounds resolve against the surface they actually sit on.
+  userBar: { height: 56, flex: 'none', background: 'var(--surface-rail)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: '0 8px 0 10px' },
   main: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' },
   topbar: { height: 'var(--topbar-height)', flex: 'none', display: 'flex', alignItems: 'center', gap: 'var(--space-4)', padding: '0 16px', boxShadow: 'var(--shadow-xs)', position: 'sticky', top: 0, zIndex: 20, backdropFilter: 'var(--blur-overlay)', background: 'color-mix(in oklab, var(--surface-app) 82%, transparent)' },
   topTitle: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--fs-15)', fontWeight: 800, color: 'var(--text-strong)' },
@@ -188,7 +192,7 @@ export function AppShell({ title, titleIcon, topRight, sidebar = true, streakInT
               type="button"
               onClick={newDeck}
               aria-label="New deck"
-              style={{ border: 'none', background: 'transparent', color: 'var(--text-faint)', cursor: 'pointer', padding: 0, display: 'grid' }}
+              style={{ border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', padding: 0, display: 'grid' }}
             >
               <Icon name="plus" size={14} />
             </button>
@@ -210,7 +214,7 @@ export function AppShell({ title, titleIcon, topRight, sidebar = true, streakInT
               );
             })}
             {!visibleDecks.length && (
-              <span style={{ padding: '8px', fontSize: 'var(--fs-12)', color: 'var(--text-faint)', lineHeight: 'var(--lh-normal)' }}>
+              <span style={{ padding: '8px', fontSize: 'var(--fs-12)', color: 'var(--text-muted)', lineHeight: 'var(--lh-normal)' }}>
                 {search ? 'No deck matches that.' : 'No decks yet. Add one with the plus above.'}
               </span>
             )}
@@ -220,8 +224,8 @@ export function AppShell({ title, titleIcon, topRight, sidebar = true, streakInT
         {/* No accounts exist, so this bar carries what is actually true about the
             data rather than a user identity — and not the workspace name, which
             the picker owns. */}
-        <div style={styles.userBar}>
-          <span style={{ flex: 1, minWidth: 0, fontSize: 'var(--fs-12)', fontWeight: 600, color: 'var(--text-faint)', lineHeight: 'var(--lh-normal)' }}>
+        <div style={styles.userBar} data-theme="dark">
+          <span style={{ flex: 1, minWidth: 0, fontSize: 'var(--fs-12)', fontWeight: 600, color: 'var(--text-muted)', lineHeight: 'var(--lh-normal)' }}>
             {decks.length} {decks.length === 1 ? 'deck' : 'decks'} · stored in this browser
           </span>
           <Tooltip label="Settings">

@@ -37,7 +37,7 @@ export function DeckList() {
           <span
             style={{
               fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)',
-              textTransform: 'uppercase', color: 'var(--text-faint)',
+              textTransform: 'uppercase', color: 'var(--text-muted)',
             }}
           >
             {workspace.name} · {decks.length} {decks.length === 1 ? 'deck' : 'decks'} · {totalCards} cards

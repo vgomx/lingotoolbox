@@ -95,7 +95,7 @@ function Hero() {
           ].map((s) => (
             <div key={s.n} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-32)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1 }}>{s.n}</span>
-              <span style={{ fontSize: 'var(--fs-12)', color: 'var(--text-faint)' }}>{s.l}</span>
+              <span style={{ fontSize: 'var(--fs-12)', color: 'var(--text-muted)' }}>{s.l}</span>
             </div>
           ))}
         </div>
@@ -112,7 +112,7 @@ function Hero() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-          <span style={{ flex: 1, fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
+          <span style={{ flex: 1, fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
             Everyday phrases · 12 due
           </span>
           <StreakPill days={26} size="sm" />
@@ -127,7 +127,9 @@ function Hero() {
           flipped={flipped}
           onFlip={setFlipped}
           hint={flipped ? undefined : 'Click to flip'}
-          tags={[<Tag key="n" color="var(--violet-300)">noun</Tag>, <Tag key="b1" color="var(--violet-300)">B1</Tag>]}
+          // 100, not 300 — on the violet back face, and the tag's own 18% tint lifts the
+          // backdrop further, so 200 still measured 4.32. See ReviewSession.
+          tags={[<Tag key="n" color="var(--violet-100)">noun</Tag>, <Tag key="b1" color="var(--violet-100)">B1</Tag>]}
         />
 
         <ReviewRating onGrade={() => setFlipped(false)} />
@@ -300,7 +302,7 @@ function Footer() {
         </div>
 
         <div>
-          <div style={{ fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 'var(--space-5)' }}>
+          <div style={{ fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 'var(--space-5)' }}>
             Tools
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -311,7 +313,7 @@ function Footer() {
         </div>
 
         <div>
-          <div style={{ fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 'var(--space-5)' }}>
+          <div style={{ fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 'var(--space-5)' }}>
             Project
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -323,7 +325,7 @@ function Footer() {
       </div>
 
       <div style={{ maxWidth: SHELL, margin: '0 auto', padding: '20px 24px 40px', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.06)' }}>
-        <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-faint)' }}>
+        <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>
           MIT licence · Icons by Lucide (ISC) · Illustration by OpenMoji (CC BY-SA 4.0)
         </span>
       </div>

@@ -114,7 +114,7 @@ export function DeckDetail() {
       <div style={page}>
         <header style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
+            <span style={{ fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
               {cards.length} cards · {due} due
             </span>
             <h1 style={{ margin: '6px 0 0', fontFamily: 'var(--font-display)', fontSize: 'var(--fs-32)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.15 }}>
@@ -189,7 +189,7 @@ export function DeckDetail() {
                         {card.front}
                       </span>
                       {card.phonetic && (
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-12)', color: 'var(--text-faint)' }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-12)', color: 'var(--text-muted)' }}>
                           {card.phonetic}
                         </span>
                       )}
@@ -198,7 +198,7 @@ export function DeckDetail() {
                   </div>
 
                   <Badge tone={STATE_TONE[card.state]}>{card.state}</Badge>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-11)', color: 'var(--text-faint)', minWidth: 44, textAlign: 'right' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-11)', color: 'var(--text-muted)', minWidth: 44, textAlign: 'right' }}>
                     {card.due <= Date.now() ? 'due' : formatDue(card.due - Date.now())}
                   </span>
 
