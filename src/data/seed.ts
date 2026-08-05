@@ -8,15 +8,22 @@ export const WORKSPACES: Workspace[] = [
   { code: 'ES', name: 'Spanish', flag: '🇪🇸', color: 'var(--coral-500)' },
 ];
 
-/** `released: false` marks a tool that is designed but not built — the rail
- *  flags those with a "Soon" badge. Flip the flag when a tool ships. */
+/**
+ * `released: false` marks a tool that is designed but not built — the rail flags
+ * those with a "Soon" badge. Flip the flag when a tool ships.
+ *
+ * `blurb` says what the tool does for the learner, in their terms. It is the only
+ * thing shown for a tool that isn't ready: whether the work is designed, drafted
+ * or half-written is our business, not theirs, and telling them says nothing
+ * about what they'd get.
+ */
 export const TOOLS = [
-  { id: 'home', label: 'Home', short: 'Home', icon: 'house', path: 'home', accent: 'var(--brand)', released: true },
-  { id: 'cards', label: 'Flashcards', short: 'Cards', icon: 'layers', path: 'cards', accent: 'var(--tool-flashcards)', released: true },
-  { id: 'etymology', label: 'Etymology Explorer', short: 'Roots', icon: 'git-branch', path: 'etymology', accent: 'var(--tool-etymology)', released: false },
-  { id: 'conjugation', label: 'Conjugation Drill', short: 'Verbs', icon: 'spell-check', path: 'conjugation', accent: 'var(--tool-conjugation)', released: false },
-  { id: 'phrasebook', label: 'Phrasebook', short: 'Phrases', icon: 'message-square-quote', path: 'phrasebook', accent: 'var(--tool-phrasebook)', released: false },
-  { id: 'grammar', label: 'Grammar Notes', short: 'Grammar', icon: 'scroll-text', path: 'grammar', accent: 'var(--tool-grammar)', released: false },
+  { id: 'home', label: 'Home', short: 'Home', icon: 'house', path: 'home', accent: 'var(--brand)', released: true, blurb: 'Everything due today, at a glance.' },
+  { id: 'cards', label: 'Flashcards', short: 'Cards', icon: 'layers', path: 'cards', accent: 'var(--tool-flashcards)', released: true, blurb: 'Spaced repetition that schedules itself.' },
+  { id: 'etymology', label: 'Etymology Explorer', short: 'Roots', icon: 'git-branch', path: 'etymology', accent: 'var(--tool-etymology)', released: false, blurb: 'Trace a word back to its root.' },
+  { id: 'conjugation', label: 'Conjugation Drill', short: 'Verbs', icon: 'spell-check', path: 'conjugation', accent: 'var(--tool-conjugation)', released: false, blurb: 'Drill the verb forms you keep missing.' },
+  { id: 'phrasebook', label: 'Phrasebook', short: 'Phrases', icon: 'message-square-quote', path: 'phrasebook', accent: 'var(--tool-phrasebook)', released: false, blurb: 'Keep whole phrases, not just single words.' },
+  { id: 'grammar', label: 'Grammar Notes', short: 'Grammar', icon: 'scroll-text', path: 'grammar', accent: 'var(--tool-grammar)', released: false, blurb: 'Pull up a short explanation mid-review.' },
 ] as const;
 
 export type ToolId = (typeof TOOLS)[number]['id'];

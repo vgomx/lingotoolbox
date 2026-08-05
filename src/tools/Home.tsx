@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button, Card, Icon, ProgressBar } from 'lingo-ds';
+import { Badge, Button, Card, Icon, ProgressBar } from 'lingo-ds';
 import { AppShell } from '../shell/AppShell';
 import { useStore } from '../state/store';
 import { TOOLS } from '../data/seed';
@@ -100,13 +100,16 @@ export function Home() {
                 <span style={{ color: t.accent, display: 'grid', width: 28 }}>
                   <Icon name={t.icon} size={26} />
                 </span>
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-18)', fontWeight: 800, color: 'var(--text-strong)' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontFamily: 'var(--font-display)', fontSize: 'var(--fs-18)', fontWeight: 800, color: 'var(--text-strong)' }}>
                   {t.label}
+                  {!t.released && <Badge tone="neutral">Soon</Badge>}
                 </span>
                 <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>
+                  {/* A tool that is ready reports its own state; one that isn't
+                      says what it will do, not where we are with building it. */}
                   {t.released
                     ? `${dueCount} due · ${decks.length} ${decks.length === 1 ? 'deck' : 'decks'}`
-                    : 'Designed, not built yet'}
+                    : t.blurb}
                 </span>
               </Card>
             </Link>
