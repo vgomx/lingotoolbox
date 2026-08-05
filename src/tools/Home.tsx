@@ -236,8 +236,14 @@ export function Home() {
               </div>
             )}
 
+            {/* The heading belongs to the column, not inside the card. With the
+                title on the card, the card had to start level with the heading
+                beside it and so sat 45px above the deck cards it is paired with,
+                reading as though it belonged to a different row. */}
             {word && (
-              <Card title="Word of the day" accent="var(--tool-etymology)">
+            <div>
+              <h2 style={{ ...sectionHeading, marginBottom: 'var(--space-5)' }}>Word of the day</h2>
+              <Card accent="var(--tool-etymology)">
                 <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-32)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.05 }}>
                   {word.front}
                 </span>
@@ -260,6 +266,7 @@ export function Home() {
                   </Link>
                 )}
               </Card>
+            </div>
             )}
           </div>
         )}
