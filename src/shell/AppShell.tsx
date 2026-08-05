@@ -1,9 +1,10 @@
 import * as React from 'react';
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Badge, Icon, IconButton, Input, SidebarItem, RailTile, StreakPill, Tooltip } from 'lingo-ds';
 import { useStore } from '../state/store';
 import { TOOLS } from '../data/seed';
 import { LanguageMenu } from './LanguageMenu';
+import { ChromeProvider, useChromeState } from './chrome';
 import stackUrl from 'lingo-ds/assets/logo/stack-violet.svg';
 
 const styles: Record<string, React.CSSProperties> = {
@@ -26,30 +27,23 @@ const styles: Record<string, React.CSSProperties> = {
   body: { flex: 1, minHeight: 0, overflowY: 'auto' },
 };
 
-export interface AppShellProps {
-  /**
-   * Names the object on screen — a deck, a session — not the tool. The rail
-   * already says which tool you're in, so a screen with nothing of its own to
-   * name (Home) omits this rather than echoing the rail.
-   */
-  title?: React.ReactNode;
-  titleIcon?: string;
-  topRight?: React.ReactNode;
-  /**
-   * The deck sidebar. Tools that have nothing to do with decks pass `false` —
-   * chrome that lists decks beside a screen which cannot use them is noise, and
-   * hiding it shouldn't be left to the reader to do by hand every time.
-   */
-  sidebar?: boolean;
-  /**
-   * The streak in the top bar. Home sets this false because it shows the streak
-   * large in its own hero, and one screen does not need to say it twice.
-   */
-  streakInTopBar?: boolean;
-  children: React.ReactNode;
-}
-
-export function AppShell({ title, titleIcon, topRight, sidebar = true, streakInTopBar = true, children }: AppShellProps) {
+/**
+ * The application frame: tool rail, deck sidebar, top bar, content pane.
+ *
+ * A layout route, not a wrapper each screen renders. Rendered per screen it was a
+ * different component type at the same position on every navigation, so React
+ * discarded and rebuilt the whole thing — no rail transition ever played, the
+ * sidebar could not animate across a navigation, and the deck list forgot where
+ * it was scrolled to. Screens now declare their chrome with `useChrome` and
+ * `<TopRight>` from ./chrome.
+ */
+export function AppShell() {
+  const { chrome, set } = useChromeState();
+  const { title, titleIcon, sidebar, streakInTopBar } = chrome;
+  // Callback ref rather than useRef: <TopRight> portals into this node, and a
+  // ref object's mutation would not re-render the consumers waiting for it.
+  const [topRightSlot, setTopRightSlot] = React.useState<HTMLElement | null>(null);
+  const chromeValue = React.useMemo(() => ({ set, slot: topRightSlot }), [set, topRightSlot]);
   const { decks, dueInDeck, streak, saveDeck, language, prefs, setPrefs } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -107,6 +101,7 @@ export function AppShell({ title, titleIcon, topRight, sidebar = true, streakInT
   };
 
   return (
+    <ChromeProvider value={chromeValue}>
     <div style={styles.frame}>
       {/* The rail keeps a dark surface in light mode — that is deliberate, and the
           light scope sets --surface-rail to an ink step to say so. But only the
@@ -252,7 +247,8 @@ export function AppShell({ title, titleIcon, topRight, sidebar = true, streakInT
             {title}
           </span>
           <span style={{ flex: 1 }} />
-          {topRight}
+          {/* Filled by whichever screen renders <TopRight>; empty otherwise. */}
+          <span ref={setTopRightSlot} style={{ display: 'contents' }} />
           <span style={{ width: 4 }} />
           <LanguageMenu />
           {streakInTopBar && <StreakPill days={streak} active={streak > 0} size="sm" />}
@@ -264,8 +260,9 @@ export function AppShell({ title, titleIcon, topRight, sidebar = true, streakInT
             </NavLink>
           </Tooltip>
         </header>
-        <div style={styles.body}>{children}</div>
+        <div style={styles.body}><Outlet /></div>
       </main>
     </div>
+    </ChromeProvider>
   );
 }

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Button, Card, Icon, Select, Switch } from 'lingo-ds';
-import { AppShell } from '../shell/AppShell';
+import { useChrome } from '../shell/chrome';
 import { useStore } from '../state/store';
 import { WORKSPACES } from '../data/seed';
 import { APP_VERSION } from '../legalNotices';
@@ -20,8 +20,10 @@ export function Settings() {
   const { prefs, setPrefs, reset, cards, decks } = useStore();
   const [legalOpen, setLegalOpen] = React.useState(false);
 
+  useChrome({ title: 'Settings', titleIcon: 'settings', sidebar: false });
+
   return (
-    <AppShell title="Settings" titleIcon="settings" sidebar={false}>
+    <>
       <div style={page}>
         <header>
           <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 'var(--fs-32)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.15 }}>
@@ -130,6 +132,6 @@ export function Settings() {
 
         <LegalDialog open={legalOpen} onClose={() => setLegalOpen(false)} />
       </div>
-    </AppShell>
+    </>
   );
 }

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Button, Flashcard, Icon, ProgressBar, ReviewRating, Tag, Toast } from 'lingo-ds';
-import { AppShell } from '../../shell/AppShell';
+import { TopRight, useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
 import { gradePreview, sortForSession } from '../../data/scheduler';
@@ -104,15 +104,15 @@ export function ReviewSession() {
   }, [toast]);
 
   const title = deck ? `Review · ${deck.name}` : 'Review';
+  useChrome({ title, titleIcon: 'layers' });
 
   if (!queue) {
-    return <AppShell title={title} titleIcon="layers"><div style={page} /></AppShell>;
+    return <div style={page} />;
   }
 
   if (!queue.length) {
     return (
-      <AppShell title={title} titleIcon="layers">
-        <EmptyTool
+      <EmptyTool
           icon="circle-check"
           accent="var(--success)"
           title="Nothing due"
@@ -124,15 +124,13 @@ export function ReviewSession() {
               <Button variant="secondary">Back to {deck ? 'deck' : 'decks'}</Button>
             </Link>
           }
-        />
-      </AppShell>
+      />
     );
   }
 
   if (done) {
     return (
-      <AppShell title={title} titleIcon="layers">
-        <div style={page}>
+      <div style={page}>
           <EmptyTool
             icon="circle-check"
             accent="var(--success)"
@@ -152,8 +150,7 @@ export function ReviewSession() {
               </div>
             }
           />
-        </div>
-      </AppShell>
+      </div>
     );
   }
 
@@ -167,15 +164,12 @@ export function ReviewSession() {
   }));
 
   return (
-    <AppShell
-      title={title}
-      titleIcon="layers"
-      topRight={
+    <>
+      <TopRight>
         <Button variant="ghost" size="sm" onClick={() => navigate(deck ? `/app/cards/${deck.id}` : '/app/cards')}>
           End session
         </Button>
-      }
-    >
+      </TopRight>
       <div style={page}>
         <ProgressBar
           label="Session"
@@ -230,6 +224,6 @@ export function ReviewSession() {
           <Toast title={toast} onClose={() => setToast(null)} />
         </div>
       )}
-    </AppShell>
+    </>
   );
 }

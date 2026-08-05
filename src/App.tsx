@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { AppShell } from './shell/AppShell';
 import { Splash, SPLASH_EXIT_MS, SPLASH_MIN_MS, prefersReducedMotion } from './shell/Splash';
 import { Landing } from './marketing/Landing';
 import { Home } from './tools/Home';
@@ -53,17 +54,23 @@ export function App() {
     <Routes>
       <Route path="/" element={<Landing />} />
 
-      <Route path="/app" element={<Boot><Home /></Boot>} />
-      <Route path="/app/home" element={<Navigate to="/app" replace />} />
-      <Route path="/app/cards" element={<Boot><DeckList /></Boot>} />
-      <Route path="/app/cards/:deckId" element={<Boot><DeckDetail /></Boot>} />
-      <Route path="/app/review" element={<Boot><ReviewSession /></Boot>} />
-      <Route path="/app/review/:deckId" element={<Boot><ReviewSession /></Boot>} />
-      <Route path="/app/etymology" element={<Boot><EtymologyScreen /></Boot>} />
-      <Route path="/app/conjugation" element={<Boot><ConjugationScreen /></Boot>} />
-      <Route path="/app/phrasebook" element={<Boot><PhrasebookScreen /></Boot>} />
-      <Route path="/app/grammar" element={<Boot><GrammarScreen /></Boot>} />
-      <Route path="/app/settings" element={<Boot><Settings /></Boot>} />
+      {/* One shell for every screen under /app. As a layout route it stays
+          mounted across navigations, so the rail can animate and the deck list
+          keeps its scroll — neither of which was possible when each screen
+          rendered its own copy. */}
+      <Route path="/app" element={<Boot><AppShell /></Boot>}>
+        <Route index element={<Home />} />
+        <Route path="home" element={<Navigate to="/app" replace />} />
+        <Route path="cards" element={<DeckList />} />
+        <Route path="cards/:deckId" element={<DeckDetail />} />
+        <Route path="review" element={<ReviewSession />} />
+        <Route path="review/:deckId" element={<ReviewSession />} />
+        <Route path="etymology" element={<EtymologyScreen />} />
+        <Route path="conjugation" element={<ConjugationScreen />} />
+        <Route path="phrasebook" element={<PhrasebookScreen />} />
+        <Route path="grammar" element={<GrammarScreen />} />
+        <Route path="settings" element={<Settings />} />
+      </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

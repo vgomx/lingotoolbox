@@ -1,6 +1,6 @@
 import { Button, Icon } from 'lingo-ds';
 import { Link } from 'react-router-dom';
-import { AppShell } from '../shell/AppShell';
+import { useChrome } from '../shell/chrome';
 import { EmptyTool } from './EmptyTool';
 import { TOOLS, type ToolId } from '../data/seed';
 
@@ -15,8 +15,10 @@ import { TOOLS, type ToolId } from '../data/seed';
 function ComingSoon({ id }: { id: ToolId }) {
   const tool = TOOLS.find((t) => t.id === id)!;
 
+  useChrome({ title: tool.label, titleIcon: tool.icon, sidebar: false });
+
   return (
-    <AppShell title={tool.label} titleIcon={tool.icon} sidebar={false}>
+    <>
       <EmptyTool
         icon={tool.icon}
         accent={tool.accent}
@@ -28,7 +30,7 @@ function ComingSoon({ id }: { id: ToolId }) {
           </Link>
         }
       />
-    </AppShell>
+    </>
   );
 }
 

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Badge, Button, Card, Icon, ProgressBar, StreakPill, Tag } from 'lingo-ds';
-import { AppShell } from '../shell/AppShell';
+import { useChrome } from '../shell/chrome';
 import { useStore } from '../state/store';
 import { TOOLS } from '../data/seed';
 
@@ -109,8 +109,11 @@ export function Home() {
     return Math.round((deckCards.filter((c) => c.state === 'review' && c.interval >= 21).length / deckCards.length) * 100);
   };
 
+  // No title: the rail already says Home, and the hero names the workspace.
+  useChrome({ streakInTopBar: false });
+
   return (
-    <AppShell streakInTopBar={false}>
+    <>
       <div style={page}>
         {/* Heading left, the two things you act on right — as in the kit, rather
             than pushing both into the top bar. */}
@@ -278,6 +281,6 @@ export function Home() {
           </div>
         )}
       </div>
-    </AppShell>
+    </>
   );
 }

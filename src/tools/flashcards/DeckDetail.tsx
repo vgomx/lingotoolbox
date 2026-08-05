@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Badge, Button, Card, Dialog, Icon, IconButton, IllustrationPicker, Input, Tag, Tooltip } from 'lingo-ds';
-import { AppShell } from '../../shell/AppShell';
+import { TopRight, useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
 import { formatDue } from '../../data/scheduler';
@@ -31,6 +31,10 @@ export function DeckDetail() {
   const cards = cardsInDeck(deckId);
   const due = dueInDeck(deckId).length;
   const anyIllustrated = cards.some((c) => c.illustration);
+
+  // Above the not-found return, because hooks cannot be conditional. A missing
+  // deck falls back to the tool's own name rather than an empty title bar.
+  useChrome({ title: deck?.name ?? 'Flashcards', titleIcon: 'layers' });
 
   const [editing, setEditing] = React.useState<CardModel | null>(null);
   const [adding, setAdding] = React.useState(false);
@@ -82,7 +86,7 @@ export function DeckDetail() {
 
   if (!deck) {
     return (
-      <AppShell title="Flashcards" titleIcon="layers">
+      <>
         <EmptyTool
           icon="circle-alert"
           accent="var(--danger)"
@@ -90,27 +94,22 @@ export function DeckDetail() {
           description="That deck no longer exists. It may have been deleted from this browser."
           action={<Link to="/app/cards" style={{ textDecoration: 'none' }}><Button variant="secondary">Back to decks</Button></Link>}
         />
-      </AppShell>
+      </>
     );
   }
 
   return (
-    <AppShell
-      title={deck.name}
-      titleIcon="layers"
-      topRight={
-        <>
-          <Tooltip label="Add a card" shortcut="N">
-            <IconButton label="Add a card" onClick={openAdd}><Icon name="plus" size={18} /></IconButton>
-          </Tooltip>
-          {due > 0 && (
-            <Button size="sm" iconLeft={<Icon name="play" size={15} />} onClick={() => navigate(`/app/review/${deck.id}`)}>
-              Review {due}
-            </Button>
-          )}
-        </>
-      }
-    >
+    <>
+      <TopRight>
+        <Tooltip label="Add a card" shortcut="N">
+          <IconButton label="Add a card" onClick={openAdd}><Icon name="plus" size={18} /></IconButton>
+        </Tooltip>
+        {due > 0 && (
+          <Button size="sm" iconLeft={<Icon name="play" size={15} />} onClick={() => navigate(`/app/review/${deck.id}`)}>
+            Review {due}
+          </Button>
+        )}
+      </TopRight>
       <div style={page}>
         <header style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -260,6 +259,6 @@ export function DeckDetail() {
           />
         </div>
       </Dialog>
-    </AppShell>
+    </>
   );
 }
