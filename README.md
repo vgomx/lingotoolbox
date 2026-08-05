@@ -58,6 +58,13 @@ src/
 └─ styles/     app-level CSS (everything visual comes from lingo-ds tokens)
 ```
 
+There is no `src/assets/`. Brand artwork is imported straight from the package —
+`import mark from 'lingo-ds/assets/logo/mark-violet.svg'` — so the app cannot
+drift from the design system by holding a stale copy. The one exception is the
+favicon, which has to be a real file at a fixed URL: `npm run sync:assets`
+copies it into `public/` and runs automatically before `dev` and `build`, so it
+is generated rather than committed.
+
 ## The scheduler
 
 `src/data/scheduler.ts` is SM-2 adapted to the four grades the design's

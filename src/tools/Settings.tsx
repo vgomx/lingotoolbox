@@ -5,7 +5,7 @@ import { useStore } from '../state/store';
 import { WORKSPACES } from '../data/seed';
 import { APP_VERSION } from '../legalNotices';
 import { LegalDialog } from './LegalDialog';
-import markUrl from '../assets/mark-violet.svg';
+import markUrl from 'lingo-ds/assets/logo/mark-violet.svg';
 
 const page: React.CSSProperties = {
   maxWidth: 720,

@@ -5,6 +5,9 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
+    "sync:assets": "cp node_modules/lingo-ds/assets/logo/mark-violet.svg public/",
+    "predev": "npm run sync:assets",
+    "prebuild": "npm run sync:assets",
     "dev": "vite",
     "build": "tsc -b && vite build && cp dist/index.html dist/404.html",
     "preview": "vite preview",

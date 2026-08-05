@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { Badge, Button, Card, EtymologyNode, Flashcard, Icon, ProgressBar, ReviewRating, StreakPill, Tag } from 'lingo-ds';
-import wordmarkViolet from '../assets/logo-wordmark-violet.svg';
-import wordmarkWhite from '../assets/logo-wordmark-white.svg';
+import wordmarkViolet from 'lingo-ds/assets/logo/logo-wordmark-violet.svg';
+import wordmarkWhite from 'lingo-ds/assets/logo/logo-wordmark-white.svg';
 
 /**
  * The light-theme landing page. There is deliberately no pricing surface anywhere —

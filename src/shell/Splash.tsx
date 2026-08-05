@@ -1,6 +1,6 @@
 import { useStore } from '../state/store';
-import wordmarkWhite from '../assets/logo-wordmark-white.svg';
-import wordmarkBlack from '../assets/logo-wordmark-black.svg';
+import wordmarkWhite from 'lingo-ds/assets/logo/logo-wordmark-white.svg';
+import wordmarkBlack from 'lingo-ds/assets/logo/logo-wordmark-black.svg';
 
 /** Shortest the splash stays up, so a fast open reads as deliberate rather than a flash. */
 export const SPLASH_MIN_MS = 600;

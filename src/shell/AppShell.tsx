@@ -4,7 +4,7 @@ import { Badge, Icon, IconButton, Input, SidebarItem, RailTile, StreakPill, Tool
 import { useStore } from '../state/store';
 import { TOOLS } from '../data/seed';
 import { LanguageMenu } from './LanguageMenu';
-import stackUrl from '../assets/stack-violet.svg';
+import stackUrl from 'lingo-ds/assets/logo/stack-violet.svg';
 
 const styles: Record<string, React.CSSProperties> = {
   frame: { display: 'flex', height: '100vh', background: 'var(--surface-app)', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' },
