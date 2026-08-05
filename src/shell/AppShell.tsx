@@ -99,7 +99,15 @@ export function AppShell({ title, titleIcon, topRight, sidebar = true, children 
 
   return (
     <div style={styles.frame}>
-      <nav className="lt-rail" style={styles.rail} aria-label="Tools">
+      {/* The rail keeps a dark surface in light mode — that is deliberate, and the
+          light scope sets --surface-rail to an ink step to say so. But only the
+          background was following that decision: every foreground token inside
+          still resolved to its light value, so in light mode the active label and
+          the pip came out ink-900 on an ink-900 rail at 1:1, and the active icon
+          white on near-white paper at 1.07:1. Declaring the rail a dark island
+          settles it in one place — the design system supports either scope nesting
+          inside the other, and this is what that is for. */}
+      <nav className="lt-rail" data-theme="dark" style={styles.rail} aria-label="Tools">
         <Link to="/" title="Lingo Toolbox home" style={{ display: 'block' }}>
           <img src={stackUrl} alt="Lingo Toolbox" style={{ height: 63, width: 44 }} />
         </Link>
