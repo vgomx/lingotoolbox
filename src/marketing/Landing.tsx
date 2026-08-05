@@ -91,7 +91,7 @@ function Hero() {
           {[
             { n: 'Local', l: 'every card stays in your browser' },
             { n: '4', l: 'starter languages' },
-            { n: 'MIT', l: 'licensed, self-hostable' },
+            { n: 'Offline', l: 'no connection needed' },
           ].map((s) => (
             <div key={s.n} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-32)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1 }}>{s.n}</span>
@@ -230,22 +230,23 @@ function OpenSource() {
   const columns = [
     {
       badge: 'Easiest',
-      title: 'Run it hosted',
-      copy: 'Use the public build. Nothing to install, every tool unlocked.',
+      title: 'Use it now',
+      copy: 'Open it in a browser. Nothing to install, every tool unlocked.',
       points: ['All five tools as they ship', 'Unlimited decks and cards', 'Your data never leaves the browser'],
       cta: <Link to="/app" style={{ textDecoration: 'none' }}><Button size="sm">Open the app</Button></Link>,
     },
     {
-      title: 'Self-host',
-      copy: 'It’s a static site. Clone it, build it, serve it anywhere.',
-      points: ['No server, no accounts service', 'No telemetry of any kind', 'Fork it and change what you like'],
-      cta: <a href="https://github.com/vgomx/lingotoolbox" style={{ textDecoration: 'none' }}><Button size="sm" variant="secondary">Read the repo</Button></a>,
+      badge: 'Offline',
+      title: 'Install it',
+      copy: 'Add it to your home screen or dock and it opens like any other app.',
+      points: ['Works with no connection', 'Opens in its own window', 'Still just a web page underneath'],
+      cta: <Link to="/app" style={{ textDecoration: 'none' }}><Button size="sm" variant="secondary">Open, then install</Button></Link>,
     },
     {
-      title: 'Contribute',
-      copy: 'Add a tool, a language pack, or a better scheduler.',
-      points: ['MIT licensed', 'Design system is open too', 'Issues and PRs are public'],
-      cta: <a href="https://github.com/vgomx/lingo-ds" style={{ textDecoration: 'none' }}><Button size="sm" variant="secondary">See the design system</Button></a>,
+      title: 'Fork it',
+      copy: 'Add a tool, a language pack, or a better scheduler — or run your own copy.',
+      points: ['MIT licensed', 'A static site you can host anywhere', 'Design system is open too'],
+      cta: <a href="https://github.com/vgomx/lingotoolbox" style={{ textDecoration: 'none' }}><Button size="sm" variant="secondary">Read the repo</Button></a>,
     },
   ];
 
@@ -255,8 +256,8 @@ function OpenSource() {
         <span style={eyebrow}>Open source</span>
         <h2 style={h2}>Free, and yours to fork.</h2>
         <p style={lede}>
-          Lingo Toolbox is built in the open under the MIT licence. Use the public build,
-          run your own, or send a pull request — there is no paid tier to unlock.
+          Lingo Toolbox is built in the open under the MIT licence. Open it in a browser,
+          install it, or fork it — there is no paid tier to unlock.
         </p>
       </div>
 

@@ -74,11 +74,29 @@ the real numbers rather than fixed copy. Grading writes the card's new state and
 a review-log entry in a single IndexedDB transaction, so a card can never
 advance unrecorded.
 
+## Installing it
+
+The app is a PWA: `vite-plugin-pwa` generates a manifest and a Workbox service
+worker that precaches the build, so it can be added to a home screen or dock and
+opened in its own window with no connection.
+
+Icons are generated from the design system's app-icon lockup by
+`npm run build:icons`, committed as a script rather than as binaries dropped in
+by hand. `registerType` is `autoUpdate`: a new deploy simply becomes the app on
+the next visit, since a static build has no versioning story worth prompting
+about.
+
+The one gap is type. The fonts still come from Google Fonts via `@import` in
+`lingo-ds/tokens/fonts.css`, so they are cached at runtime rather than
+precached — offline works from the **second** visit. Self-hosting the `.woff2`
+files, which the design brief already recommends, would make it work from the
+first, and is the remaining piece.
+
 ## Notes for future work
 
-- **PWA/offline.** The design brief recommends a service worker and self-hosted
-  `.woff2` files; today the fonts come from Google Fonts via `@import` in
-  `lingo-ds/tokens/fonts.css`, which breaks the offline story.
+- **Self-hosted fonts.** See above — the last thing standing between this and a
+  genuinely offline first load. Also fixes the licence question, since OFL text
+  must ship alongside redistributed font files.
 - **Import/export.** There is a reset in Settings but no deck import or export
   yet, so data is trapped in one browser.
 - **Routing on Pages.** `dist/404.html` is a copy of `index.html` so deep links
