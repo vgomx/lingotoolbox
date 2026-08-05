@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { setSoundEnabled, unlockSound } from 'lingo-ds';
 import type { Card, Deck, Grade, LanguageCode, Prefs } from '../data/types';
 import * as db from '../data/db';
 import { isDue } from '../data/scheduler';
@@ -83,6 +84,28 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     document.documentElement.setAttribute('data-theme', prefs.theme);
   }, [prefs.theme]);
+
+  // The sound module holds the on/off flag outside React, so that playSound can
+  // be called from anywhere without threading the preference through. This is
+  // the one place that keeps the two in step.
+  React.useEffect(() => {
+    setSoundEnabled(prefs.sound);
+  }, [prefs.sound]);
+
+  // Browsers keep an AudioContext suspended until a real gesture, so the first
+  // sound of a session would otherwise be swallowed. Unlocking on the first
+  // pointer or key event means the interaction that asks for a sound is also the
+  // one that gets it.
+  React.useEffect(() => {
+    const unlock = () => unlockSound();
+    const opts = { once: true, passive: true } as const;
+    window.addEventListener('pointerdown', unlock, opts);
+    window.addEventListener('keydown', unlock, opts);
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+  }, []);
 
   const setPrefs = React.useCallback((patch: Partial<Prefs>) => {
     setPrefsState((current) => {

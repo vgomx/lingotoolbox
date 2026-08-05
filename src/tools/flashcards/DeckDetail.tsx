@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Badge, Button, Card, Dialog, Icon, IconButton, IllustrationPicker, Input, Tag, Tooltip } from 'lingo-ds';
+import { Badge, Button, Card, Dialog, Icon, IconButton, IllustrationPicker, Input, Tag, Tooltip, playSound } from 'lingo-ds';
 import { TopRight, useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
@@ -86,6 +86,7 @@ export function DeckDetail() {
         lapses: 0,
       });
     }
+    playSound('cardAdded');
     close();
   };
 
@@ -216,7 +217,11 @@ export function DeckDetail() {
                       label="Delete card"
                       size="sm"
                       variant="danger"
-                      onClick={() => { if (window.confirm(`Delete "${card.front}"?`)) removeCard(card.id); }}
+                      onClick={() => {
+                        if (!window.confirm(`Delete "${card.front}"?`)) return;
+                        playSound('cardRemoved');
+                        void removeCard(card.id);
+                      }}
                     >
                       <Icon name="trash-2" size={15} />
                     </IconButton>

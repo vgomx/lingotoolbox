@@ -236,6 +236,7 @@ const DEFAULT_PREFS: Prefs = {
   language: 'NL',
   theme: 'dark',
   showShortcuts: true,
+  sound: true,
   sessionLimit: 20,
   sidebarCollapsed: false,
 };

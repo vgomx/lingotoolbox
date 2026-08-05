@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Button, Card, Icon, Select, Switch } from 'lingo-ds';
+import { Button, Card, Icon, Select, Switch, playSound, setSoundEnabled } from 'lingo-ds';
 import { useChrome } from '../shell/chrome';
 import { useStore } from '../state/store';
 import { WORKSPACES } from '../data/seed';
@@ -61,6 +61,17 @@ export function Settings() {
             hint="Numbers 1–4 on the grade buttons."
             checked={prefs.showShortcuts}
             onChange={(next) => setPrefs({ showShortcuts: next })}
+          />
+          <Switch
+            label="Sound"
+            hint="Short tones when a card flips and when you grade it."
+            checked={prefs.sound}
+            onChange={(next) => {
+              setPrefs({ sound: next });
+              // Switching it on is the one moment a sound is worth playing
+              // unprompted — it is the answer to "what will this sound like?".
+              if (next) { setSoundEnabled(true); playSound('toggle'); }
+            }}
           />
         </Card>
 
