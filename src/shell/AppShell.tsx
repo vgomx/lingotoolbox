@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Icon, IconButton, Input, SidebarItem, RailTile, StreakPill, Tooltip } from 'lingo-ds';
+import { Badge, Icon, IconButton, Input, SidebarItem, RailTile, StreakPill, Tooltip } from 'lingo-ds';
 import { useStore } from '../state/store';
 import { TOOLS } from '../data/seed';
 import { LanguageMenu } from './LanguageMenu';
@@ -64,25 +64,35 @@ export function AppShell({ title, titleIcon, topRight, children }: AppShellProps
 
   return (
     <div style={styles.frame}>
-      <nav style={styles.rail} aria-label="Tools">
+      <nav className="lt-rail" style={styles.rail} aria-label="Tools">
         <Link to="/" title="Lingo Toolbox home" style={{ display: 'block' }}>
           <img src={markUrl} alt="Lingo Toolbox" style={{ height: 43, width: 38 }} />
         </Link>
         <span style={{ width: 32, height: 2, background: 'var(--border)', borderRadius: 2, margin: '4px 0 6px' }} />
 
         {TOOLS.map((t) => (
-          <Tooltip key={t.id} label={t.label} side="right">
-            <RailTile
-              label={t.short}
-              icon={<Icon name={t.icon} size={18} />}
-              color="var(--surface-raised)"
-              size={38}
-              quiet
-              showLabel
-              active={activeTool.id === t.id && !settingsActive}
-              onClick={() => navigate(`/app/${t.path}`)}
-            />
-          </Tooltip>
+          <div key={t.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, width: '100%', flex: 'none' }}>
+            <Tooltip label={t.label} side="right">
+              <RailTile
+                label={t.short}
+                icon={<Icon name={t.icon} size={18} />}
+                color="var(--surface-raised)"
+                size={38}
+                quiet
+                showLabel
+                active={activeTool.id === t.id && !settingsActive}
+                onClick={() => navigate(`/app/${t.path}`)}
+              />
+            </Tooltip>
+            {!t.released && (
+              // Sized down from the Badge default so it sits under the 10px rail
+              // label without outweighing it. --fs-10 is the smallest type token;
+              // anything below it would be an off-scale literal.
+              <Badge tone="neutral" style={{ height: 14, padding: '0 5px', fontSize: 'var(--fs-10)' }}>
+                Soon
+              </Badge>
+            )}
+          </div>
         ))}
 
         <span style={{ flex: 1 }} />

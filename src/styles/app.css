@@ -16,3 +16,15 @@ body {
 a {
   color: inherit;
 }
+
+/* The tool rail scrolls rather than clipping when the window is too short for
+   every tile — otherwise the Settings button at its foot becomes unreachable.
+   The scrollbar is hidden because a visible one inside 72px of chrome is noise. */
+.lt-rail {
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.lt-rail::-webkit-scrollbar {
+  display: none;
+}

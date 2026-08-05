@@ -104,7 +104,7 @@ export function Home() {
                   {t.label}
                 </span>
                 <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>
-                  {t.id === 'cards'
+                  {t.released
                     ? `${dueCount} due · ${decks.length} ${decks.length === 1 ? 'deck' : 'decks'}`
                     : 'Designed, not built yet'}
                 </span>
