@@ -44,8 +44,6 @@ export function Home() {
 
   return (
     <AppShell
-      title="Home"
-      titleIcon="house"
       topRight={dueCount > 0 ? (
         <Button size="sm" iconLeft={<Icon name="play" size={15} />} onClick={() => navigate('/app/review')}>
           Start review
@@ -74,7 +72,7 @@ export function Home() {
         </div>
 
         {cards.length > 0 && (
-          <Card title="Mastery mix" subtitle={`${workspace.name} · ${cards.length} cards`} style={{ marginBottom: 'var(--space-8)' }}>
+          <Card title="Mastery mix" subtitle={`${cards.length} cards`} style={{ marginBottom: 'var(--space-8)' }}>
             <ProgressBar
               height={10}
               value={0}

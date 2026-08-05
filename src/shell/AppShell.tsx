@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Avatar, Badge, Icon, IconButton, Input, SidebarItem, RailTile, StreakPill, Tooltip } from 'lingo-ds';
+import { Icon, IconButton, Input, SidebarItem, RailTile, StreakPill, Tooltip } from 'lingo-ds';
 import { useStore } from '../state/store';
 import { TOOLS } from '../data/seed';
 import { LanguageMenu } from './LanguageMenu';
@@ -10,7 +10,7 @@ const styles: Record<string, React.CSSProperties> = {
   frame: { display: 'flex', height: '100vh', background: 'var(--surface-app)', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' },
   rail: { width: 'var(--rail-width)', flex: 'none', background: 'var(--surface-rail)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-2)', padding: '10px 0 12px' },
   sidebar: { width: 'var(--sidebar-width)', flex: 'none', background: 'var(--surface-sidebar)', display: 'flex', flexDirection: 'column' },
-  sidebarHead: { height: 'var(--topbar-height)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 12px 0 16px', boxShadow: 'var(--shadow-xs)', flex: 'none' },
+  sidebarHead: { height: 'var(--topbar-height)', display: 'flex', alignItems: 'center', padding: '0 8px', boxShadow: 'var(--shadow-xs)', flex: 'none' },
   sectionLabel: { fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-faint)', padding: '0 8px', marginBottom: 4 },
   userBar: { height: 56, flex: 'none', background: 'var(--ink-900)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: '0 8px 0 10px' },
   main: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' },
@@ -20,14 +20,19 @@ const styles: Record<string, React.CSSProperties> = {
 };
 
 export interface AppShellProps {
-  title: React.ReactNode;
+  /**
+   * Names the object on screen — a deck, a session — not the tool. The rail
+   * already says which tool you're in, so a screen with nothing of its own to
+   * name (Home) omits this rather than echoing the rail.
+   */
+  title?: React.ReactNode;
   titleIcon?: string;
   topRight?: React.ReactNode;
   children: React.ReactNode;
 }
 
 export function AppShell({ title, titleIcon, topRight, children }: AppShellProps) {
-  const { decks, dueInDeck, streak, workspace, saveDeck, language } = useStore();
+  const { decks, dueInDeck, streak, saveDeck, language } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
   const [search, setSearch] = React.useState('');
@@ -89,14 +94,11 @@ export function AppShell({ title, titleIcon, topRight, children }: AppShellProps
       </nav>
 
       <aside style={styles.sidebar} aria-label="Decks">
+        {/* This 48px band exists to align the sidebar with the top bar. It holds
+            search rather than a heading: the rail already names the tool and the
+            top-right picker already names the workspace, so a label here could
+            only repeat one of them. */}
         <div style={styles.sidebarHead}>
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-18)', fontWeight: 800, color: 'var(--text-strong)' }}>
-            {settingsActive ? 'Settings' : activeTool.label}
-          </span>
-          <Badge tone="neutral">{workspace.flag} {workspace.code}</Badge>
-        </div>
-
-        <div style={{ padding: '10px 8px 6px' }}>
           <Input
             placeholder="Search decks…"
             size="sm"
@@ -142,16 +144,13 @@ export function AppShell({ title, titleIcon, topRight, children }: AppShellProps
           </div>
         </div>
 
+        {/* No accounts exist, so this bar carries what is actually true about the
+            data rather than a user identity — and not the workspace name, which
+            the picker owns. */}
         <div style={styles.userBar}>
-          <Avatar name="You" flag={workspace.flag} size="md" />
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: 'var(--fs-13)', fontWeight: 800, color: 'var(--text-strong)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {workspace.name}
-            </span>
-            <span style={{ fontSize: 'var(--fs-11)', fontWeight: 600, color: 'var(--text-faint)' }}>
-              {decks.length} {decks.length === 1 ? 'deck' : 'decks'} · stored locally
-            </span>
-          </div>
+          <span style={{ flex: 1, minWidth: 0, fontSize: 'var(--fs-12)', fontWeight: 600, color: 'var(--text-faint)', lineHeight: 'var(--lh-normal)' }}>
+            {decks.length} {decks.length === 1 ? 'deck' : 'decks'} · stored in this browser
+          </span>
           <Tooltip label="Settings">
             <IconButton label="Settings" size="sm" onClick={() => navigate('/app/settings')}>
               <Icon name="settings" size={16} />
