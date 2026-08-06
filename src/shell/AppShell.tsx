@@ -25,11 +25,12 @@ const styles: Record<string, React.CSSProperties> = {
   sidebarInner: { width: 'var(--sidebar-width)', height: '100%', display: 'flex', flexDirection: 'column' },
   sidebarHead: { height: 'var(--topbar-height)', display: 'flex', alignItems: 'center', padding: '0 8px', boxShadow: 'var(--shadow-xs)', flex: 'none' },
   sectionLabel: { fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-muted)', padding: '0 8px', marginBottom: 4 },
-  // --surface-rail, not a raw --ink-900: this bar is a dark island by design, and
-  // the raw step kept it dark in light mode while its text followed the light
-  // theme — ink on ink at 3.15. Pairing the token with data-theme="dark" below
-  // makes the foregrounds resolve against the surface they actually sit on.
-  userBar: { height: 56, flex: 'none', background: 'var(--surface-rail)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: '0 8px 0 10px' },
+  // --surface-sunken: one step below whatever the sidebar is, in either theme —
+  // ink-900 under the dark sidebar's ink-800, paper-100 under the light one's
+  // paper-50. It reads as part of the sidebar rather than as a slab of the rail
+  // that wandered over, which is what --surface-rail made of it in light mode.
+  // Following the theme also means it no longer needs to declare itself dark.
+  userBar: { height: 56, flex: 'none', background: 'var(--surface-sunken)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: '0 8px 0 10px' },
   main: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' },
   topbar: { height: 'var(--topbar-height)', flex: 'none', display: 'flex', alignItems: 'center', gap: 'var(--space-4)', padding: '0 16px', boxShadow: 'var(--shadow-xs)', position: 'sticky', top: 0, zIndex: 20, backdropFilter: 'var(--blur-overlay)', background: 'color-mix(in oklab, var(--surface-app) 82%, transparent)' },
   // minWidth:0 so the title can shrink inside the flex row, and nowrap so a long
@@ -292,7 +293,7 @@ export function AppShell() {
         {/* No accounts exist, so this bar carries what is actually true about the
             data rather than a user identity — and not the workspace name, which
             the picker owns. */}
-        <div style={styles.userBar} data-theme="dark">
+        <div style={styles.userBar}>
           <span style={{ flex: 1, minWidth: 0, fontSize: 'var(--fs-12)', fontWeight: 600, color: 'var(--text-muted)', lineHeight: 'var(--lh-normal)' }}>
             {decks.length} {decks.length === 1 ? 'deck' : 'decks'} · stored in this browser
           </span>
