@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Badge, Button, Card, Icon, ProgressBar, Tag } from 'lingo-ds';
+import { Badge, Button, Card, Icon, IconButton, ProgressBar, Tag, useIsMobile } from 'lingo-ds';
 import { TopRight, useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
@@ -11,6 +11,7 @@ const page: React.CSSProperties = {
 };
 
 export function DeckList() {
+  const isMobile = useIsMobile();
   const { decks, cardsInDeck, dueInDeck, dueCount, workspace } = useStore();
   const navigate = useNavigate();
 
@@ -22,13 +23,21 @@ export function DeckList() {
     <>
       {dueCount > 0 && (
         <TopRight>
-          <Button
-            size="sm"
-            iconLeft={<Icon name="play" size={15} />}
-            onClick={() => navigate('/app/review')}
-          >
-            Start review
-          </Button>
+          {isMobile ? (
+            // Icon-only, as on the deck screen: the words cost ~90px of a 375px
+            // bar that already carries the brand mark, the title and the language.
+            <IconButton label={`Start a review of ${dueCount} cards`} size="lg" variant="brand" onClick={() => navigate('/app/review')}>
+              <Icon name="play" size={18} />
+            </IconButton>
+          ) : (
+            <Button
+              size="sm"
+              iconLeft={<Icon name="play" size={15} />}
+              onClick={() => navigate('/app/review')}
+            >
+              Start review
+            </Button>
+          )}
         </TopRight>
       )}
       <div style={page}>
