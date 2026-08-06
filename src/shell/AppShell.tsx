@@ -7,6 +7,7 @@ import { LanguageMenu } from './LanguageMenu';
 import { ChromeProvider, useChromeState } from './chrome';
 import { markAppVisited } from '../data/visit';
 import { HelpMenu } from './HelpMenu';
+import { Dock, DOCK_HEIGHT } from './Dock';
 import stackUrl from 'lingo-ds/assets/logo/stack-violet.svg';
 
 const styles: Record<string, React.CSSProperties> = {
@@ -40,10 +41,6 @@ const styles: Record<string, React.CSSProperties> = {
   crumb: { flex: 'none', color: 'var(--text-muted)', textDecoration: 'none', fontWeight: 700, borderRadius: 'var(--radius-xs)' },
   topTitleText: { minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' },
   body: { flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' },
-  scrim: {
-    position: 'fixed', inset: 0, zIndex: 40, border: 'none', padding: 0,
-    background: 'var(--scrim, rgba(0,0,0,.5))', cursor: 'pointer',
-  },
 };
 
 /**
@@ -70,30 +67,18 @@ export function AppShell() {
 
   const bp = useBreakpoint();
   const isMobile = bp === 'mobile';
-  // The rail is 72px — a fifth of a 375px phone, spent on chrome. On mobile it
-  // becomes a drawer instead; everywhere else it stays put.
-  const [navOpen, setNavOpen] = React.useState(false);
-  // The deck sidebar is a desktop convenience. On a phone the Flashcards screen
-  // *is* the deck list, and the breadcrumb already goes there, so a second copy
-  // of it in a drawer would be the same list twice.
+  // The rail is 72px — a fifth of a 375px phone, spent on chrome. On mobile a
+  // bottom dock replaces it: navigation on a phone belongs where the thumb is,
+  // not behind a button in the top corner it can barely reach.
+  //
+  // The deck sidebar goes too. It is a desktop convenience — on a phone the
+  // Flashcards screen *is* the deck list, and the breadcrumb already goes there.
   const showSidebar = sidebar && !isMobile;
 
   // Reaching the shell is what counts as having used the app, and it is what
   // makes `/` skip the landing page next time. Marked here rather than on the
   // landing page because bouncing off the marketing site decides nothing.
   React.useEffect(() => { markAppVisited(); }, []);
-
-  // Closing on navigation is the whole contract of a drawer: it covers the thing
-  // you are trying to reach, so following a link inside it has to put it away.
-  React.useEffect(() => { setNavOpen(false); }, [location.pathname]);
-
-  // Escape closes it, as with any overlay.
-  React.useEffect(() => {
-    if (!navOpen) return undefined;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setNavOpen(false); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [navOpen]);
 
   // /app/review belongs to Flashcards — it has no rail tile of its own.
   const path = location.pathname.replace('/app/review', '/app/cards');
@@ -157,31 +142,9 @@ export function AppShell() {
           white on near-white paper at 1.07:1. Declaring the rail a dark island
           settles it in one place — the design system supports either scope nesting
           inside the other, and this is what that is for. */}
-      {/* One rail, two placements. On mobile it slides in over the content and a
-          scrim closes it; elsewhere it is a column in the flex row. Same markup
-          either way, so the active pip, the badges and the tooltips do not have
-          to be built twice. */}
-      {isMobile && navOpen && (
-        <button type="button" style={styles.scrim} aria-label="Close menu" onClick={() => setNavOpen(false)} />
-      )}
-      <nav
-        className="lt-rail"
-        data-theme="dark"
-        aria-label="Tools"
-        aria-hidden={isMobile && !navOpen}
-        style={{
-          ...styles.rail,
-          ...(isMobile ? {
-            position: 'fixed', insetBlock: 0, left: 0, zIndex: 50,
-            transform: navOpen ? 'none' : 'translateX(-100%)',
-            transition: 'transform var(--dur-base) var(--ease-standard)',
-            boxShadow: navOpen ? 'var(--shadow-xl)' : 'none',
-            // Not just off-screen: a hidden nav must not be tabbable, or the
-            // first Tab on a phone lands in a menu nobody can see.
-            visibility: navOpen ? 'visible' : 'hidden',
-          } : null),
-        }}
-      >
+      {/* Desktop and tablet only — the phone gets <Dock /> at the bottom. */}
+      {!isMobile && (
+      <nav className="lt-rail" data-theme="dark" aria-label="Tools" style={styles.rail}>
         {/* The app's home, not the marketing page. A logo at the top of a
             product's own nav is the way back to its start, and the rail's Home
             tile a few pixels below already means exactly that — two adjacent
@@ -230,6 +193,7 @@ export function AppShell() {
           </IconButton>
         </Tooltip>
       </nav>
+      )}
 
       {showSidebar && (
       <aside
@@ -316,13 +280,7 @@ export function AppShell() {
 
       <main style={styles.main}>
         <header style={styles.topbar}>
-          {isMobile ? (
-            // flex:none — the top bar is a flex row and was shrinking the menu
-            // button to 20px wide to make room for the title beside it.
-            <IconButton label="Menu" size="lg" style={{ flex: 'none' }} onClick={() => setNavOpen(true)}>
-              <Icon name="list" size={20} />
-            </IconButton>
-          ) : showSidebar && (
+          {!isMobile && showSidebar && (
             <Tooltip label={collapsed ? 'Show decks' : 'Hide decks'} shortcut={toggleShortcut}>
               <IconButton label={collapsed ? 'Show decks' : 'Hide decks'} style={{ flex: 'none' }} onClick={toggleSidebar}>
                 <Icon name="panel-left" size={18} />
@@ -359,8 +317,14 @@ export function AppShell() {
               for that case, and shortcuts do not apply without a keyboard. */}
           {!isMobile && <HelpMenu />}
         </header>
-        <div style={styles.body}><Outlet /></div>
+        {/* The dock is fixed, so the scroller has to stop short of it — otherwise
+            the last card on every screen sits under the bar. */}
+        <div style={{ ...styles.body, paddingBottom: isMobile ? `calc(${DOCK_HEIGHT}px + env(safe-area-inset-bottom, 0px))` : undefined }}>
+          <Outlet />
+        </div>
       </main>
+
+      {isMobile && <Dock />}
     </div>
     </ChromeProvider>
   );
