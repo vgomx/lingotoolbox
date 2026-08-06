@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AppShell } from './shell/AppShell';
 import { Splash, SPLASH_EXIT_MS, SPLASH_MIN_MS, prefersReducedMotion } from './shell/Splash';
 import { Landing } from './marketing/Landing';
@@ -10,6 +10,7 @@ import { DeckDetail } from './tools/flashcards/DeckDetail';
 import { ReviewSession } from './tools/flashcards/ReviewSession';
 import { ConjugationScreen, EtymologyScreen, GrammarScreen, PhrasebookScreen } from './tools/Placeholders';
 import { useStore } from './state/store';
+import { hasVisitedApp } from './data/visit';
 
 /**
  * Holds the splash over the app until IndexedDB has opened and seeded.
@@ -49,10 +50,36 @@ function Boot({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * What `/` does, which depends on who is arriving.
+ *
+ * A first-time visitor gets the marketing page. Someone who has used the app
+ * before gets the app — they have already read the pitch, and making them click
+ * past it every time is a toll on the people who liked it enough to come back.
+ *
+ * The redirect fires only on a cold arrival. React Router gives the initial
+ * entry the key `default` and generates one for every navigation after it, which
+ * is exactly the distinction that matters here: *arriving* at the site is the
+ * case to shortcut, while *clicking* the marketing link from inside the app is a
+ * deliberate request for this page and must be honoured. Both in-app routes back
+ * to `/` — the rail logo and the About button — depend on that.
+ */
+function Entry() {
+  const location = useLocation();
+  const coldArrival = location.key === 'default';
+  if (coldArrival && hasVisitedApp()) return <Navigate to="/app" replace />;
+  return <Landing />;
+}
+
+/** An unknown URL lands wherever `/` would have sent this person anyway. */
+function NotFound() {
+  return <Navigate to={hasVisitedApp() ? '/app' : '/'} replace />;
+}
+
 export function App() {
   return (
     <Routes>
-      <Route path="/" element={<Landing />} />
+      <Route path="/" element={<Entry />} />
 
       {/* One shell for every screen under /app. As a layout route it stays
           mounted across navigations, so the rail can animate and the deck list
@@ -72,7 +99,7 @@ export function App() {
         <Route path="settings" element={<Settings />} />
       </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

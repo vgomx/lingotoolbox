@@ -5,6 +5,7 @@ import { useStore } from '../state/store';
 import { TOOLS } from '../data/seed';
 import { LanguageMenu } from './LanguageMenu';
 import { ChromeProvider, useChromeState } from './chrome';
+import { markAppVisited } from '../data/visit';
 import stackUrl from 'lingo-ds/assets/logo/stack-violet.svg';
 
 const styles: Record<string, React.CSSProperties> = {
@@ -74,6 +75,11 @@ export function AppShell() {
   // *is* the deck list, and the breadcrumb already goes there, so a second copy
   // of it in a drawer would be the same list twice.
   const showSidebar = sidebar && !isMobile;
+
+  // Reaching the shell is what counts as having used the app, and it is what
+  // makes `/` skip the landing page next time. Marked here rather than on the
+  // landing page because bouncing off the marketing site decides nothing.
+  React.useEffect(() => { markAppVisited(); }, []);
 
   // Closing on navigation is the whole contract of a drawer: it covers the thing
   // you are trying to reach, so following a link inside it has to put it away.
