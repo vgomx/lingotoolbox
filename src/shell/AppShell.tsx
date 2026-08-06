@@ -206,10 +206,16 @@ export function AppShell() {
               />
             </Tooltip>
             {!t.released && (
-              // Sized down from the Badge default so it sits under the rail label
-              // without outweighing it — at --fs-9, the scale's floor, added for
-              // exactly this kind of micro-label on narrow chrome.
-              <Badge tone="neutral" style={{ height: 12, padding: '0 4px', fontSize: 'var(--fs-9)' }}>
+              // Sized well below the Badge default: at 36.8px it was as wide as
+              // the 38px tile above it, so the marker read as loud as the tool it
+              // was qualifying. --fs-8 is the scale's floor, added for exactly
+              // this kind of micro-label on narrow chrome, and the box is pulled
+              // in to match. Tighter tracking too — --ls-wide exists to open up
+              // caps for reading, and this is a stamp, not a word.
+              <Badge
+                tone="neutral"
+                style={{ height: 11, padding: '0 3px', fontSize: 'var(--fs-8)', letterSpacing: 'var(--ls-normal)' }}
+              >
                 Soon
               </Badge>
             )}
