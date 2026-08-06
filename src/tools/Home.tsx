@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Badge, Button, Card, Icon, ProgressBar, StreakPill, Tag } from 'lingo-ds';
+import { Badge, Button, Card, Icon, ProgressBar, StreakPill, Tag, useIsMobile } from 'lingo-ds';
 import { useChrome } from '../shell/chrome';
 import { useStore } from '../state/store';
 import { TOOLS } from '../data/seed';
@@ -39,13 +39,13 @@ const sectionHeading: React.CSSProperties = {
 };
 
 const grid3: React.CSSProperties = {
-  display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-5)',
+  display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: 'var(--space-5)',
 };
 
 /** Three across at content width, as the kit has it — 240px would fit four and
  *  leave the fifth tool stranded on its own row. */
 const toolGrid: React.CSSProperties = {
-  display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-5)',
+  display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))', gap: 'var(--space-5)',
 };
 
 /** Reviews graded per day for the last week. Today is the last bar. */
@@ -72,6 +72,7 @@ function WeekChart({ counts }: { counts: number[] }) {
 }
 
 export function Home() {
+  const isMobile = useIsMobile();
   const { decks, cards, dueCount, streak, weeklyReviews, workspace, cardsInDeck, dueInDeck } = useStore();
   const navigate = useNavigate();
 
@@ -213,8 +214,11 @@ export function Home() {
           </div>
         </div>
 
+        {/* Stacked on a phone. A 1.4fr/1fr split of 375px is two ~170px columns,
+            which broke "Everyday phrases" onto three lines and clipped the word
+            of the day mid-word. */}
         {(topDecks.length > 0 || word) && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr)', gap: 'var(--space-5)', alignItems: 'start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0, 1fr)' : 'minmax(0, 1.4fr) minmax(0, 1fr)', gap: 'var(--space-5)', alignItems: 'start' }}>
             {topDecks.length > 0 && (
               <div>
                 <h2 style={{ ...sectionHeading, marginBottom: 'var(--space-5)' }}>Pick up where you left off</h2>
