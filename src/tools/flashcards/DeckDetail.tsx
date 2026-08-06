@@ -227,6 +227,7 @@ export function DeckDetail() {
                       label="Delete card"
                       size="sm"
                       variant="danger"
+                      sound={false}
                       onClick={() => {
                         if (!window.confirm(`Delete "${card.front}"?`)) return;
                         playSound('cardRemoved');
@@ -252,7 +253,7 @@ export function DeckDetail() {
         footer={
           <>
             <Button variant="ghost" onClick={close}>Cancel</Button>
-            <Button onClick={submit} disabled={!front.trim() || !back.trim()}>
+            <Button sound={false} onClick={submit} disabled={!front.trim() || !back.trim()}>
               {editing ? 'Save card' : 'Add card'}
             </Button>
           </>
