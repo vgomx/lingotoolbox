@@ -1,6 +1,6 @@
 import type { IllustrationItem } from 'lingo-ds';
 import type { Illustration } from './types';
-import { ILLUSTRATIONS, ILLUSTRATION_GROUPS, OPENMOJI_VERSION } from './openmojiCatalog';
+import { FLAGS, ILLUSTRATIONS, ILLUSTRATION_GROUPS, OPENMOJI_VERSION } from './openmojiCatalog';
 
 export { ILLUSTRATION_GROUPS, OPENMOJI_VERSION };
 
@@ -37,3 +37,21 @@ export const ILLUSTRATION_ITEMS: IllustrationItem[] = ILLUSTRATIONS.map((i) => (
   group: i.group,
   keywords: i.keywords,
 }));
+
+const FLAG_BY_HEX = new Map(FLAGS.map((f) => [f.hex, f]));
+
+/**
+ * URL for a workspace flag.
+ *
+ * Separate from `illustrationUrl` because flags are not illustrations: they are
+ * deliberately absent from the picker, so looking one up there would fail.
+ */
+export function flagUrl(hex: string): string | undefined {
+  const found = FLAG_BY_HEX.get(hex);
+  return found && `${ILLUSTRATION_BASE}${found.file}`;
+}
+
+/** "flag: Portugal" — the alt text, though the name beside it usually carries it. */
+export function flagName(hex: string): string {
+  return FLAG_BY_HEX.get(hex)?.name ?? '';
+}

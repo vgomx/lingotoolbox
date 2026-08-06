@@ -84,7 +84,10 @@ export function Settings() {
           <Select
             label="Language track"
             value={prefs.language}
-            options={WORKSPACES.map((w) => ({ value: w.code, label: `${w.flag}  ${w.name}` }))}
+            // No flag here: a native <option> renders text only, and the picker
+            // in the top bar is where the flags live. The name was always the
+            // identifier anyway.
+            options={WORKSPACES.map((w) => ({ value: w.code, label: w.name }))}
             onChange={(e) => setPrefs({ language: e.target.value as typeof prefs.language })}
           />
           <Select

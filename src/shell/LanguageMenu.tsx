@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Badge, Icon } from 'lingo-ds';
 import { useStore } from '../state/store';
 import { WORKSPACES } from '../data/seed';
+import { flagUrl } from '../data/illustrations';
 import { MenuItem } from './MenuItem';
 
 /**
@@ -45,7 +46,9 @@ export function LanguageMenu({ compact = false }: LanguageMenuProps) {
           cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: 'var(--fs-13)', fontWeight: 800,
         }}
       >
-        <span style={{ fontSize: 18, lineHeight: 1 }}>{workspace.flag}</span>
+        {/* alt="" — the language name sits right beside it, so a screen reader
+            announcing "flag: United Kingdom, English" would say it twice. */}
+        <img src={flagUrl(workspace.flagHex)} alt="" width={18} height={18} style={{ display: 'block', flex: 'none' }} />
         {workspace.name}
         {!compact && <Icon name="chevron-down" size={14} style={{ color: 'var(--text-muted)' }} />}
       </button>
@@ -73,7 +76,7 @@ export function LanguageMenu({ compact = false }: LanguageMenuProps) {
               selected={w.code === workspace.code}
               onClick={() => { setLanguage(w.code); setOpen(false); }}
             >
-              <span style={{ fontSize: 20, lineHeight: 1 }}>{w.flag}</span>
+              <img src={flagUrl(w.flagHex)} alt="" width={20} height={20} style={{ display: 'block', flex: 'none' }} />
               <span style={{ flex: 1, minWidth: 0 }}>{w.name}</span>
               {w.code === workspace.code && <Icon name="check" size={16} style={{ color: w.color, flex: 'none' }} />}
             </MenuItem>

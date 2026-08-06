@@ -17,9 +17,17 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFile(path.join(root, p), 'utf8');
 
 const catalogSrc = await read('src/data/openmojiCatalog.ts');
-const catalog = JSON.parse(
-  catalogSrc.match(/ILLUSTRATIONS[^=]*= (\[[\s\S]*\]);/)[1].replace(/,\n\]$/, '\n]'),
-);
+
+// Non-greedy, and anchored on the export that follows: the file now holds two
+// arrays, and a greedy match ran ILLUSTRATIONS straight through into FLAGS.
+const arrayAfter = (name) => {
+  const m = catalogSrc.match(new RegExp(`${name}: Illustration\\[\\] = (\\[[\\s\\S]*?\\n\\]);`));
+  if (!m) throw new Error(`${name} not found in openmojiCatalog.ts`);
+  return JSON.parse(m[1].replace(/,\n\]$/, '\n]'));
+};
+
+const catalog = arrayAfter('ILLUSTRATIONS');
+const flags = arrayAfter('FLAGS');
 const byHex = new Map(catalog.map((i) => [i.hex, i]));
 
 const onDisk = new Set(
@@ -28,20 +36,28 @@ const onDisk = new Set(
 
 const problems = [];
 
-// 1. Every catalogue entry has its file.
-for (const entry of catalog) {
+// 1. Every catalogue entry has its file — flags included, even though they are
+//    deliberately not illustrations.
+for (const entry of [...catalog, ...flags]) {
   if (!onDisk.has(entry.file)) {
     problems.push(`catalogue lists ${entry.file} (${entry.hex}) but public/openmoji/ has no such file`);
   }
 }
 
 // 2. Every file is in the catalogue — an orphan is dead weight in the deploy.
-const listed = new Set(catalog.map((i) => i.file));
+const listed = new Set([...catalog, ...flags].map((i) => i.file));
 for (const file of onDisk) {
   if (!listed.has(file)) problems.push(`public/openmoji/${file} is not in the catalogue`);
 }
 
-// 3. Every codepoint the seed names resolves.
+// 3. Every workspace has a flag that ships.
+const seedSrc = await read('src/data/seed.ts');
+const flagHexes = new Set(flags.map((f) => f.hex));
+for (const [, hex] of seedSrc.matchAll(/flagHex:\s*'([^']+)'/g)) {
+  if (!flagHexes.has(hex)) problems.push(`seed.ts names flag ${hex}, which is not vendored`);
+}
+
+// 4. Every codepoint the seed names resolves.
 const seed = await read('src/data/seed.ts');
 const used = [...seed.matchAll(/illustration:\s*'([^']+)'/g)].map((m) => m[1]);
 for (const hex of new Set(used)) {
@@ -56,5 +72,6 @@ if (problems.length) {
 }
 
 console.log(
-  `Illustrations OK — ${catalog.length} glyphs vendored, ${new Set(used).size} used by the starter decks.`,
+  `Illustrations OK — ${catalog.length} glyphs and ${flags.length} flags vendored, `
+  + `${new Set(used).size} used by the starter decks.`,
 );
