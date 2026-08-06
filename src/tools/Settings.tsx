@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button, Card, Icon, Select, Switch, playSound, setSoundEnabled } from 'lingo-ds';
 import { useChrome } from '../shell/chrome';
 import { useStore } from '../state/store';
+import { buildBackup, downloadBackup, parseBackup, restoreBackup, BackupError } from '../data/backup';
 import { WORKSPACES } from '../data/seed';
 import { APP_VERSION } from '../legalNotices';
 import { LegalDialog } from './LegalDialog';
@@ -19,9 +20,42 @@ const page: React.CSSProperties = {
 };
 
 export function Settings() {
-  const { prefs, setPrefs, reset, cards, decks } = useStore();
+  const { prefs, setPrefs, reset, reload, cards, decks } = useStore();
   const [legalOpen, setLegalOpen] = React.useState(false);
   const [faqOpen, setFaqOpen] = React.useState(false);
+  const fileInput = React.useRef<HTMLInputElement>(null);
+  const [status, setStatus] = React.useState<{ tone: 'ok' | 'bad'; text: string } | null>(null);
+
+  const doExport = async () => {
+    try {
+      downloadBackup(await buildBackup());
+      setStatus({ tone: 'ok', text: 'Backup saved to your downloads.' });
+    } catch {
+      setStatus({ tone: 'bad', text: 'Could not build the backup.' });
+    }
+  };
+
+  const doImport = async (file: File) => {
+    try {
+      const counts = await restoreBackup(parseBackup(await file.text()));
+      await reload();
+      const added = counts.decks + counts.cards + counts.reviews;
+      const skipped = counts.skipped.decks + counts.skipped.cards + counts.skipped.reviews;
+      setStatus({
+        tone: 'ok',
+        text: added === 0 && skipped > 0
+          ? 'Everything in that backup is already here — nothing changed.'
+          : `Restored ${counts.decks} decks and ${counts.cards} cards`
+            + `${skipped > 0 ? `. ${skipped} records were already here and were left alone.` : '.'}`,
+      });
+    } catch (err) {
+      // BackupError messages are written for the reader; anything else is not.
+      setStatus({
+        tone: 'bad',
+        text: err instanceof BackupError ? err.message : 'That file could not be read.',
+      });
+    }
+  };
 
   useChrome({ title: 'Settings', titleIcon: 'settings' });
 
@@ -80,7 +114,44 @@ export function Settings() {
 
         <Card title="Local data" subtitle={`${decks.length} decks · ${cards.length} cards in this workspace`}>
           <p style={{ margin: 0, fontSize: 'var(--fs-13)', color: 'var(--text-muted)', lineHeight: 'var(--lh-relaxed)' }}>
-            Resetting clears every deck, card and review in this browser and restores the starter decks.
+            A backup is a single JSON file holding every deck, card and review, across all four
+            workspaces. Restoring adds back anything missing and leaves what is already here
+            alone, so importing the same file twice is harmless.
+          </p>
+          <div style={{ display: 'flex', gap: 'var(--gap-inline)', flexWrap: 'wrap' }}>
+            <Button variant="secondary" size="sm" iconLeft={<Icon name="download" size={15} />} onClick={doExport}>
+              Export a backup
+            </Button>
+            <Button variant="ghost" size="sm" iconLeft={<Icon name="upload" size={15} />} onClick={() => fileInput.current?.click()}>
+              Restore from a backup
+            </Button>
+            {/* The input is the only way to get a file, but it is not a control
+                anyone should see — the two buttons above are. */}
+            <input
+              ref={fileInput}
+              type="file"
+              accept="application/json,.json"
+              hidden
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                // Cleared so choosing the same file twice fires change again.
+                e.target.value = '';
+                if (file) void doImport(file);
+              }}
+            />
+          </div>
+
+          {status && (
+            <p style={{ margin: 0, fontSize: 'var(--fs-13)', lineHeight: 'var(--lh-relaxed)', color: status.tone === 'bad' ? 'var(--danger-text, var(--danger))' : 'var(--text-muted)' }}>
+              {status.text}
+            </p>
+          )}
+
+          {/* The warning sits with the button rather than at the top of the card,
+              where it now reads as a caption to Export. */}
+          <p style={{ margin: 0, fontSize: 'var(--fs-13)', color: 'var(--text-muted)', lineHeight: 'var(--lh-relaxed)' }}>
+            Resetting clears every deck, card and review in this browser and restores the
+            starter decks. Export first if you want any of it back.
           </p>
           <div>
             <Button

@@ -18,11 +18,11 @@ const ENTRIES: Entry[] = [
   },
   {
     q: 'What happens if I clear my browser data?',
-    a: 'Everything goes: decks, cards and review history. There is no copy anywhere else and no way to recover it. Settings → Reset local data does the same thing deliberately.',
+    a: 'Everything goes: decks, cards and review history. Nothing is stored anywhere else, so the only way back is a backup you exported beforehand — Settings → Local data. Reset local data does the same thing deliberately.',
   },
   {
     q: 'Can I export or back up my decks?',
-    a: 'Not yet. It is the most obvious gap in a tool that keeps everything locally, and it is the next thing worth building.',
+    a: 'Yes — Settings → Local data → Export a backup writes one JSON file holding every deck, card and review across all four workspaces. Restoring from it adds back whatever is missing and leaves anything already there alone, so importing the same file twice is harmless.',
   },
   {
     q: 'Does it work offline?',

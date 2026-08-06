@@ -15,7 +15,7 @@ tier; your cards live in IndexedDB on your own machine.
 
 | Tool | State |
 | --- | --- |
-| **Flashcards** | Built — decks, card CRUD, and a review session on a local SM-2 scheduler |
+| **Flashcards** | Built — decks, card CRUD, a review session on a local SM-2 scheduler, and JSON backup/restore |
 | Etymology Explorer | Designed, empty state only |
 | Conjugation Drill | Designed, empty state only |
 | Phrasebook | Designed, empty state only |
