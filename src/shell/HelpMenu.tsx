@@ -3,16 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Icon, IconButton, Tooltip } from 'lingo-ds';
 import { FaqDialog } from '../tools/FaqDialog';
 import { ShortcutsDialog } from '../tools/ShortcutsDialog';
+import { MenuItem } from './MenuItem';
 
 type Panel = 'faq' | 'shortcuts' | null;
-
-const item: React.CSSProperties = {
-  display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-  height: 38, padding: '0 10px', border: 'none', cursor: 'pointer',
-  background: 'transparent', color: 'var(--text-strong)',
-  fontFamily: 'var(--font-ui)', fontSize: 'var(--fs-14)', fontWeight: 700, textAlign: 'left',
-  borderRadius: 'var(--radius-md)',
-};
 
 /**
  * The three things a reader might want that are not part of doing the work:
@@ -66,18 +59,18 @@ export function HelpMenu() {
               display: 'flex', flexDirection: 'column', gap: 2,
             }}
           >
-            <button type="button" role="menuitem" style={item} onClick={choose(() => navigate('/'))}>
-              <Icon name="house" size={16} style={{ color: 'var(--text-muted)' }} />
+            <MenuItem onClick={choose(() => navigate('/'))}>
+              <Icon name="house" size={16} style={{ color: 'var(--text-muted)', flex: 'none' }} />
               About Lingo Toolbox
-            </button>
-            <button type="button" role="menuitem" style={item} onClick={choose(() => setPanel('faq'))}>
-              <Icon name="circle-question-mark" size={16} style={{ color: 'var(--text-muted)' }} />
+            </MenuItem>
+            <MenuItem onClick={choose(() => setPanel('faq'))}>
+              <Icon name="circle-question-mark" size={16} style={{ color: 'var(--text-muted)', flex: 'none' }} />
               FAQ
-            </button>
-            <button type="button" role="menuitem" style={item} onClick={choose(() => setPanel('shortcuts'))}>
-              <Icon name="text-cursor-input" size={16} style={{ color: 'var(--text-muted)' }} />
+            </MenuItem>
+            <MenuItem onClick={choose(() => setPanel('shortcuts'))}>
+              <Icon name="text-cursor-input" size={16} style={{ color: 'var(--text-muted)', flex: 'none' }} />
               Keyboard shortcuts
-            </button>
+            </MenuItem>
           </div>
         )}
       </div>
