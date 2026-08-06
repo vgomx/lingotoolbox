@@ -180,7 +180,12 @@ export function AppShell() {
           } : null),
         }}
       >
-        <Link to="/" title="Lingo Toolbox home" style={{ display: 'block' }}>
+        {/* The app's home, not the marketing page. A logo at the top of a
+            product's own nav is the way back to its start, and the rail's Home
+            tile a few pixels below already means exactly that — two adjacent
+            marks that looked identical and went to different places. Getting to
+            the marketing site is the About button's job. */}
+        <Link to="/app" title="Home" style={{ display: 'block' }}>
           <img src={stackUrl} alt="Lingo Toolbox" style={{ height: 63, width: 44 }} />
         </Link>
         <span style={{ width: 32, height: 2, background: 'var(--border)', borderRadius: 2, margin: '4px 0 6px' }} />

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { Link } from 'react-router-dom';
 import { Button, Card, Icon, Select, Switch, playSound, setSoundEnabled } from 'lingo-ds';
 import { useChrome } from '../shell/chrome';
 import { useStore } from '../state/store';
@@ -120,8 +121,14 @@ export function Settings() {
           </p>
 
           <div style={{ display: 'flex', gap: 'var(--gap-inline)', flexWrap: 'wrap' }}>
+            {/* The rail's logo used to lead here and now goes to Home, and the
+                top bar's About button is hidden on a phone — without this there
+                would be no way back to the marketing page on mobile at all. */}
+            <Link to="/" style={{ textDecoration: 'none' }}>
+              <Button variant="secondary" size="sm" iconLeft={<Icon name="circle-question-mark" size={15} />}>About Lingo Toolbox</Button>
+            </Link>
             <a href="https://github.com/vgomx/lingotoolbox" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-              <Button variant="secondary" size="sm" iconLeft={<Icon name="git-branch" size={15} />}>Source</Button>
+              <Button variant="ghost" size="sm" iconLeft={<Icon name="git-branch" size={15} />}>Source</Button>
             </a>
             <a href="https://vgomx.github.io/lingo-ds/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
               <Button variant="ghost" size="sm">Design system</Button>
