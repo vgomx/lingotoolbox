@@ -25,7 +25,12 @@ export default defineConfig({
           'A set of tools for practising a language you are already learning — flashcards with spaced repetition, and more to come.',
         // Relative so the manifest works both at the root and under the
         // /lingotoolbox/ subpath GitHub Pages serves from.
-        start_url: '.',
+        //
+        // 'app', not '.': someone who installed this to their home screen has
+        // long since read the pitch, and an installed icon that opens a
+        // marketing page is not the app they installed. The scope stays at the
+        // root so the landing page is still inside the PWA.
+        start_url: 'app',
         scope: '.',
         display: 'standalone',
         orientation: 'any',

@@ -4,7 +4,15 @@ export interface Workspace {
   code: LanguageCode;
   /** Written out in full everywhere — a flag is never the only identifier. */
   name: string;
-  flag: string;
+  /**
+   * OpenMoji codepoint for the flag, resolved through `illustrations.ts`.
+   *
+   * Not a character: Windows ships no glyphs for regional indicator pairs, so a
+   * native flag emoji renders there as the two letters in a box. A vendored SVG
+   * looks the same everywhere, and it also retires the one exception the design
+   * system made to "no emoji as UI".
+   */
+  flagHex: string;
   color: string;
 }
 

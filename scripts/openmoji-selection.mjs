@@ -75,3 +75,18 @@ export const EXTRA = [
   // Symbols that read as pictures rather than as UI chrome.
   '💯', '❗', '❓', '✅', '❌', '⚠️', '🚫', '♻️', '🔔', '💤', '💬', '💭',
 ];
+
+/**
+ * Workspace flags, vendored for the language picker rather than for cards.
+ *
+ * Not part of EXTRA, and kept out of the illustration catalogue entirely: these
+ * are chrome, not something to put on a flashcard. Offering a country flag in a
+ * picker meant for "a picture of the word" invites it onto cards where it would
+ * stand for a language, or a people, and neither is what a vocabulary card is
+ * about.
+ *
+ * They are here at all because native flag emoji do not render on Windows — the
+ * OS ships no glyphs for regional indicator pairs, so a reader there sees "GB"
+ * in a box where every other platform shows a flag.
+ */
+export const FLAGS = ['🇬🇧', '🇵🇹', '🇳🇱', '🇪🇸'];

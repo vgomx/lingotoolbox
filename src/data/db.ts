@@ -230,6 +230,80 @@ export async function reviewsPerDay(days = 7, now: number = Date.now()): Promise
   return Array.from({ length: days }, (_, i) => counts.get(dayKey(from + i * DAY_MS)) ?? 0);
 }
 
+// ── Whole-database access, for backup and restore ──────────────────
+
+/**
+ * Everything, across every language workspace.
+ *
+ * The listing functions above all filter by language because every screen shows
+ * one workspace at a time. A backup is the one thing that must not: exporting
+ * only the workspace you happen to be looking at would produce a file that looks
+ * complete and quietly isn't.
+ */
+export async function exportAll(): Promise<{ decks: Deck[]; cards: Card[]; reviews: ReviewLogEntry[] }> {
+  const db = await getDB();
+  const [decks, cards, reviews] = await Promise.all([
+    db.getAll('decks'),
+    db.getAll('cards'),
+    db.getAll('reviews'),
+  ]);
+  return { decks, cards, reviews };
+}
+
+export interface ImportCounts {
+  decks: number; cards: number; reviews: number;
+  skipped: { decks: number; cards: number; reviews: number };
+}
+
+/**
+ * Adds records that are not already here, and leaves the ones that are.
+ *
+ * Never overwrites: an id that already exists is skipped and counted. Restoring
+ * into an empty database — the case this exists for, after clearing browser data
+ * — puts everything back exactly. Restoring into a database that has moved on
+ * cannot silently undo the reviews done since, and merging a file twice does
+ * nothing the second time.
+ *
+ * One transaction across all three stores, so a failure part-way leaves the
+ * database as it was rather than half-restored.
+ */
+export async function importAll(
+  data: { decks: Deck[]; cards: Card[]; reviews: ReviewLogEntry[] },
+): Promise<ImportCounts> {
+  const db = await getDB();
+  const existing = await exportAll();
+  const has = {
+    decks: new Set(existing.decks.map((d) => d.id)),
+    cards: new Set(existing.cards.map((c) => c.id)),
+    reviews: new Set(existing.reviews.map((r) => r.id)),
+  };
+
+  const fresh = {
+    decks: data.decks.filter((d) => !has.decks.has(d.id)),
+    cards: data.cards.filter((c) => !has.cards.has(c.id)),
+    reviews: data.reviews.filter((r) => !has.reviews.has(r.id)),
+  };
+
+  const tx = db.transaction(['decks', 'cards', 'reviews'], 'readwrite');
+  await Promise.all([
+    ...fresh.decks.map((d) => tx.objectStore('decks').put(d)),
+    ...fresh.cards.map((c) => tx.objectStore('cards').put(c)),
+    ...fresh.reviews.map((r) => tx.objectStore('reviews').put(r)),
+    tx.done,
+  ]);
+
+  return {
+    decks: fresh.decks.length,
+    cards: fresh.cards.length,
+    reviews: fresh.reviews.length,
+    skipped: {
+      decks: data.decks.length - fresh.decks.length,
+      cards: data.cards.length - fresh.cards.length,
+      reviews: data.reviews.length - fresh.reviews.length,
+    },
+  };
+}
+
 // ── Prefs (localStorage — small, synchronous, read on every render) ──
 
 const DEFAULT_PREFS: Prefs = {

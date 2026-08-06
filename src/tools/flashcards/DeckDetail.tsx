@@ -58,6 +58,22 @@ export function DeckDetail() {
   };
   const close = () => setAdding(false);
 
+  // The Add-a-card tooltip has advertised "N" since the screen was built, and
+  // nothing listened for it. Same guards as the review keys: not while typing,
+  // and not when a modifier is held, so ⌘N still opens a browser window.
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'n' && e.key !== 'N') return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      e.preventDefault();
+      openAdd();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
   const submit = async () => {
     if (!front.trim() || !back.trim()) return;
     const now = Date.now();
@@ -227,6 +243,7 @@ export function DeckDetail() {
                       label="Delete card"
                       size="sm"
                       variant="danger"
+                      sound={false}
                       onClick={() => {
                         if (!window.confirm(`Delete "${card.front}"?`)) return;
                         playSound('cardRemoved');
@@ -252,7 +269,7 @@ export function DeckDetail() {
         footer={
           <>
             <Button variant="ghost" onClick={close}>Cancel</Button>
-            <Button onClick={submit} disabled={!front.trim() || !back.trim()}>
+            <Button sound={false} onClick={submit} disabled={!front.trim() || !back.trim()}>
               {editing ? 'Save card' : 'Add card'}
             </Button>
           </>

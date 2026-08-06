@@ -248,7 +248,7 @@ export function ReviewSession() {
             onGrade={(key) => void answer(key as Grade)}
           />
         ) : (
-          <Button block size="lg" variant="secondary" onClick={() => { playSound('flip'); setFlipped(true); }}>
+          <Button block size="lg" variant="secondary" sound={false} onClick={() => { playSound('flip'); setFlipped(true); }}>
             Show answer
           </Button>
         )}

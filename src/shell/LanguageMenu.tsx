@@ -2,6 +2,8 @@ import * as React from 'react';
 import { Badge, Icon } from 'lingo-ds';
 import { useStore } from '../state/store';
 import { WORKSPACES } from '../data/seed';
+import { flagUrl } from '../data/illustrations';
+import { MenuItem } from './MenuItem';
 
 /**
  * The language picker, top right of the content pane. Flags never appear alone —
@@ -44,7 +46,9 @@ export function LanguageMenu({ compact = false }: LanguageMenuProps) {
           cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: 'var(--fs-13)', fontWeight: 800,
         }}
       >
-        <span style={{ fontSize: 18, lineHeight: 1 }}>{workspace.flag}</span>
+        {/* alt="" — the language name sits right beside it, so a screen reader
+            announcing "flag: United Kingdom, English" would say it twice. */}
+        <img src={flagUrl(workspace.flagHex)} alt="" width={18} height={18} style={{ display: 'block', flex: 'none' }} />
         {workspace.name}
         {!compact && <Icon name="chevron-down" size={14} style={{ color: 'var(--text-muted)' }} />}
       </button>
@@ -67,22 +71,15 @@ export function LanguageMenu({ compact = false }: LanguageMenuProps) {
             Language track
           </span>
           {WORKSPACES.map((w) => (
-            <button
+            <MenuItem
               key={w.code}
-              type="button"
+              selected={w.code === workspace.code}
               onClick={() => { setLanguage(w.code); setOpen(false); }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 10, height: 38, padding: '0 8px',
-                borderRadius: 'var(--radius-md)', border: 'none', cursor: 'pointer',
-                background: w.code === workspace.code ? 'var(--surface-card)' : 'transparent',
-                color: 'var(--text-strong)', fontFamily: 'var(--font-ui)',
-                fontSize: 'var(--fs-14)', fontWeight: 800, textAlign: 'left',
-              }}
             >
-              <span style={{ fontSize: 20, lineHeight: 1 }}>{w.flag}</span>
-              <span style={{ flex: 1 }}>{w.name}</span>
-              {w.code === workspace.code && <Icon name="check" size={16} style={{ color: w.color }} />}
-            </button>
+              <img src={flagUrl(w.flagHex)} alt="" width={20} height={20} style={{ display: 'block', flex: 'none' }} />
+              <span style={{ flex: 1, minWidth: 0 }}>{w.name}</span>
+              {w.code === workspace.code && <Icon name="check" size={16} style={{ color: w.color, flex: 'none' }} />}
+            </MenuItem>
           ))}
           <span style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
           {/* Sits under the list because this is where someone looks for a

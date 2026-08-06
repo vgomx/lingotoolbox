@@ -15,7 +15,7 @@ tier; your cards live in IndexedDB on your own machine.
 
 | Tool | State |
 | --- | --- |
-| **Flashcards** | Built — decks, card CRUD, and a review session on a local SM-2 scheduler |
+| **Flashcards** | Built — decks, card CRUD, a review session on a local SM-2 scheduler, and JSON backup/restore |
 | Etymology Explorer | Designed, empty state only |
 | Conjugation Drill | Designed, empty state only |
 | Phrasebook | Designed, empty state only |
@@ -23,6 +23,14 @@ tier; your cards live in IndexedDB on your own machine.
 
 The marketing landing page at `/` and the dark product shell at `/app` are both
 complete, as is the light/dark theme parity across the whole shell.
+
+`/` shows the landing page to a first-time visitor and redirects to `/app` for
+anyone who has used the app before — arriving is the case worth shortcutting,
+while *clicking* the marketing link from inside the app is a deliberate request
+for that page and always honoured. The two are told apart by React Router's
+`location.key`, which is `default` only on the initial entry. The flag is set on
+reaching the app, not on seeing the landing page: someone who bounced off the
+marketing site has decided nothing.
 
 ## Running it
 

@@ -572,3 +572,35 @@ export const ILLUSTRATIONS: Illustration[] = [
   {"hex":"2705","file":"check-mark-button-2705.svg","name":"check mark button","group":"symbols","keywords":["✓","white","right"]},
   {"hex":"274C","file":"cross-mark-274C.svg","name":"cross mark","group":"symbols","keywords":["cancel","multiplication","multiply","x","×","wrong"]},
 ];
+
+/** Workspace flags. Chrome, not card illustrations — kept out of the picker. */
+export const FLAGS: Illustration[] = [
+  {
+    "hex": "1F1EA-1F1F8",
+    "file": "flag-spain-1F1EA-1F1F8.svg",
+    "name": "flag: Spain",
+    "group": "flags",
+    "keywords": []
+  },
+  {
+    "hex": "1F1EC-1F1E7",
+    "file": "flag-united-kingdom-1F1EC-1F1E7.svg",
+    "name": "flag: United Kingdom",
+    "group": "flags",
+    "keywords": []
+  },
+  {
+    "hex": "1F1F3-1F1F1",
+    "file": "flag-netherlands-1F1F3-1F1F1.svg",
+    "name": "flag: Netherlands",
+    "group": "flags",
+    "keywords": []
+  },
+  {
+    "hex": "1F1F5-1F1F9",
+    "file": "flag-portugal-1F1F5-1F1F9.svg",
+    "name": "flag: Portugal",
+    "group": "flags",
+    "keywords": []
+  }
+];

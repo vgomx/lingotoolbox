@@ -5,6 +5,8 @@ import { useStore } from '../state/store';
 import { TOOLS } from '../data/seed';
 import { LanguageMenu } from './LanguageMenu';
 import { ChromeProvider, useChromeState } from './chrome';
+import { markAppVisited } from '../data/visit';
+import { HelpMenu } from './HelpMenu';
 import stackUrl from 'lingo-ds/assets/logo/stack-violet.svg';
 
 const styles: Record<string, React.CSSProperties> = {
@@ -24,11 +26,12 @@ const styles: Record<string, React.CSSProperties> = {
   sidebarInner: { width: 'var(--sidebar-width)', height: '100%', display: 'flex', flexDirection: 'column' },
   sidebarHead: { height: 'var(--topbar-height)', display: 'flex', alignItems: 'center', padding: '0 8px', boxShadow: 'var(--shadow-xs)', flex: 'none' },
   sectionLabel: { fontSize: 'var(--fs-11)', fontWeight: 800, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-muted)', padding: '0 8px', marginBottom: 4 },
-  // --surface-rail, not a raw --ink-900: this bar is a dark island by design, and
-  // the raw step kept it dark in light mode while its text followed the light
-  // theme — ink on ink at 3.15. Pairing the token with data-theme="dark" below
-  // makes the foregrounds resolve against the surface they actually sit on.
-  userBar: { height: 56, flex: 'none', background: 'var(--surface-rail)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: '0 8px 0 10px' },
+  // --surface-sunken: one step below whatever the sidebar is, in either theme —
+  // ink-900 under the dark sidebar's ink-800, paper-100 under the light one's
+  // paper-50. It reads as part of the sidebar rather than as a slab of the rail
+  // that wandered over, which is what --surface-rail made of it in light mode.
+  // Following the theme also means it no longer needs to declare itself dark.
+  userBar: { height: 56, flex: 'none', background: 'var(--surface-sunken)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: '0 8px 0 10px' },
   main: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' },
   topbar: { height: 'var(--topbar-height)', flex: 'none', display: 'flex', alignItems: 'center', gap: 'var(--space-4)', padding: '0 16px', boxShadow: 'var(--shadow-xs)', position: 'sticky', top: 0, zIndex: 20, backdropFilter: 'var(--blur-overlay)', background: 'color-mix(in oklab, var(--surface-app) 82%, transparent)' },
   // minWidth:0 so the title can shrink inside the flex row, and nowrap so a long
@@ -74,6 +77,11 @@ export function AppShell() {
   // *is* the deck list, and the breadcrumb already goes there, so a second copy
   // of it in a drawer would be the same list twice.
   const showSidebar = sidebar && !isMobile;
+
+  // Reaching the shell is what counts as having used the app, and it is what
+  // makes `/` skip the landing page next time. Marked here rather than on the
+  // landing page because bouncing off the marketing site decides nothing.
+  React.useEffect(() => { markAppVisited(); }, []);
 
   // Closing on navigation is the whole contract of a drawer: it covers the thing
   // you are trying to reach, so following a link inside it has to put it away.
@@ -174,7 +182,12 @@ export function AppShell() {
           } : null),
         }}
       >
-        <Link to="/" title="Lingo Toolbox home" style={{ display: 'block' }}>
+        {/* The app's home, not the marketing page. A logo at the top of a
+            product's own nav is the way back to its start, and the rail's Home
+            tile a few pixels below already means exactly that — two adjacent
+            marks that looked identical and went to different places. Getting to
+            the marketing site is the About button's job. */}
+        <Link to="/app" title="Home" style={{ display: 'block' }}>
           <img src={stackUrl} alt="Lingo Toolbox" style={{ height: 63, width: 44 }} />
         </Link>
         <span style={{ width: 32, height: 2, background: 'var(--border)', borderRadius: 2, margin: '4px 0 6px' }} />
@@ -194,10 +207,16 @@ export function AppShell() {
               />
             </Tooltip>
             {!t.released && (
-              // Sized down from the Badge default so it sits under the rail label
-              // without outweighing it — at --fs-9, the scale's floor, added for
-              // exactly this kind of micro-label on narrow chrome.
-              <Badge tone="neutral" style={{ height: 12, padding: '0 4px', fontSize: 'var(--fs-9)' }}>
+              // Sized well below the Badge default: at 36.8px it was as wide as
+              // the 38px tile above it, so the marker read as loud as the tool it
+              // was qualifying. --fs-8 is the scale's floor, added for exactly
+              // this kind of micro-label on narrow chrome, and the box is pulled
+              // in to match. Tighter tracking too — --ls-wide exists to open up
+              // caps for reading, and this is a stamp, not a word.
+              <Badge
+                tone="neutral"
+                style={{ height: 11, padding: '0 3px', fontSize: 'var(--fs-8)', letterSpacing: 'var(--ls-normal)' }}
+              >
                 Soon
               </Badge>
             )}
@@ -281,7 +300,7 @@ export function AppShell() {
         {/* No accounts exist, so this bar carries what is actually true about the
             data rather than a user identity — and not the workspace name, which
             the picker owns. */}
-        <div style={styles.userBar} data-theme="dark">
+        <div style={styles.userBar}>
           <span style={{ flex: 1, minWidth: 0, fontSize: 'var(--fs-12)', fontWeight: 600, color: 'var(--text-muted)', lineHeight: 'var(--lh-normal)' }}>
             {decks.length} {decks.length === 1 ? 'deck' : 'decks'} · stored in this browser
           </span>
@@ -333,15 +352,12 @@ export function AppShell() {
               on Home's hero anyway, and the marketing link lives in the rail's
               logo, which the menu opens. */}
           {streakInTopBar && !isMobile && <StreakPill days={streak} active={streak > 0} size="sm" />}
-          {!isMobile && (
-            <Tooltip label="Marketing site">
-              <NavLink to="/" style={{ display: 'grid' }} aria-label="Marketing site">
-                <IconButton label="About Lingo Toolbox">
-                  <Icon name="circle-question-mark" size={18} />
-                </IconButton>
-              </NavLink>
-            </Tooltip>
-          )}
+          {/* Three things that are not part of doing the work — what this is, how
+              it behaves, what the keys do — behind one question mark rather than
+              three competing glyphs. Still off on a phone, where the bar has room
+              for the title and about two controls; Settings carries About and FAQ
+              for that case, and shortcuts do not apply without a keyboard. */}
+          {!isMobile && <HelpMenu />}
         </header>
         <div style={styles.body}><Outlet /></div>
       </main>

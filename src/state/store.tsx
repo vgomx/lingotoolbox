@@ -33,6 +33,8 @@ interface StoreValue {
   saveDeck: (deck: Deck) => Promise<void>;
   removeDeck: (id: string) => Promise<void>;
   reset: () => Promise<void>;
+  /** Re-reads the database into the store — used after a restore. */
+  reload: () => Promise<void>;
 }
 
 const StoreContext = React.createContext<StoreValue | null>(null);
@@ -166,6 +168,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setCards((cs) => cs.filter((c) => c.deckId !== id));
   }, []);
 
+  const reload = React.useCallback(async () => {
+    await refresh(prefs.language);
+  }, [prefs.language, refresh]);
+
   const reset = React.useCallback(async () => {
     await db.resetAll();
     await db.ensureSeeded();
@@ -194,6 +200,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     saveDeck,
     removeDeck,
     reset,
+    reload,
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
