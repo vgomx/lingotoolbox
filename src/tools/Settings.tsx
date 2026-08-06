@@ -6,6 +6,7 @@ import { useStore } from '../state/store';
 import { WORKSPACES } from '../data/seed';
 import { APP_VERSION } from '../legalNotices';
 import { LegalDialog } from './LegalDialog';
+import { FaqDialog } from './FaqDialog';
 import markUrl from 'lingo-ds/assets/logo/mark-violet.svg';
 
 const page: React.CSSProperties = {
@@ -20,6 +21,7 @@ const page: React.CSSProperties = {
 export function Settings() {
   const { prefs, setPrefs, reset, cards, decks } = useStore();
   const [legalOpen, setLegalOpen] = React.useState(false);
+  const [faqOpen, setFaqOpen] = React.useState(false);
 
   useChrome({ title: 'Settings', titleIcon: 'settings' });
 
@@ -121,12 +123,15 @@ export function Settings() {
           </p>
 
           <div style={{ display: 'flex', gap: 'var(--gap-inline)', flexWrap: 'wrap' }}>
-            {/* The rail's logo used to lead here and now goes to Home, and the
-                top bar's About button is hidden on a phone — without this there
-                would be no way back to the marketing page on mobile at all. */}
+            {/* The help menu that carries these lives in the top bar, which is
+                hidden on a phone — so both of its reachable entries are repeated
+                here. Shortcuts are not: there is no keyboard to shortcut. */}
             <Link to="/" style={{ textDecoration: 'none' }}>
-              <Button variant="secondary" size="sm" iconLeft={<Icon name="circle-question-mark" size={15} />}>About Lingo Toolbox</Button>
+              <Button variant="secondary" size="sm" iconLeft={<Icon name="house" size={15} />}>About Lingo Toolbox</Button>
             </Link>
+            <Button variant="ghost" size="sm" iconLeft={<Icon name="circle-question-mark" size={15} />} onClick={() => setFaqOpen(true)}>
+              FAQ
+            </Button>
             <a href="https://github.com/vgomx/lingotoolbox" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
               <Button variant="ghost" size="sm" iconLeft={<Icon name="git-branch" size={15} />}>Source</Button>
             </a>
@@ -149,6 +154,7 @@ export function Settings() {
         </Card>
 
         <LegalDialog open={legalOpen} onClose={() => setLegalOpen(false)} />
+        <FaqDialog open={faqOpen} onClose={() => setFaqOpen(false)} />
       </div>
     </>
   );

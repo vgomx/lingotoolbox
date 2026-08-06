@@ -6,6 +6,7 @@ import { TOOLS } from '../data/seed';
 import { LanguageMenu } from './LanguageMenu';
 import { ChromeProvider, useChromeState } from './chrome';
 import { markAppVisited } from '../data/visit';
+import { HelpMenu } from './HelpMenu';
 import stackUrl from 'lingo-ds/assets/logo/stack-violet.svg';
 
 const styles: Record<string, React.CSSProperties> = {
@@ -351,15 +352,12 @@ export function AppShell() {
               on Home's hero anyway, and the marketing link lives in the rail's
               logo, which the menu opens. */}
           {streakInTopBar && !isMobile && <StreakPill days={streak} active={streak > 0} size="sm" />}
-          {!isMobile && (
-            <Tooltip label="Marketing site">
-              <NavLink to="/" style={{ display: 'grid' }} aria-label="Marketing site">
-                <IconButton label="About Lingo Toolbox">
-                  <Icon name="circle-question-mark" size={18} />
-                </IconButton>
-              </NavLink>
-            </Tooltip>
-          )}
+          {/* Three things that are not part of doing the work — what this is, how
+              it behaves, what the keys do — behind one question mark rather than
+              three competing glyphs. Still off on a phone, where the bar has room
+              for the title and about two controls; Settings carries About and FAQ
+              for that case, and shortcuts do not apply without a keyboard. */}
+          {!isMobile && <HelpMenu />}
         </header>
         <div style={styles.body}><Outlet /></div>
       </main>
