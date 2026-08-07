@@ -6,6 +6,7 @@ import { useStore } from '../../state/store';
 import * as db from '../../data/db';
 import { WORKSPACES } from '../../data/seed';
 import { EmptyTool } from '../EmptyTool';
+import { ConfirmDialog } from '../../shell/ConfirmDialog';
 import { formatDue } from '../../data/scheduler';
 import { START_EASE } from '../../data/scheduler';
 import { ILLUSTRATION_GROUPS, ILLUSTRATION_ITEMS, findIllustration, illustrationUrl } from '../../data/illustrations';
@@ -75,6 +76,13 @@ export function DeckDetail() {
   const [phonetic, setPhonetic] = React.useState('');
   const [illustration, setIllustration] = React.useState<string | null>(null);
   const [level, setLevel] = React.useState<CEFRLevel | ''>('');
+  // Renaming and the two deletions were window.prompt and window.confirm,
+  // which a browser is free not to implement — prompt threw and confirm
+  // answered "no" on the reader's behalf, so all three quietly did nothing.
+  const [renaming, setRenaming] = React.useState(false);
+  const [rename, setRename] = React.useState('');
+  const [deletingDeck, setDeletingDeck] = React.useState(false);
+  const [deletingCard, setDeletingCard] = React.useState<CardModel | null>(null);
 
   const openAdd = () => {
     setEditing(null); setFront(''); setBack(''); setPhonetic(''); setIllustration(null); setLevel(''); setAdding(true);
@@ -223,10 +231,7 @@ export function DeckDetail() {
               size={isMobile ? 'lg' : 'sm'}
               style={isMobile ? { flex: 1, minWidth: 0 } : undefined}
               iconLeft={<Icon name="pencil" size={15} />}
-              onClick={async () => {
-                const name = window.prompt('Rename deck', deck.name);
-                if (name?.trim()) await saveDeck({ ...deck, name: name.trim() });
-              }}
+              onClick={() => { setRename(deck.name); setRenaming(true); }}
             >
               Rename
             </Button>
@@ -235,11 +240,7 @@ export function DeckDetail() {
               size={isMobile ? 'lg' : 'sm'}
               style={isMobile ? { flex: 1, minWidth: 0 } : undefined}
               iconLeft={<Icon name="trash-2" size={15} />}
-              onClick={async () => {
-                if (!window.confirm(`Delete "${deck.name}" and its ${cards.length} cards? This cannot be undone.`)) return;
-                await removeDeck(deck.id);
-                navigate('/app/cards');
-              }}
+              onClick={() => setDeletingDeck(true)}
             >
               Delete deck
             </Button>
@@ -319,11 +320,7 @@ export function DeckDetail() {
                       size="sm"
                       variant="danger"
                       sound={false}
-                      onClick={() => {
-                        if (!window.confirm(`Delete "${card.front}"?`)) return;
-                        playSound('cardRemoved');
-                        void removeCard(card.id);
-                      }}
+                      onClick={() => setDeletingCard(card)}
                     >
                       <Icon name="trash-2" size={15} />
                     </IconButton>
@@ -334,6 +331,67 @@ export function DeckDetail() {
           </div>
         )}
       </div>
+
+      <Dialog
+        open={renaming}
+        onClose={() => setRenaming(false)}
+        title="Rename deck"
+        description="The name is only for you — nothing else refers to it."
+        width={420}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setRenaming(false)}>Cancel</Button>
+            <Button
+              sound={false}
+              disabled={!rename.trim()}
+              onClick={async () => {
+                await saveDeck({ ...deck, name: rename.trim() });
+                setRenaming(false);
+              }}
+            >
+              Save name
+            </Button>
+          </>
+        }
+      >
+        <div style={{ paddingBottom: 'var(--space-4)' }}>
+          <Input
+            label="Name"
+            value={rename}
+            onChange={(e) => setRename(e.target.value)}
+            onKeyDown={async (e) => {
+              if (e.key !== 'Enter' || !rename.trim()) return;
+              await saveDeck({ ...deck, name: rename.trim() });
+              setRenaming(false);
+            }}
+          />
+        </div>
+      </Dialog>
+
+      <ConfirmDialog
+        open={deletingDeck}
+        title={`Delete "${deck.name}"?`}
+        description={`Its ${cards.length} ${cards.length === 1 ? 'card' : 'cards'} go with it, along with everything the scheduler has learned about them. This cannot be undone.`}
+        confirmLabel="Delete deck"
+        onCancel={() => setDeletingDeck(false)}
+        onConfirm={async () => {
+          setDeletingDeck(false);
+          await removeDeck(deck.id);
+          navigate('/app/cards');
+        }}
+      />
+
+      <ConfirmDialog
+        open={!!deletingCard}
+        title={`Delete "${deletingCard?.front ?? ''}"?`}
+        description="The card and its review history go. This cannot be undone."
+        confirmLabel="Delete card"
+        onCancel={() => setDeletingCard(null)}
+        onConfirm={() => {
+          if (deletingCard) { playSound('cardRemoved'); void removeCard(deletingCard.id); }
+          setDeletingCard(null);
+        }}
+      />
 
       <Dialog
         open={adding}

@@ -389,4 +389,9 @@ export async function resetAll(): Promise<void> {
     tx.done,
   ]);
   localStorage.removeItem(PREFS_KEY);
+  // The latch below caches the fact that seeding has already happened, which
+  // emptying the database has just made untrue. Without this, the ensureSeeded()
+  // that follows a reset returns the resolved promise from boot without doing
+  // anything, and the starter decks the button promises never come back.
+  seeding = null;
 }

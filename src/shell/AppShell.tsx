@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Badge, Icon, IconButton, Input, SidebarItem, RailTile, StreakPill, Tooltip, useBreakpoint } from 'lingo-ds';
+import { Badge, Button, Dialog, Icon, IconButton, Input, SidebarItem, RailTile, StreakPill, Tooltip, useBreakpoint } from 'lingo-ds';
 import { useStore } from '../state/store';
 import { TOOLS } from '../data/seed';
 import { LanguageMenu } from './LanguageMenu';
@@ -130,18 +130,28 @@ export function AppShell() {
   const isMac = typeof navigator !== 'undefined' && /mac/i.test(navigator.platform || navigator.userAgent);
   const toggleShortcut = isMac ? '⌘B' : 'Ctrl+B';
 
+  /**
+   * Naming a new deck. A dialog rather than window.prompt, which throws outright
+   * in environments that decline to implement it — the button did nothing at
+   * all, and the error went nowhere because the handler was async.
+   */
+  const [naming, setNaming] = React.useState(false);
+  const [deckName, setDeckName] = React.useState('');
+
   const newDeck = async () => {
-    const name = window.prompt('Name the deck');
-    if (!name?.trim()) return;
+    const name = deckName.trim();
+    if (!name) return;
     const id = `deck-${Date.now().toString(36)}`;
     await saveDeck({
       id,
       language,
-      name: name.trim(),
+      name,
       accent: 'var(--tool-flashcards)',
       tags: [],
       createdAt: Date.now(),
     });
+    setNaming(false);
+    setDeckName('');
     navigate(`/app/cards/${id}`);
   };
 
@@ -245,7 +255,7 @@ export function AppShell() {
             <span>Decks</span>
             <button
               type="button"
-              onClick={newDeck}
+              onClick={() => { setDeckName(''); setNaming(true); }}
               aria-label="New deck"
               style={{ border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', padding: 0, display: 'grid' }}
             >
@@ -394,6 +404,31 @@ export function AppShell() {
           <Outlet />
         </div>
       </main>
+
+      <Dialog
+        open={naming}
+        onClose={() => setNaming(false)}
+        title="New deck"
+        description={`A deck holds words you are practising in ${workspace.name}.`}
+        width={420}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setNaming(false)}>Cancel</Button>
+            <Button sound={false} onClick={newDeck} disabled={!deckName.trim()}>Create deck</Button>
+          </>
+        }
+      >
+        <div style={{ paddingBottom: 'var(--space-4)' }}>
+          <Input
+            label="Name"
+            placeholder="Everyday phrases"
+            value={deckName}
+            onChange={(e) => setDeckName(e.target.value)}
+            // Enter submits, the way it would have in the prompt this replaces.
+            onKeyDown={(e) => { if (e.key === 'Enter' && deckName.trim()) void newDeck(); }}
+          />
+        </div>
+      </Dialog>
 
       {isMobile && <Dock />}
     </div>

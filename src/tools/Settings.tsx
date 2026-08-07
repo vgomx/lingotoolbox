@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { Button, Card, Icon, Select, Switch, playSound, setSoundEnabled } from 'lingo-ds';
 import { useChrome } from '../shell/chrome';
+import { ConfirmDialog } from '../shell/ConfirmDialog';
 import { useStore } from '../state/store';
 import { buildBackup, downloadBackup, parseBackup, restoreBackup, BackupError } from '../data/backup';
 import { WORKSPACES } from '../data/seed';
@@ -22,6 +23,7 @@ const page: React.CSSProperties = {
 export function Settings() {
   const { prefs, setPrefs, reset, reload, cards, decks } = useStore();
   const [legalOpen, setLegalOpen] = React.useState(false);
+  const [resetting, setResetting] = React.useState(false);
   const [faqOpen, setFaqOpen] = React.useState(false);
   const fileInput = React.useRef<HTMLInputElement>(null);
   const [status, setStatus] = React.useState<{ tone: 'ok' | 'bad'; text: string } | null>(null);
@@ -160,11 +162,7 @@ export function Settings() {
             <Button
               variant="danger"
               iconLeft={<Icon name="trash-2" size={16} />}
-              onClick={async () => {
-                if (window.confirm('Clear all local data and restore the starter decks? This cannot be undone.')) {
-                  await reset();
-                }
-              }}
+              onClick={() => setResetting(true)}
             >
               Reset local data
             </Button>
@@ -226,6 +224,15 @@ export function Settings() {
             </Button>
           </div>
         </Card>
+
+        <ConfirmDialog
+          open={resetting}
+          title="Reset local data?"
+          description="Every deck, card and review in this browser goes, and the starter decks come back. This cannot be undone — export first if you want any of it back."
+          confirmLabel="Reset everything"
+          onCancel={() => setResetting(false)}
+          onConfirm={async () => { setResetting(false); await reset(); }}
+        />
 
         <LegalDialog open={legalOpen} onClose={() => setLegalOpen(false)} />
         <FaqDialog open={faqOpen} onClose={() => setFaqOpen(false)} />
