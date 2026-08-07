@@ -203,29 +203,41 @@ export function DeckDetail() {
               </div>
             )}
           </div>
-          <Button
-            variant="ghost"
-            size={isMobile ? 'lg' : 'sm'}
-            iconLeft={<Icon name="pencil" size={15} />}
-            onClick={async () => {
-              const name = window.prompt('Rename deck', deck.name);
-              if (name?.trim()) await saveDeck({ ...deck, name: name.trim() });
-            }}
+          {/* Side by side on a phone rather than stacked. The header goes to a
+              column at this width so the title gets the full line, which sent
+              these two down it as well — two centred full-width rows spending
+              ~250px above the first card on the things you do least. `display:
+              contents` leaves the desktop row exactly as it was. */}
+          <div style={isMobile
+            ? { display: 'flex', gap: 'var(--gap-inline)' }
+            : { display: 'contents' }}
           >
-            Rename
-          </Button>
-          <Button
-            variant="ghost"
-            size={isMobile ? 'lg' : 'sm'}
-            iconLeft={<Icon name="trash-2" size={15} />}
-            onClick={async () => {
-              if (!window.confirm(`Delete "${deck.name}" and its ${cards.length} cards? This cannot be undone.`)) return;
-              await removeDeck(deck.id);
-              navigate('/app/cards');
-            }}
-          >
-            Delete deck
-          </Button>
+            <Button
+              variant="ghost"
+              size={isMobile ? 'lg' : 'sm'}
+              style={isMobile ? { flex: 1, minWidth: 0 } : undefined}
+              iconLeft={<Icon name="pencil" size={15} />}
+              onClick={async () => {
+                const name = window.prompt('Rename deck', deck.name);
+                if (name?.trim()) await saveDeck({ ...deck, name: name.trim() });
+              }}
+            >
+              Rename
+            </Button>
+            <Button
+              variant="ghost"
+              size={isMobile ? 'lg' : 'sm'}
+              style={isMobile ? { flex: 1, minWidth: 0 } : undefined}
+              iconLeft={<Icon name="trash-2" size={15} />}
+              onClick={async () => {
+                if (!window.confirm(`Delete "${deck.name}" and its ${cards.length} cards? This cannot be undone.`)) return;
+                await removeDeck(deck.id);
+                navigate('/app/cards');
+              }}
+            >
+              Delete deck
+            </Button>
+          </div>
         </header>
 
         {cards.length === 0 ? (

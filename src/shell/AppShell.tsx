@@ -15,7 +15,19 @@ const styles: Record<string, React.CSSProperties> = {
   // dvh, not vh: on a phone the URL bar is counted into vh, so a 100vh frame is
   // taller than the visible viewport and the bottom of every screen sits under
   // browser chrome until you scroll.
-  frame: { display: 'flex', height: '100dvh', background: 'var(--surface-app)', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' },
+  // The insets are applied here rather than on the top bar so everything inside
+  // inherits them, and because box-sizing is border-box the 100dvh frame gives
+  // the space up rather than growing past the screen. The strip they leave
+  // behind is the frame's own --surface-app, which is what the translucent iOS
+  // status bar sits over. Left and right are for landscape, where the notch
+  // takes a bite out of one side. All four are 0 on a desktop.
+  frame: {
+    display: 'flex', height: '100dvh', background: 'var(--surface-app)',
+    fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden',
+    paddingTop: 'env(safe-area-inset-top, 0px)',
+    paddingLeft: 'env(safe-area-inset-left, 0px)',
+    paddingRight: 'env(safe-area-inset-right, 0px)',
+  },
   // --space-5, not --space-2: a rail item is a stack of tile, label and — on the
   // unreleased tools — a "Soon" badge, whose internal gaps are 4px and 2px. At
   // --space-2 the space *between* items was also 4px, so a badge sat as close to

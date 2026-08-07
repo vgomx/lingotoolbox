@@ -69,7 +69,10 @@ export function Dock() {
           style={{
             position: 'fixed', left: 0, right: 0, zIndex: 46,
             bottom: `calc(${DOCK_HEIGHT}px + env(safe-area-inset-bottom, 0px))`,
-            padding: 8, display: 'flex', flexDirection: 'column', gap: 2,
+            padding: 8,
+            paddingLeft: 'calc(8px + env(safe-area-inset-left, 0px))',
+            paddingRight: 'calc(8px + env(safe-area-inset-right, 0px))',
+            display: 'flex', flexDirection: 'column', gap: 2,
             background: 'var(--surface-raised)',
             borderTop: '1px solid var(--border)',
             boxShadow: 'var(--shadow-xl)',
@@ -107,8 +110,13 @@ export function Dock() {
           background: 'var(--surface-rail)',
           boxShadow: '0 -1px 0 var(--border)',
           // The home indicator on a modern iPhone sits under the bar; without
-          // this the last few pixels of every tap target are behind it.
+          // this the last few pixels of every tap target are behind it. Fixed
+          // positioning is relative to the viewport, so the frame's insets do
+          // not apply here and the bar states all three itself — the sides
+          // matter in landscape, where the notch overlaps the end buttons.
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          paddingLeft: 'env(safe-area-inset-left, 0px)',
+          paddingRight: 'env(safe-area-inset-right, 0px)',
         }}
       >
         <button type="button" style={barItem(onHome)} aria-current={onHome || undefined} onClick={go('/app')}>
