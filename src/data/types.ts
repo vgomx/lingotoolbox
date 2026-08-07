@@ -47,6 +47,34 @@ export interface IllustrationGroup {
   label: string;
 }
 
+/**
+ * CEFR, in ascending order — and the order is the whole point of it being a list
+ * rather than a set. "A2 and below" is a comparison, which a tag cannot answer:
+ * a `string[]` can say whether it contains 'B1' but not that B1 sits above A2.
+ */
+export const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
+export type CEFRLevel = (typeof CEFR_LEVELS)[number];
+
+/** Narrows a loose string, for reading data written before the field existed. */
+export const asLevel = (v: unknown): CEFRLevel | undefined =>
+  (CEFR_LEVELS as readonly string[]).includes(v as string) ? (v as CEFRLevel) : undefined;
+
+/**
+ * The span a set of cards covers — "B1" when they agree, "A2–B2" when they do
+ * not. Undefined when none of them are graded, which is the honest answer for a
+ * deck someone wrote themselves rather than pretending it is A1.
+ *
+ * A deck does not carry a level of its own: "Everyday phrases" runs from A1 to
+ * B2, and a single badge on it would be a guess at an average nobody asked for.
+ */
+export function levelRange(cards: readonly { level?: CEFRLevel }[]): string | undefined {
+  const ranks = cards.map((c) => CEFR_LEVELS.indexOf(c.level as CEFRLevel)).filter((i) => i >= 0);
+  if (!ranks.length) return undefined;
+  const lo = Math.min(...ranks);
+  const hi = Math.max(...ranks);
+  return lo === hi ? CEFR_LEVELS[lo] : `${CEFR_LEVELS[lo]}–${CEFR_LEVELS[hi]}`;
+}
+
 /** Where a card sits in the scheduler's lifecycle. */
 export type CardState = 'new' | 'learning' | 'review' | 'relearning';
 
@@ -56,6 +84,17 @@ export interface Card {
   front: string;
   back: string;
   phonetic?: string;
+  /**
+   * Roughly how hard the word is, on the CEFR scale.
+   *
+   * Its own field rather than a member of `tags`, where it lived until now
+   * beside `verb` and `food`. Nothing could tell a level from a topic there, a
+   * typo made a new tag rather than an error, and the scale's order — the thing
+   * that makes "B1 and above" a question you can ask — was not expressed at all.
+   *
+   * Optional: a card someone writes themselves does not have to be graded.
+   */
+  level?: CEFRLevel;
   /**
    * OpenMoji codepoint, e.g. `1F436`. The codepoint rather than the filename, so
    * a renamed asset — or a revised OpenMoji annotation — cannot orphan the card.

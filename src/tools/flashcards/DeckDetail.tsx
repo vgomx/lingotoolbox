@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Badge, Button, Card, Dialog, Icon, IconButton, IllustrationPicker, Input, Tag, Tooltip, playSound, useIsMobile } from 'lingo-ds';
+import { Badge, Button, Card, Dialog, Icon, IconButton, IllustrationPicker, Input, Select, Tag, Tooltip, playSound, useIsMobile } from 'lingo-ds';
 import { TopRight, useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import * as db from '../../data/db';
@@ -9,7 +9,8 @@ import { EmptyTool } from '../EmptyTool';
 import { formatDue } from '../../data/scheduler';
 import { START_EASE } from '../../data/scheduler';
 import { ILLUSTRATION_GROUPS, ILLUSTRATION_ITEMS, findIllustration, illustrationUrl } from '../../data/illustrations';
-import type { Card as CardModel, Deck } from '../../data/types';
+import { CEFR_LEVELS, asLevel, levelRange } from '../../data/types';
+import type { CEFRLevel, Card as CardModel, Deck } from '../../data/types';
 
 const page: React.CSSProperties = {
   maxWidth: 'var(--content-max, 1120px)',
@@ -73,13 +74,14 @@ export function DeckDetail() {
   const [back, setBack] = React.useState('');
   const [phonetic, setPhonetic] = React.useState('');
   const [illustration, setIllustration] = React.useState<string | null>(null);
+  const [level, setLevel] = React.useState<CEFRLevel | ''>('');
 
   const openAdd = () => {
-    setEditing(null); setFront(''); setBack(''); setPhonetic(''); setIllustration(null); setAdding(true);
+    setEditing(null); setFront(''); setBack(''); setPhonetic(''); setIllustration(null); setLevel(''); setAdding(true);
   };
   const openEdit = (card: CardModel) => {
     setEditing(card); setFront(card.front); setBack(card.back); setPhonetic(card.phonetic ?? '');
-    setIllustration(card.illustration ?? null); setAdding(true);
+    setIllustration(card.illustration ?? null); setLevel(card.level ?? ''); setAdding(true);
   };
   const close = () => setAdding(false);
 
@@ -109,6 +111,7 @@ export function DeckDetail() {
         back: back.trim(),
         phonetic: phonetic.trim() || undefined,
         illustration: illustration ?? undefined,
+        level: level || undefined,
       });
     } else {
       await saveCard({
@@ -118,6 +121,7 @@ export function DeckDetail() {
         back: back.trim(),
         phonetic: phonetic.trim() || undefined,
         illustration: illustration ?? undefined,
+        level: level || undefined,
         tags: [],
         createdAt: now,
         state: 'new',
@@ -194,8 +198,13 @@ export function DeckDetail() {
             <h1 style={{ margin: '6px 0 0', fontFamily: 'var(--font-display)', fontSize: 'var(--fs-32)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.15 }}>
               {deck.name}
             </h1>
-            {deck.tags.length > 0 && (
+            {(levelRange(cards) || deck.tags.length > 0) && (
               <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+                {levelRange(cards) && (
+                  <Tag color="var(--text-muted)" style={{ fontFamily: 'var(--font-mono)' }}>
+                    {levelRange(cards)}
+                  </Tag>
+                )}
                 {deck.tags.map((t) => <Tag key={t} color={deck.accent}>{t}</Tag>)}
               </div>
             )}
@@ -283,6 +292,15 @@ export function DeckDetail() {
                     <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>{card.back}</span>
                   </div>
 
+                  {/* Beside the scheduler's state, not among the card's tags:
+                      it says something about the word rather than about where
+                      the word has got to. Mono and muted so a column of them
+                      reads as a scale. */}
+                  {!isMobile && (
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-11)', fontWeight: 700, color: 'var(--text-muted)', minWidth: 20, textAlign: 'right' }}>
+                      {card.level ?? ''}
+                    </span>
+                  )}
                   {!isMobile && <Badge tone={STATE_TONE[card.state]}>{card.state}</Badge>}
                   {!isMobile && (
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-11)', color: 'var(--text-muted)', minWidth: 44, textAlign: 'right' }}>
@@ -341,6 +359,15 @@ export function DeckDetail() {
             placeholder="/ɣəˈzɛləx/"
             value={phonetic}
             onChange={(e) => setPhonetic(e.target.value)}
+          />
+          {/* "Ungraded" rather than an empty first option: a card someone
+              wrote themselves does not have to carry a level, and the list
+              should say so instead of leaving a blank to be interpreted. */}
+          <Select
+            label="Level"
+            value={level}
+            options={[{ value: '', label: 'Ungraded' }, ...CEFR_LEVELS]}
+            onChange={(e) => setLevel(asLevel(e.target.value) ?? '')}
           />
           <IllustrationPicker
             label="Illustration"

@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Badge, Button, Card, Icon, IconButton, ProgressBar, Tag, useIsMobile } from 'lingo-ds';
 import { TopRight, useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
+import { levelRange } from '../../data/types';
 import { EmptyTool } from '../EmptyTool';
 
 const page: React.CSSProperties = {
@@ -101,8 +102,17 @@ export function DeckList() {
                       ] : undefined}
                       value={0}
                     />
-                    {deck.tags.length > 0 && (
+                    {(levelRange(cards) || deck.tags.length > 0) && (
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {/* The span its cards actually cover, worked out from
+                            them rather than stored on the deck — see
+                            levelRange. First and in the mono face, because it
+                            is a measurement and the rest are labels. */}
+                        {levelRange(cards) && (
+                          <Tag color="var(--text-muted)" style={{ fontFamily: 'var(--font-mono)' }}>
+                            {levelRange(cards)}
+                          </Tag>
+                        )}
                         {deck.tags.map((t) => <Tag key={t} color={deck.accent}>{t}</Tag>)}
                       </div>
                     )}

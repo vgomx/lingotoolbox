@@ -98,6 +98,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     (async () => {
       await db.ensureSeeded();
       if (cancelled) return;
+      // Before the first read, so nothing renders a level that is still a tag.
+      await db.migrateLevels();
+      if (cancelled) return;
       await refresh(prefs.language);
       if (!cancelled) setReady(true);
     })();
@@ -191,6 +194,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const reload = React.useCallback(async () => {
+    await db.migrateLevels();
     await refresh(prefs.language);
   }, [prefs.language, refresh]);
 
