@@ -36,6 +36,35 @@ export function Dock() {
   const { language } = useStore();
   const [moreOpen, setMoreOpen] = React.useState(false);
 
+  /**
+   * Re-runs layout on the bar a few times after launch.
+   *
+   * This is a hack and worth naming as one. On an installed iOS app the dock
+   * comes up pinned to a bottom that is not the screen's, and *any* interaction
+   * corrects it — which means the CSS is right and WebKit simply resolved it
+   * against a viewport it had not finished working out. Dragging the page is
+   * what people found; this does the same thing on their behalf, by writing a
+   * padding that differs by a hundredth of a pixel so the value genuinely
+   * changes and layout has to run again.
+   *
+   * Also on pageshow, which is what fires when a standalone app is resumed from
+   * the background rather than launched cold.
+   */
+  const [relayout, setRelayout] = React.useState(0);
+  React.useEffect(() => {
+    const bump = () => setRelayout((n) => n + 1);
+    const frame = requestAnimationFrame(bump);
+    const timers = [200, 600, 1200].map((ms) => setTimeout(bump, ms));
+    window.addEventListener('pageshow', bump);
+    window.addEventListener('orientationchange', bump);
+    return () => {
+      cancelAnimationFrame(frame);
+      timers.forEach(clearTimeout);
+      window.removeEventListener('pageshow', bump);
+      window.removeEventListener('orientationchange', bump);
+    };
+  }, []);
+
   const path = location.pathname;
   // /app/review belongs to Flashcards; it has no destination of its own.
   const onCards = path.startsWith('/app/cards') || path.startsWith('/app/review');
@@ -127,7 +156,9 @@ export function Dock() {
           // --dock-inset rather than the raw env(): in a browser that value is
           // the height of the browser's own toolbar, not the indicator. See the
           // note on it in app.css.
-          paddingBottom: 'var(--dock-inset)',
+          // The hundredth of a pixel is the relayout nudge above, not a design
+          // decision. It alternates so the computed value actually changes.
+          paddingBottom: relayout % 2 === 0 ? 'var(--dock-inset)' : 'calc(var(--dock-inset) + 0.01px)',
           paddingLeft: 'env(safe-area-inset-left, 0px)',
           paddingRight: 'env(safe-area-inset-right, 0px)',
         }}
