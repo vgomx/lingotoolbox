@@ -34,6 +34,7 @@ export function LanguageMenu({ variant }: LanguageMenuProps) {
   const { workspace, setLanguage, prefs } = useStore();
   const navigate = useNavigate();
   const [open, setOpen] = React.useState(false);
+  const [hovered, setHovered] = React.useState(false);
   const wrapRef = React.useRef<HTMLDivElement | null>(null);
   const menuRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -156,11 +157,24 @@ export function LanguageMenu({ variant }: LanguageMenuProps) {
           aria-label="Switch language"
           aria-haspopup
           aria-expanded={open}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+          onFocus={() => setHovered(true)}
+          onBlur={() => setHovered(false)}
           style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-            width: '100%', padding: '6px 2px', border: 'none', cursor: 'pointer',
+            // Inset from the rail's full 72px so the fill has an edge to sit
+            // inside. At width 100% it ran into both walls of the column and
+            // read as a band across it rather than as this control being lit.
+            width: 'calc(100% - 12px)', margin: '0 auto',
+            padding: '6px 2px', border: 'none', cursor: 'pointer',
             borderRadius: 'var(--radius-md)',
-            background: open ? 'var(--surface-raised)' : 'transparent',
+            // Same two axes as MenuItem: open is a state of the menu, hovered is
+            // a state of the pointer, and an open trigger still has to answer the
+            // cursor rather than freezing at its resting fill.
+            background: open
+              ? (hovered ? 'var(--surface-raised-hover)' : 'var(--surface-raised)')
+              : (hovered ? 'var(--surface-hover)' : 'transparent'),
             transition: 'var(--transition-control)',
           }}
         >
