@@ -477,8 +477,17 @@ export function AppShell() {
         </div>
       </Dialog>
 
-      {isMobile && <Dock />}
     </div>
+
+    {/* Outside the frame, deliberately.
+
+        The frame is height:100dvh with overflow:hidden. A fixed element is
+        supposed to resolve against the viewport wherever it sits, but on an
+        installed iOS app the dock was landing at the *frame's* bottom edge with
+        the body's own background showing below it — so the frame was both
+        shorter than the screen and, contrary to spec, deciding where the dock
+        went. Out here there is no ancestor left that could do either. */}
+    {isMobile && <Dock />}
     </ChromeProvider>
   );
 }
