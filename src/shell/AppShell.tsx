@@ -6,6 +6,7 @@ import { TOOLS } from '../data/seed';
 import { LanguageMenu } from './LanguageMenu';
 import { ChromeProvider, useChromeState } from './chrome';
 import { markAppVisited } from '../data/visit';
+import { flagUrl } from '../data/illustrations';
 import { HelpMenu } from './HelpMenu';
 import { Dock, DOCK_HEIGHT } from './Dock';
 import stackUrl from 'lingo-ds/assets/logo/stack-violet.svg';
@@ -68,12 +69,12 @@ const styles: Record<string, React.CSSProperties> = {
  */
 export function AppShell() {
   const { chrome, set } = useChromeState();
-  const { title, titleIcon, parent, sidebar, streakInTopBar, languageMenu } = chrome;
+  const { title, titleIcon, parent, sidebar, streakInTopBar } = chrome;
   // Callback ref rather than useRef: <TopRight> portals into this node, and a
   // ref object's mutation would not re-render the consumers waiting for it.
   const [topRightSlot, setTopRightSlot] = React.useState<HTMLElement | null>(null);
   const chromeValue = React.useMemo(() => ({ set, slot: topRightSlot }), [set, topRightSlot]);
-  const { decks, dueInDeck, streak, saveDeck, language, prefs, setPrefs } = useStore();
+  const { decks, dueInDeck, streak, saveDeck, language, prefs, setPrefs, workspace, switching } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
   const [search, setSearch] = React.useState('');
@@ -200,6 +201,7 @@ export function AppShell() {
         ))}
 
         <span style={{ flex: 1 }} />
+        <LanguageMenu variant="rail" />
         <Tooltip label="Settings" side="right">
           <IconButton label="Settings" size={isMobile ? 'lg' : 'md'} active={settingsActive} onClick={() => navigate('/app/settings')}>
             <Icon name="settings" size={20} />
@@ -291,6 +293,50 @@ export function AppShell() {
       </aside>
       )}
 
+      {switching && (
+        <div
+          // aria-live rather than a role: this is a status being announced, not
+          // a dialog to be dealt with, and nothing here can be interacted with.
+          role="status"
+          aria-live="polite"
+          style={{
+            position: 'fixed', inset: 0, zIndex: 60,
+            display: 'grid', placeItems: 'center', background: 'var(--surface-app)',
+            animation: 'lt-ws-in var(--dur-fast) var(--ease-out)',
+          }}
+        >
+          <style>
+            {'@keyframes lt-ws-in{from{opacity:0}to{opacity:1}}'
+              + '@keyframes lt-ws-mark{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:none}}'
+              + '@keyframes lt-ws-sweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}'}
+          </style>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-5)' }}>
+            <img
+              src={flagUrl(workspace.flagHex)}
+              alt=""
+              width={48}
+              height={48}
+              style={{ display: 'block', animation: 'lt-ws-mark var(--dur-base) var(--ease-out)' }}
+            />
+            <span style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--fs-15)', fontWeight: 800, color: 'var(--text-strong)' }}>
+              Loading {switching} workspace
+            </span>
+            {/* An indeterminate sweep, not a progress bar: there is no progress
+                to report, and a bar that fills would be describing work that
+                has already finished. */}
+            <span style={{ width: 120, height: 3, borderRadius: 2, background: 'var(--surface-raised)', overflow: 'hidden' }}>
+              <span
+                style={{
+                  display: 'block', width: '100%', height: '100%', borderRadius: 2,
+                  background: workspace.color,
+                  animation: 'lt-ws-sweep 620ms var(--ease-standard) infinite',
+                }}
+              />
+            </span>
+          </div>
+        </div>
+      )}
+
       <main style={styles.main}>
         <header style={styles.topbar}>
           {/* The rail carried the brand on desktop; on a phone there is no rail, so
@@ -330,7 +376,6 @@ export function AppShell() {
           {/* Filled by whichever screen renders <TopRight>; empty otherwise. */}
           <span ref={setTopRightSlot} style={{ display: 'contents' }} />
           <span style={{ width: 4 }} />
-          {languageMenu && <LanguageMenu compact={isMobile} />}
           {/* Both are secondary to the screen's own actions, and on a phone the
               top bar has room for the title and about two controls. The streak is
               on Home's hero anyway, and the marketing link lives in the rail's

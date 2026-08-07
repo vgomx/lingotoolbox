@@ -45,9 +45,6 @@ export function DeckDetail() {
     // Flashcards" — a link back to the page it claims you came from.
     parent: deck ? { label: 'Flashcards', to: '/app/cards' } : undefined,
     sidebar: true,
-    // This screen belongs to one workspace. Switching from here left the deck
-    // outside it and showed "Deck not found", which was not true.
-    languageMenu: false,
   });
 
   /**

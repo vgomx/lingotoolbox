@@ -2,7 +2,9 @@ import * as React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Badge, Icon, playSound } from 'lingo-ds';
 import { TOOLS } from '../data/seed';
+import { useStore } from '../state/store';
 import { MenuItem } from './MenuItem';
+import { LanguageMenu } from './LanguageMenu';
 
 /** Height of the bar itself, before the home-indicator inset is added under it. */
 export const DOCK_HEIGHT = 58;
@@ -31,6 +33,7 @@ const barItem = (active: boolean): React.CSSProperties => ({
 export function Dock() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { language } = useStore();
   const [moreOpen, setMoreOpen] = React.useState(false);
 
   const path = location.pathname;
@@ -40,7 +43,10 @@ export function Dock() {
   const secondary = TOOLS.filter((t) => !PRIMARY.includes(t.id as typeof PRIMARY[number]));
   const onSecondary = secondary.some((t) => path.startsWith(`/app/${t.path}`)) || path.startsWith('/app/settings');
 
-  React.useEffect(() => { setMoreOpen(false); }, [path]);
+  // On the language too, not only the path. Choosing a workspace from the sheet
+  // navigates Home — but from Home that is not a path change, so the sheet had
+  // nothing to close it and sat there over the workspace it had just switched.
+  React.useEffect(() => { setMoreOpen(false); }, [path, language]);
 
   React.useEffect(() => {
     if (!moreOpen) return undefined;
@@ -92,6 +98,10 @@ export function Dock() {
             </MenuItem>
           ))}
           <span style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
+          {/* Beside Settings, which is where it is on a desktop too — the rail
+              has no phone equivalent, and this sheet is what holds the controls
+              that belong to the app rather than to a screen. */}
+          <LanguageMenu variant="row" />
           <MenuItem selected={path.startsWith('/app/settings')} onClick={go('/app/settings')}>
             <Icon name="settings" size={18} style={{ color: 'var(--text-muted)', flex: 'none' }} />
             <span style={{ flex: 1, minWidth: 0 }}>Settings</span>

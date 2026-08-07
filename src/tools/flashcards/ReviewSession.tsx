@@ -131,7 +131,6 @@ export function ReviewSession() {
       ? { label: deck.name, to: `/app/cards/${deck.id}` }
       : { label: 'Flashcards', to: '/app/cards' },
     sidebar: true,
-    languageMenu: false,
   });
 
   if (!queue) {
