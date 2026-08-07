@@ -3,11 +3,13 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Badge, Button, Card, Dialog, Icon, IconButton, IllustrationPicker, Input, Tag, Tooltip, playSound, useIsMobile } from 'lingo-ds';
 import { TopRight, useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
+import * as db from '../../data/db';
+import { WORKSPACES } from '../../data/seed';
 import { EmptyTool } from '../EmptyTool';
 import { formatDue } from '../../data/scheduler';
 import { START_EASE } from '../../data/scheduler';
 import { ILLUSTRATION_GROUPS, ILLUSTRATION_ITEMS, findIllustration, illustrationUrl } from '../../data/illustrations';
-import type { Card as CardModel } from '../../data/types';
+import type { Card as CardModel, Deck } from '../../data/types';
 
 const page: React.CSSProperties = {
   maxWidth: 'var(--content-max, 1120px)',
@@ -25,7 +27,7 @@ const STATE_TONE = {
 export function DeckDetail() {
   const { deckId = '' } = useParams();
   const navigate = useNavigate();
-  const { decks, cardsInDeck, dueInDeck, saveCard, removeCard, removeDeck, saveDeck } = useStore();
+  const { ready, decks, language, setLanguage, cardsInDeck, dueInDeck, saveCard, removeCard, removeDeck, saveDeck } = useStore();
 
   const deck = decks.find((d) => d.id === deckId);
   const cards = cardsInDeck(deckId);
@@ -38,9 +40,35 @@ export function DeckDetail() {
   useChrome({
     title: deck?.name ?? 'Flashcards',
     titleIcon: 'layers',
-    parent: { label: 'Flashcards', to: '/app/cards' },
+    // No parent when there is no deck: the crumb is the path down to this
+    // screen, and with nothing here to be a child of it read "Flashcards ›
+    // Flashcards" — a link back to the page it claims you came from.
+    parent: deck ? { label: 'Flashcards', to: '/app/cards' } : undefined,
     sidebar: true,
+    // This screen belongs to one workspace. Switching from here left the deck
+    // outside it and showed "Deck not found", which was not true.
+    languageMenu: false,
   });
+
+  /**
+   * A deck id missing from this workspace has two very different explanations,
+   * and the screen used to assert the alarming one. `decks` is filtered by
+   * language, so the back button after a workspace switch lands here and was
+   * told the deck had been deleted from the browser. The database is not
+   * filtered, so it can tell the two apart.
+   *
+   * `undefined` means the question is still open — the screen shows nothing
+   * rather than flashing "not found" for a frame on the way to the answer.
+   */
+  const [elsewhere, setElsewhere] = React.useState<Deck | null | undefined>(undefined);
+  React.useEffect(() => {
+    if (!ready || deck) return undefined;
+    let live = true;
+    void db.getDeck(deckId).then((found) => {
+      if (live) setElsewhere(found && found.language !== language ? found : null);
+    });
+    return () => { live = false; };
+  }, [ready, deck, deckId, language]);
 
   const [editing, setEditing] = React.useState<CardModel | null>(null);
   const [adding, setAdding] = React.useState(false);
@@ -108,16 +136,36 @@ export function DeckDetail() {
   };
 
   if (!deck) {
-    return (
-      <>
+    if (!ready || elsewhere === undefined) return <div style={page} />;
+
+    if (elsewhere) {
+      const home = WORKSPACES.find((w) => w.code === elsewhere.language);
+      return (
         <EmptyTool
-          icon="circle-alert"
-          accent="var(--danger)"
-          title="Deck not found"
-          description="That deck no longer exists. It may have been deleted from this browser."
-          action={<Link to="/app/cards" style={{ textDecoration: 'none' }}><Button variant="secondary">Back to decks</Button></Link>}
+          icon="languages"
+          accent="var(--tool-flashcards)"
+          title={`"${elsewhere.name}" is in ${home?.name ?? 'another'}`}
+          description={`You're in ${WORKSPACES.find((w) => w.code === language)?.name ?? 'another workspace'}. Decks belong to the language you made them for.`}
+          action={
+            <div style={{ display: 'flex', gap: 'var(--gap-inline)' }}>
+              <Link to="/app/cards" style={{ textDecoration: 'none' }}><Button variant="ghost">Back to decks</Button></Link>
+              <Button onClick={() => setLanguage(elsewhere.language)}>
+                Switch to {home?.name ?? elsewhere.language}
+              </Button>
+            </div>
+          }
         />
-      </>
+      );
+    }
+
+    return (
+      <EmptyTool
+        icon="circle-alert"
+        accent="var(--danger)"
+        title="Deck not found"
+        description="That deck no longer exists. It may have been deleted from this browser."
+        action={<Link to="/app/cards" style={{ textDecoration: 'none' }}><Button variant="secondary">Back to decks</Button></Link>}
+      />
     );
   }
 

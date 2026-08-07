@@ -56,7 +56,7 @@ const styles: Record<string, React.CSSProperties> = {
  */
 export function AppShell() {
   const { chrome, set } = useChromeState();
-  const { title, titleIcon, parent, sidebar, streakInTopBar } = chrome;
+  const { title, titleIcon, parent, sidebar, streakInTopBar, languageMenu } = chrome;
   // Callback ref rather than useRef: <TopRight> portals into this node, and a
   // ref object's mutation would not re-render the consumers waiting for it.
   const [topRightSlot, setTopRightSlot] = React.useState<HTMLElement | null>(null);
@@ -318,7 +318,7 @@ export function AppShell() {
           {/* Filled by whichever screen renders <TopRight>; empty otherwise. */}
           <span ref={setTopRightSlot} style={{ display: 'contents' }} />
           <span style={{ width: 4 }} />
-          <LanguageMenu compact={isMobile} />
+          {languageMenu && <LanguageMenu compact={isMobile} />}
           {/* Both are secondary to the screen's own actions, and on a phone the
               top bar has room for the title and about two controls. The streak is
               on Home's hero anyway, and the marketing link lives in the rail's

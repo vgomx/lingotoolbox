@@ -40,9 +40,16 @@ export interface Chrome {
    * in its own hero, and one screen does not need to say it twice.
    */
   streakInTopBar: boolean;
+  /**
+   * The workspace picker. On unless a screen belongs to one workspace in
+   * particular — a deck, or a review of it. Switching from inside one does not
+   * take you somewhere useful: the deck you are reading is not in the workspace
+   * you just chose, so the screen has nowhere to go.
+   */
+  languageMenu: boolean;
 }
 
-export const DEFAULT_CHROME: Chrome = { sidebar: false, streakInTopBar: true };
+export const DEFAULT_CHROME: Chrome = { sidebar: false, streakInTopBar: true, languageMenu: true };
 
 interface ChromeContextValue {
   set: (next: Chrome) => void;
@@ -59,6 +66,7 @@ export const ChromeProvider = ChromeContext.Provider;
 const same = (a: Chrome, b: Chrome) =>
   a.title === b.title && a.titleIcon === b.titleIcon
   && a.sidebar === b.sidebar && a.streakInTopBar === b.streakInTopBar
+  && a.languageMenu === b.languageMenu
   && a.parent?.label === b.parent?.label && a.parent?.to === b.parent?.to;
 
 /** Used by AppShell to hold the current screen's chrome without looping. */
@@ -85,6 +93,7 @@ export function useChrome(chrome: Partial<Chrome>) {
   const { title, titleIcon } = chrome;
   const sidebar = chrome.sidebar ?? DEFAULT_CHROME.sidebar;
   const streakInTopBar = chrome.streakInTopBar ?? DEFAULT_CHROME.streakInTopBar;
+  const languageMenu = chrome.languageMenu ?? DEFAULT_CHROME.languageMenu;
   // Depended on as two primitives rather than as the object, which is new each render.
   const parentLabel = chrome.parent?.label;
   const parentTo = chrome.parent?.to;
@@ -95,9 +104,10 @@ export function useChrome(chrome: Partial<Chrome>) {
       titleIcon,
       sidebar,
       streakInTopBar,
+      languageMenu,
       parent: parentLabel && parentTo ? { label: parentLabel, to: parentTo } : undefined,
     });
-  }, [ctx, title, titleIcon, sidebar, streakInTopBar, parentLabel, parentTo]);
+  }, [ctx, title, titleIcon, sidebar, streakInTopBar, languageMenu, parentLabel, parentTo]);
 }
 
 /**
