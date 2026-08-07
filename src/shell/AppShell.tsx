@@ -22,7 +22,10 @@ const styles: Record<string, React.CSSProperties> = {
   // status bar sits over. Left and right are for landscape, where the notch
   // takes a bite out of one side. All four are 0 on a desktop.
   frame: {
-    display: 'flex', height: '100dvh', background: 'var(--surface-app)',
+    // --app-height, not 100dvh: on an installed iOS app dvh follows a viewport
+    // that is a status bar short at launch. The fallback is what every other
+    // platform uses, and what this is before the effect above has run once.
+    display: 'flex', height: 'var(--app-height, 100dvh)', background: 'var(--surface-app)',
     fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden',
     paddingTop: 'env(safe-area-inset-top, 0px)',
     paddingLeft: 'env(safe-area-inset-left, 0px)',
@@ -77,6 +80,44 @@ export function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
   const [search, setSearch] = React.useState('');
+
+  /**
+   * How tall the screen the app is actually drawn on is.
+   *
+   * At launch an installed iOS app reports a layout viewport one status bar
+   * short of the screen it occupies — measured 812 against a screen of 874, a
+   * difference of exactly env(safe-area-inset-top). It corrects itself the
+   * moment anything scrolls, which is why dragging appeared to fix the dock.
+   *
+   * Nothing about the dock was ever wrong: it sat flush with the bottom of a
+   * viewport 62pt too short, and the band below it was the page showing through
+   * where the shell had run out. So the shell is sized from the screen while the
+   * two disagree, and from the viewport once they agree — which they do from the
+   * first interaction onward, and always do everywhere else.
+   */
+  React.useEffect(() => {
+    const apply = () => {
+      const standalone = window.matchMedia('(display-mode: standalone)').matches
+        || (window.navigator as unknown as { standalone?: boolean }).standalone === true;
+      const reported = window.innerHeight;
+      // Only ever upward, and only when installed: a browser's viewport is
+      // legitimately shorter than the screen, and must be left alone.
+      const height = standalone && window.screen.height > reported ? window.screen.height : reported;
+      document.documentElement.style.setProperty('--app-height', `${height}px`);
+    };
+    apply();
+    const vv = window.visualViewport;
+    window.addEventListener('resize', apply);
+    window.addEventListener('orientationchange', apply);
+    window.addEventListener('pageshow', apply);
+    vv?.addEventListener('resize', apply);
+    return () => {
+      window.removeEventListener('resize', apply);
+      window.removeEventListener('orientationchange', apply);
+      window.removeEventListener('pageshow', apply);
+      vv?.removeEventListener('resize', apply);
+    };
+  }, []);
 
   const bp = useBreakpoint();
   const reducedMotion = usePrefersReducedMotion();
