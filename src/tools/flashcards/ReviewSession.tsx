@@ -89,7 +89,7 @@ export function ReviewSession() {
     setIndex((i) => i + 1);
   }, [current, grade]);
 
-  // Space/Enter flips; 1–4 grade a flipped card.
+  // Space/Enter turns the card either way; 1–4 grade a turned one.
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!current) return;
@@ -98,10 +98,14 @@ export function ReviewSession() {
       // Without this, Cmd+1 graded a card on its way to switching browser tab.
       if (e.metaKey || e.ctrlKey || e.altKey) return;
 
-      if (!flipped && (e.key === ' ' || e.key === 'Enter')) {
+      // Turns, rather than only opening. It used to fire only while the card
+      // showed its prompt, so once you had the answer the key that got you
+      // there did nothing — the card could be turned back by dragging it or by
+      // clicking it, but not by the same key that turned it over.
+      if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
-        playSound('flip');
-        setFlipped(true);
+        if (!flipped) playSound('flip');
+        setFlipped(!flipped);
         return;
       }
       if (flipped) {
