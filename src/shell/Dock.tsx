@@ -74,7 +74,7 @@ export function Dock() {
           aria-label="More tools"
           style={{
             position: 'fixed', left: 0, right: 0, zIndex: 46,
-            bottom: `calc(${DOCK_HEIGHT}px + env(safe-area-inset-bottom, 0px))`,
+            bottom: `calc(${DOCK_HEIGHT}px + var(--dock-inset))`,
             padding: 8,
             paddingLeft: 'calc(8px + env(safe-area-inset-left, 0px))',
             paddingRight: 'calc(8px + env(safe-area-inset-right, 0px))',
@@ -123,7 +123,11 @@ export function Dock() {
           // positioning is relative to the viewport, so the frame's insets do
           // not apply here and the bar states all three itself — the sides
           // matter in landscape, where the notch overlaps the end buttons.
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          //
+          // --dock-inset rather than the raw env(): in a browser that value is
+          // the height of the browser's own toolbar, not the indicator. See the
+          // note on it in app.css.
+          paddingBottom: 'var(--dock-inset)',
           paddingLeft: 'env(safe-area-inset-left, 0px)',
           paddingRight: 'env(safe-area-inset-right, 0px)',
         }}

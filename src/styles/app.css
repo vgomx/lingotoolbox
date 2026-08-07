@@ -28,3 +28,31 @@ a {
 .lt-rail::-webkit-scrollbar {
   display: none;
 }
+
+/* How much room the dock leaves beneath itself for the home indicator.
+   Zero in a browser, on purpose.
+
+   iOS Safari reports env(safe-area-inset-bottom) as the space its *own* bottom
+   toolbar takes — around 90pt while that toolbar is expanded, collapsing to the
+   34pt home indicator once you scroll and it minimises. Padding the dock by it
+   there put a band of dock-coloured nothing under the bar on load that snapped
+   away the moment you dragged, which is the bug this fixes. A browser already
+   pins a fixed element above its own chrome, so the dock needs nothing from us.
+
+   Installed, there is no chrome, the inset really is the home indicator, and
+   the dock does have to clear it. */
+:root {
+  --dock-inset: 0px;
+}
+
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  :root {
+    --dock-inset: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* iOS did not match display-mode: standalone until 16.4; navigator.standalone
+   is how it answered before that, and index.html sets this from it. */
+:root[data-standalone='true'] {
+  --dock-inset: env(safe-area-inset-bottom, 0px);
+}

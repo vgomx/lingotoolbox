@@ -432,7 +432,7 @@ export function AppShell() {
         </header>
         {/* The dock is fixed, so the scroller has to stop short of it — otherwise
             the last card on every screen sits under the bar. */}
-        <div style={{ ...styles.body, paddingBottom: isMobile ? `calc(${DOCK_HEIGHT}px + env(safe-area-inset-bottom, 0px))` : undefined }}>
+        <div style={{ ...styles.body, paddingBottom: isMobile ? `calc(${DOCK_HEIGHT}px + var(--dock-inset))` : undefined }}>
           {/* Keyed on the hub, so changing hub remounts this and the animation
               runs again. Nothing is thrown away that was not already going: the
               routed component under it changes with the hub anyway.
