@@ -10,7 +10,6 @@ import { flagUrl } from '../data/illustrations';
 import { HelpMenu } from './HelpMenu';
 import { Dock, DOCK_HEIGHT } from './Dock';
 import stackVioletUrl from 'lingo-ds/assets/logo/stack-violet.svg';
-import stackDarkUrl from 'lingo-ds/assets/logo/stack-dark.svg';
 import markUrl from 'lingo-ds/assets/logo/mark-violet.svg';
 
 const styles: Record<string, React.CSSProperties> = {
@@ -173,17 +172,13 @@ export function AppShell() {
             tile a few pixels below already means exactly that — two adjacent
             marks that looked identical and went to different places. Getting to
             the marketing site is the About button's job. */}
-        {/* The ink variant follows the ground. Violet is violet-500, which the
-            design system's own rule puts under 4.5:1 on paper — measured 4.30
-            against the rail's new paper-200 — and TOOLBOX is about 8px at this
-            height, which the guide already calls closing up on a *dark* ground.
-            The four stack-* inks exist for exactly this. */}
+        {/* Violet on both grounds. It measures 4.30 against the light rail's
+            paper-200, under the 4.5 the design system holds text to — but a
+            logotype is the one thing WCAG exempts from that floor, and the mark
+            being the brand's colour is worth more here than a number it is not
+            asked to meet. The rest of the rail is measured and does meet it. */}
         <Link to="/app" title="Home" style={{ display: 'block' }}>
-          <img
-            src={prefs.theme === 'light' ? stackDarkUrl : stackVioletUrl}
-            alt="Lingo Toolbox"
-            style={{ height: 63, width: 44 }}
-          />
+          <img src={stackVioletUrl} alt="Lingo Toolbox" style={{ height: 63, width: 44 }} />
         </Link>
         {/* Mixed from the theme's own ink rather than --border, which in the
             light scope is paper-200 — exactly what the rail is now, so the rule
