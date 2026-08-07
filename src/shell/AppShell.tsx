@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Badge, Button, Dialog, Icon, IconButton, Input, SidebarItem, RailTile, StreakPill, Tooltip, useBreakpoint } from 'lingo-ds';
+import { Badge, Button, Dialog, Icon, IconButton, Input, SidebarItem, RailTile, StreakPill, Tooltip, useBreakpoint, usePrefersReducedMotion } from 'lingo-ds';
 import { useStore } from '../state/store';
 import { TOOLS } from '../data/seed';
 import { LanguageMenu } from './LanguageMenu';
@@ -80,6 +80,7 @@ export function AppShell() {
   const [search, setSearch] = React.useState('');
 
   const bp = useBreakpoint();
+  const reducedMotion = usePrefersReducedMotion();
   const isMobile = bp === 'mobile';
   // The rail is 72px — a fifth of a 375px phone, spent on chrome. On mobile a
   // bottom dock replaces it: navigation on a phone belongs where the thumb is,
@@ -98,6 +99,17 @@ export function AppShell() {
   const path = location.pathname.replace('/app/review', '/app/cards');
   const activeTool = TOOLS.find((t) => t.path !== 'home' && path.startsWith(`/app/${t.path}`)) ?? TOOLS[0];
   const settingsActive = location.pathname.startsWith('/app/settings');
+
+  /**
+   * Which hub the route belongs to, and the key the content pane animates on.
+   *
+   * Deliberately coarser than the route. Every screen rising on every navigation
+   * would put the animation between a deck and one of its cards, and between a
+   * deck and its review — moves *within* a place, where a page that re-enters
+   * says you left and came back when you did not. `path` already folds
+   * /app/review into /app/cards, so a session counts as inside Flashcards.
+   */
+  const hub = settingsActive ? 'settings' : activeTool.id;
 
   const visibleDecks = React.useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -421,7 +433,24 @@ export function AppShell() {
         {/* The dock is fixed, so the scroller has to stop short of it — otherwise
             the last card on every screen sits under the bar. */}
         <div style={{ ...styles.body, paddingBottom: isMobile ? `calc(${DOCK_HEIGHT}px + env(safe-area-inset-bottom, 0px))` : undefined }}>
-          <Outlet />
+          {/* Keyed on the hub, so changing hub remounts this and the animation
+              runs again. Nothing is thrown away that was not already going: the
+              routed component under it changes with the hub anyway.
+
+              The transform lives only for the length of the animation, which
+              matters because a transformed ancestor becomes the containing block
+              for any fixed-position descendant. Everything of that kind here is
+              portalled to the body — dialogs, tooltips, the switch overlay — and
+              the dock is a sibling rather than a child. */}
+          <div
+            key={hub}
+            style={reducedMotion ? undefined : { animation: 'lt-hub-rise var(--dur-slow) var(--ease-out) both' }}
+          >
+            <style>
+              {'@keyframes lt-hub-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}'}
+            </style>
+            <Outlet />
+          </div>
         </div>
       </main>
 
