@@ -379,7 +379,12 @@ export function AppShell() {
       )}
 
       <main style={styles.main}>
-        <header style={styles.topbar}>
+        {/* Taller on a phone. The bar is 48 and the controls in it are 44 —
+            the touch-target floor — which left two pixels of air above and
+            below and made every action look wedged into it. 56 gives the same
+            44 six pixels either side. The token stays as it is: on a desktop
+            the bar holds 34px pills and 48 is right for them. */}
+        <header style={{ ...styles.topbar, height: isMobile ? 56 : 'var(--topbar-height)' }}>
           {!isMobile && showSidebar && (
             <Tooltip label={collapsed ? 'Show decks' : 'Hide decks'} shortcut={toggleShortcut}>
               <IconButton label={collapsed ? 'Show decks' : 'Hide decks'} style={{ flex: 'none' }} onClick={toggleSidebar}>
@@ -406,7 +411,11 @@ export function AppShell() {
           <span style={{ flex: 1 }} />
           {/* Filled by whichever screen renders <TopRight>; empty otherwise. */}
           <span ref={setTopRightSlot} style={{ display: 'contents' }} />
-          <span style={{ width: 4 }} />
+          {/* Parts the screen's own actions from the streak and the help menu.
+              Both of those are desktop-only, so on a phone this was a gap on
+              the end of the row, holding the last control 16px off the edge
+              instead of the bar's own 16. */}
+          {!isMobile && <span style={{ width: 4 }} />}
           {/* Both are secondary to the screen's own actions, and on a phone the
               top bar has room for the title and about two controls. The streak is
               on Home's hero anyway, and the marketing link lives in the rail's
