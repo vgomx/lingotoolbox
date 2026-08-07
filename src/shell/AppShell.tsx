@@ -199,7 +199,13 @@ export function AppShell() {
               <RailTile
                 label={t.short}
                 icon={<Icon name={t.icon} size={18} />}
+                // A surface, not an accent — the active tile is a raised chip
+                // rather than a coloured one. So the glyph on it takes the
+                // theme's ink rather than the white that reads on an accent:
+                // white on paper-50 measures 1.07, which is a tile with nothing
+                // visible in it.
                 color="var(--surface-raised)"
+                onColor="var(--text-strong)"
                 size={isMobile ? 44 : 38}
                 quiet
                 showLabel
