@@ -231,10 +231,6 @@ export function ReviewSession() {
               />
             )}
             language={workspace.name}
-            // The session's first card only. The lean is there to say the card
-            // answers being touched; by the second one that has either landed or
-            // it is just a card that moves on its own every few seconds.
-            preview={index === 0}
             flipped={flipped}
             onFlip={(next) => { if (next) playSound('flip'); setFlipped(next); }}
             height={320}
