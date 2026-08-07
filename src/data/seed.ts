@@ -3,7 +3,7 @@ import { START_EASE } from './scheduler';
 
 export const WORKSPACES: Workspace[] = [
   { code: 'EN', name: 'English', flagHex: '1F1EC-1F1E7', color: 'var(--cyan-500)' },
-  { code: 'PT', name: 'Portuguese', flagHex: '1F1F5-1F1F9', color: 'var(--mint-500)' },
+  { code: 'PT', name: 'Portuguese', flagHex: '1F1E7-1F1F7', color: 'var(--mint-500)' },
   { code: 'NL', name: 'Dutch', flagHex: '1F1F3-1F1F1', color: 'var(--amber-500)' },
   { code: 'ES', name: 'Spanish', flagHex: '1F1EA-1F1F8', color: 'var(--coral-500)' },
 ];

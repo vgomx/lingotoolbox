@@ -576,6 +576,13 @@ export const ILLUSTRATIONS: Illustration[] = [
 /** Workspace flags. Chrome, not card illustrations — kept out of the picker. */
 export const FLAGS: Illustration[] = [
   {
+    "hex": "1F1E7-1F1F7",
+    "file": "flag-brazil-1F1E7-1F1F7.svg",
+    "name": "flag: Brazil",
+    "group": "flags",
+    "keywords": []
+  },
+  {
     "hex": "1F1EA-1F1F8",
     "file": "flag-spain-1F1EA-1F1F8.svg",
     "name": "flag: Spain",
@@ -593,13 +600,6 @@ export const FLAGS: Illustration[] = [
     "hex": "1F1F3-1F1F1",
     "file": "flag-netherlands-1F1F3-1F1F1.svg",
     "name": "flag: Netherlands",
-    "group": "flags",
-    "keywords": []
-  },
-  {
-    "hex": "1F1F5-1F1F9",
-    "file": "flag-portugal-1F1F5-1F1F9.svg",
-    "name": "flag: Portugal",
     "group": "flags",
     "keywords": []
   }

@@ -88,5 +88,10 @@ export const EXTRA = [
  * They are here at all because native flag emoji do not render on Windows — the
  * OS ships no glyphs for regional indicator pairs, so a reader there sees "GB"
  * in a box where every other platform shows a flag.
+ *
+ * A flag stands for a country and a workspace stands for a language, which
+ * are not the same thing and only ever line up by convention. Where they
+ * disagree the choice is whose Portuguese, or whose Spanish, the decks are
+ * written in — so it follows the content rather than the name.
  */
-export const FLAGS = ['🇬🇧', '🇵🇹', '🇳🇱', '🇪🇸'];
+export const FLAGS = ['🇬🇧', '🇧🇷', '🇳🇱', '🇪🇸'];
