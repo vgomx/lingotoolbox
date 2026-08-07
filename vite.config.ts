@@ -1,4 +1,17 @@
+import { execSync } from 'node:child_process';
 import { defineConfig } from 'vite';
+
+/**
+ * The commit this bundle was built from, shown in Settings.
+ *
+ * A service worker can serve an old build for a long time, and on an installed
+ * app there is no address bar to reload from — so "is this phone running the fix
+ * or the version before it" was a question we could only answer by looking for
+ * a visual change and hoping we picked one that had actually shipped.
+ */
+const BUILD = (() => {
+  try { return execSync('git rev-parse --short HEAD').toString().trim(); } catch { return 'dev'; }
+})();
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
@@ -10,6 +23,7 @@ const SURFACE_APP = '#23232F';
 
 export default defineConfig({
   base,
+  define: { __BUILD__: JSON.stringify(BUILD) },
   plugins: [
     react(),
     VitePWA({
