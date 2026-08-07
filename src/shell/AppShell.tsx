@@ -10,7 +10,6 @@ import { flagUrl } from '../data/illustrations';
 import { HelpMenu } from './HelpMenu';
 import { Dock, DOCK_HEIGHT } from './Dock';
 import stackVioletUrl from 'lingo-ds/assets/logo/stack-violet.svg';
-import markUrl from 'lingo-ds/assets/logo/mark-violet.svg';
 
 const styles: Record<string, React.CSSProperties> = {
   // dvh, not vh: on a phone the URL bar is counted into vh, so a 100vh frame is
@@ -381,16 +380,6 @@ export function AppShell() {
 
       <main style={styles.main}>
         <header style={styles.topbar}>
-          {/* The rail carried the brand on desktop; on a phone there is no rail, so
-              the shell had no mark on it anywhere. The reduced mark, not the
-              stacked lockup or the wordmark — the guide puts a 60px floor on one
-              and a 96px minimum width on the other, and this bar is 48px tall.
-              Goes to Home, like the rail's logo. */}
-          {isMobile && (
-            <Link to="/app" title="Home" style={{ display: 'grid', flex: 'none' }} aria-label="Home">
-              <img src={markUrl} alt="Lingo Toolbox" style={{ height: 30, width: 26, display: 'block' }} />
-            </Link>
-          )}
           {!isMobile && showSidebar && (
             <Tooltip label={collapsed ? 'Show decks' : 'Hide decks'} shortcut={toggleShortcut}>
               <IconButton label={collapsed ? 'Show decks' : 'Hide decks'} style={{ flex: 'none' }} onClick={toggleSidebar}>
@@ -432,7 +421,7 @@ export function AppShell() {
         </header>
         {/* The dock is fixed, so the scroller has to stop short of it — otherwise
             the last card on every screen sits under the bar. */}
-        <div style={{ ...styles.body, paddingBottom: isMobile ? `calc(${DOCK_HEIGHT}px + env(safe-area-inset-bottom, 0px))` : undefined }}>
+        <div style={{ ...styles.body, paddingBottom: isMobile ? `calc(${DOCK_HEIGHT}px + var(--dock-inset))` : undefined }}>
           {/* Keyed on the hub, so changing hub remounts this and the animation
               runs again. Nothing is thrown away that was not already going: the
               routed component under it changes with the hub anyway.

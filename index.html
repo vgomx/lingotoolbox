@@ -18,6 +18,12 @@
     <meta name="theme-color" content="#23232F" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- Pre-16.4 iOS has no display-mode media query; this is how it said the
+         same thing. Inline and before paint, so the dock is never laid out with
+         the wrong inset and corrected a frame later. -->
+    <script>
+      if (window.navigator.standalone) document.documentElement.dataset.standalone = 'true';
+    </script>
     <title>Lingo Toolbox — practise the words you nearly know</title>
     <meta
       name="description"
