@@ -9,7 +9,8 @@ import { markAppVisited } from '../data/visit';
 import { flagUrl } from '../data/illustrations';
 import { HelpMenu } from './HelpMenu';
 import { Dock, DOCK_HEIGHT } from './Dock';
-import stackUrl from 'lingo-ds/assets/logo/stack-violet.svg';
+import stackVioletUrl from 'lingo-ds/assets/logo/stack-violet.svg';
+import stackDarkUrl from 'lingo-ds/assets/logo/stack-dark.svg';
 import markUrl from 'lingo-ds/assets/logo/mark-violet.svg';
 
 const styles: Record<string, React.CSSProperties> = {
@@ -158,26 +159,44 @@ export function AppShell() {
   return (
     <ChromeProvider value={chromeValue}>
     <div style={styles.frame}>
-      {/* The rail keeps a dark surface in light mode — that is deliberate, and the
-          light scope sets --surface-rail to an ink step to say so. But only the
-          background was following that decision: every foreground token inside
-          still resolved to its light value, so in light mode the active label and
-          the pip came out ink-900 on an ink-900 rail at 1:1, and the active icon
-          white on near-white paper at 1.07:1. Declaring the rail a dark island
-          settles it in one place — the design system supports either scope nesting
-          inside the other, and this is what that is for. */}
+      {/* No data-theme here any more: the rail takes the page's. It used to
+          declare itself dark so that in light mode its foregrounds resolved
+          against an ink surface — which worked, but meant one edge of the app
+          never followed the theme, and every colour on it had to be reasoned
+          about twice. --surface-rail is the deepest paper step in the light
+          scope now, the same position ink-1000 holds in the dark one. */}
       {/* Desktop and tablet only — the phone gets <Dock /> at the bottom. */}
       {!isMobile && (
-      <nav className="lt-rail" data-theme="dark" aria-label="Tools" style={styles.rail}>
+      <nav className="lt-rail" aria-label="Tools" style={styles.rail}>
         {/* The app's home, not the marketing page. A logo at the top of a
             product's own nav is the way back to its start, and the rail's Home
             tile a few pixels below already means exactly that — two adjacent
             marks that looked identical and went to different places. Getting to
             the marketing site is the About button's job. */}
+        {/* The ink variant follows the ground. Violet is violet-500, which the
+            design system's own rule puts under 4.5:1 on paper — measured 4.30
+            against the rail's new paper-200 — and TOOLBOX is about 8px at this
+            height, which the guide already calls closing up on a *dark* ground.
+            The four stack-* inks exist for exactly this. */}
         <Link to="/app" title="Home" style={{ display: 'block' }}>
-          <img src={stackUrl} alt="Lingo Toolbox" style={{ height: 63, width: 44 }} />
+          <img
+            src={prefs.theme === 'light' ? stackDarkUrl : stackVioletUrl}
+            alt="Lingo Toolbox"
+            style={{ height: 63, width: 44 }}
+          />
         </Link>
-        <span style={{ width: 32, height: 2, background: 'var(--border)', borderRadius: 2, margin: '4px 0 6px' }} />
+        {/* Mixed from the theme's own ink rather than --border, which in the
+            light scope is paper-200 — exactly what the rail is now, so the rule
+            drew itself in the colour it sits on and vanished. Against ink it
+            works in both: ~12% white on the dark rail, matching the rgba it
+            replaces, and ~12% near-black on the light one.
+            faint-ok: a decorative rule, not text. */}
+        <span
+          style={{
+            width: 32, height: 2, borderRadius: 2, margin: '4px 0 6px',
+            background: 'color-mix(in oklab, var(--text-strong) 12%, transparent)',
+          }}
+        />
 
         {TOOLS.map((t) => (
           <div key={t.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, width: '100%', flex: 'none' }}>

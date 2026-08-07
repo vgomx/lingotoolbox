@@ -109,10 +109,9 @@ export function Dock() {
         </div>
       )}
 
-      {/* Dark whatever the page theme, like the rail it replaces — and declared as
-          such, so its foregrounds resolve against it rather than against the app. */}
+      {/* Follows the page theme, like the rail it stands in for. Both were dark
+          islands; both are now just the deepest surface their theme has. */}
       <nav
-        data-theme="dark"
         aria-label="Tools"
         style={{
           position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 47,
