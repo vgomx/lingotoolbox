@@ -1,21 +1,34 @@
 import * as React from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Badge, Icon, IconButton, Input, SidebarItem, RailTile, StreakPill, Tooltip, useBreakpoint } from 'lingo-ds';
+import { Badge, Button, Dialog, Icon, IconButton, Input, SidebarItem, RailTile, StreakPill, Tooltip, useBreakpoint, usePrefersReducedMotion } from 'lingo-ds';
 import { useStore } from '../state/store';
 import { TOOLS } from '../data/seed';
 import { LanguageMenu } from './LanguageMenu';
 import { ChromeProvider, useChromeState } from './chrome';
 import { markAppVisited } from '../data/visit';
+import { flagUrl } from '../data/illustrations';
 import { HelpMenu } from './HelpMenu';
 import { Dock, DOCK_HEIGHT } from './Dock';
-import stackUrl from 'lingo-ds/assets/logo/stack-violet.svg';
+import stackVioletUrl from 'lingo-ds/assets/logo/stack-violet.svg';
 import markUrl from 'lingo-ds/assets/logo/mark-violet.svg';
 
 const styles: Record<string, React.CSSProperties> = {
   // dvh, not vh: on a phone the URL bar is counted into vh, so a 100vh frame is
   // taller than the visible viewport and the bottom of every screen sits under
   // browser chrome until you scroll.
-  frame: { display: 'flex', height: '100dvh', background: 'var(--surface-app)', fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden' },
+  // The insets are applied here rather than on the top bar so everything inside
+  // inherits them, and because box-sizing is border-box the 100dvh frame gives
+  // the space up rather than growing past the screen. The strip they leave
+  // behind is the frame's own --surface-app, which is what the translucent iOS
+  // status bar sits over. Left and right are for landscape, where the notch
+  // takes a bite out of one side. All four are 0 on a desktop.
+  frame: {
+    display: 'flex', height: '100dvh', background: 'var(--surface-app)',
+    fontFamily: 'var(--font-ui)', position: 'relative', overflow: 'hidden',
+    paddingTop: 'env(safe-area-inset-top, 0px)',
+    paddingLeft: 'env(safe-area-inset-left, 0px)',
+    paddingRight: 'env(safe-area-inset-right, 0px)',
+  },
   // --space-5, not --space-2: a rail item is a stack of tile, label and — on the
   // unreleased tools — a "Soon" badge, whose internal gaps are 4px and 2px. At
   // --space-2 the space *between* items was also 4px, so a badge sat as close to
@@ -61,12 +74,13 @@ export function AppShell() {
   // ref object's mutation would not re-render the consumers waiting for it.
   const [topRightSlot, setTopRightSlot] = React.useState<HTMLElement | null>(null);
   const chromeValue = React.useMemo(() => ({ set, slot: topRightSlot }), [set, topRightSlot]);
-  const { decks, dueInDeck, streak, saveDeck, language, prefs, setPrefs } = useStore();
+  const { decks, dueInDeck, streak, saveDeck, language, prefs, setPrefs, workspace, switching } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
   const [search, setSearch] = React.useState('');
 
   const bp = useBreakpoint();
+  const reducedMotion = usePrefersReducedMotion();
   const isMobile = bp === 'mobile';
   // The rail is 72px — a fifth of a 375px phone, spent on chrome. On mobile a
   // bottom dock replaces it: navigation on a phone belongs where the thumb is,
@@ -85,6 +99,17 @@ export function AppShell() {
   const path = location.pathname.replace('/app/review', '/app/cards');
   const activeTool = TOOLS.find((t) => t.path !== 'home' && path.startsWith(`/app/${t.path}`)) ?? TOOLS[0];
   const settingsActive = location.pathname.startsWith('/app/settings');
+
+  /**
+   * Which hub the route belongs to, and the key the content pane animates on.
+   *
+   * Deliberately coarser than the route. Every screen rising on every navigation
+   * would put the animation between a deck and one of its cards, and between a
+   * deck and its review — moves *within* a place, where a page that re-enters
+   * says you left and came back when you did not. `path` already folds
+   * /app/review into /app/cards, so a session counts as inside Flashcards.
+   */
+  const hub = settingsActive ? 'settings' : activeTool.id;
 
   const visibleDecks = React.useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -117,44 +142,68 @@ export function AppShell() {
   const isMac = typeof navigator !== 'undefined' && /mac/i.test(navigator.platform || navigator.userAgent);
   const toggleShortcut = isMac ? '⌘B' : 'Ctrl+B';
 
+  /**
+   * Naming a new deck. A dialog rather than window.prompt, which throws outright
+   * in environments that decline to implement it — the button did nothing at
+   * all, and the error went nowhere because the handler was async.
+   */
+  const [naming, setNaming] = React.useState(false);
+  const [deckName, setDeckName] = React.useState('');
+
   const newDeck = async () => {
-    const name = window.prompt('Name the deck');
-    if (!name?.trim()) return;
+    const name = deckName.trim();
+    if (!name) return;
     const id = `deck-${Date.now().toString(36)}`;
     await saveDeck({
       id,
       language,
-      name: name.trim(),
+      name,
       accent: 'var(--tool-flashcards)',
       tags: [],
       createdAt: Date.now(),
     });
+    setNaming(false);
+    setDeckName('');
     navigate(`/app/cards/${id}`);
   };
 
   return (
     <ChromeProvider value={chromeValue}>
     <div style={styles.frame}>
-      {/* The rail keeps a dark surface in light mode — that is deliberate, and the
-          light scope sets --surface-rail to an ink step to say so. But only the
-          background was following that decision: every foreground token inside
-          still resolved to its light value, so in light mode the active label and
-          the pip came out ink-900 on an ink-900 rail at 1:1, and the active icon
-          white on near-white paper at 1.07:1. Declaring the rail a dark island
-          settles it in one place — the design system supports either scope nesting
-          inside the other, and this is what that is for. */}
+      {/* No data-theme here any more: the rail takes the page's. It used to
+          declare itself dark so that in light mode its foregrounds resolved
+          against an ink surface — which worked, but meant one edge of the app
+          never followed the theme, and every colour on it had to be reasoned
+          about twice. --surface-rail is the deepest paper step in the light
+          scope now, the same position ink-1000 holds in the dark one. */}
       {/* Desktop and tablet only — the phone gets <Dock /> at the bottom. */}
       {!isMobile && (
-      <nav className="lt-rail" data-theme="dark" aria-label="Tools" style={styles.rail}>
+      <nav className="lt-rail" aria-label="Tools" style={styles.rail}>
         {/* The app's home, not the marketing page. A logo at the top of a
             product's own nav is the way back to its start, and the rail's Home
             tile a few pixels below already means exactly that — two adjacent
             marks that looked identical and went to different places. Getting to
             the marketing site is the About button's job. */}
+        {/* Violet on both grounds. It measures 4.30 against the light rail's
+            paper-200, under the 4.5 the design system holds text to — but a
+            logotype is the one thing WCAG exempts from that floor, and the mark
+            being the brand's colour is worth more here than a number it is not
+            asked to meet. The rest of the rail is measured and does meet it. */}
         <Link to="/app" title="Home" style={{ display: 'block' }}>
-          <img src={stackUrl} alt="Lingo Toolbox" style={{ height: 63, width: 44 }} />
+          <img src={stackVioletUrl} alt="Lingo Toolbox" style={{ height: 63, width: 44 }} />
         </Link>
-        <span style={{ width: 32, height: 2, background: 'var(--border)', borderRadius: 2, margin: '4px 0 6px' }} />
+        {/* Mixed from the theme's own ink rather than --border, which in the
+            light scope is paper-200 — exactly what the rail is now, so the rule
+            drew itself in the colour it sits on and vanished. Against ink it
+            works in both: ~12% white on the dark rail, matching the rgba it
+            replaces, and ~12% near-black on the light one.
+            faint-ok: a decorative rule, not text. */}
+        <span
+          style={{
+            width: 32, height: 2, borderRadius: 2, margin: '4px 0 6px',
+            background: 'color-mix(in oklab, var(--text-strong) 12%, transparent)',
+          }}
+        />
 
         {TOOLS.map((t) => (
           <div key={t.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, width: '100%', flex: 'none' }}>
@@ -162,7 +211,13 @@ export function AppShell() {
               <RailTile
                 label={t.short}
                 icon={<Icon name={t.icon} size={18} />}
+                // A surface, not an accent — the active tile is a raised chip
+                // rather than a coloured one. So the glyph on it takes the
+                // theme's ink rather than the white that reads on an accent:
+                // white on paper-50 measures 1.07, which is a tile with nothing
+                // visible in it.
                 color="var(--surface-raised)"
+                onColor="var(--text-strong)"
                 size={isMobile ? 44 : 38}
                 quiet
                 showLabel
@@ -188,6 +243,7 @@ export function AppShell() {
         ))}
 
         <span style={{ flex: 1 }} />
+        <LanguageMenu variant="rail" />
         <Tooltip label="Settings" side="right">
           <IconButton label="Settings" size={isMobile ? 'lg' : 'md'} active={settingsActive} onClick={() => navigate('/app/settings')}>
             <Icon name="settings" size={20} />
@@ -231,7 +287,7 @@ export function AppShell() {
             <span>Decks</span>
             <button
               type="button"
-              onClick={newDeck}
+              onClick={() => { setDeckName(''); setNaming(true); }}
               aria-label="New deck"
               style={{ border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', padding: 0, display: 'grid' }}
             >
@@ -279,6 +335,50 @@ export function AppShell() {
       </aside>
       )}
 
+      {switching && (
+        <div
+          // aria-live rather than a role: this is a status being announced, not
+          // a dialog to be dealt with, and nothing here can be interacted with.
+          role="status"
+          aria-live="polite"
+          style={{
+            position: 'fixed', inset: 0, zIndex: 60,
+            display: 'grid', placeItems: 'center', background: 'var(--surface-app)',
+            animation: 'lt-ws-in var(--dur-fast) var(--ease-out)',
+          }}
+        >
+          <style>
+            {'@keyframes lt-ws-in{from{opacity:0}to{opacity:1}}'
+              + '@keyframes lt-ws-mark{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:none}}'
+              + '@keyframes lt-ws-sweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}'}
+          </style>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-5)' }}>
+            <img
+              src={flagUrl(workspace.flagHex)}
+              alt=""
+              width={48}
+              height={48}
+              style={{ display: 'block', animation: 'lt-ws-mark var(--dur-base) var(--ease-out)' }}
+            />
+            <span style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--fs-15)', fontWeight: 800, color: 'var(--text-strong)' }}>
+              Loading {switching} workspace
+            </span>
+            {/* An indeterminate sweep, not a progress bar: there is no progress
+                to report, and a bar that fills would be describing work that
+                has already finished. */}
+            <span style={{ width: 120, height: 3, borderRadius: 2, background: 'var(--surface-raised)', overflow: 'hidden' }}>
+              <span
+                style={{
+                  display: 'block', width: '100%', height: '100%', borderRadius: 2,
+                  background: workspace.color,
+                  animation: 'lt-ws-sweep 620ms var(--ease-standard) infinite',
+                }}
+              />
+            </span>
+          </div>
+        </div>
+      )}
+
       <main style={styles.main}>
         <header style={styles.topbar}>
           {/* The rail carried the brand on desktop; on a phone there is no rail, so
@@ -318,7 +418,6 @@ export function AppShell() {
           {/* Filled by whichever screen renders <TopRight>; empty otherwise. */}
           <span ref={setTopRightSlot} style={{ display: 'contents' }} />
           <span style={{ width: 4 }} />
-          <LanguageMenu compact={isMobile} />
           {/* Both are secondary to the screen's own actions, and on a phone the
               top bar has room for the title and about two controls. The streak is
               on Home's hero anyway, and the marketing link lives in the rail's
@@ -334,9 +433,51 @@ export function AppShell() {
         {/* The dock is fixed, so the scroller has to stop short of it — otherwise
             the last card on every screen sits under the bar. */}
         <div style={{ ...styles.body, paddingBottom: isMobile ? `calc(${DOCK_HEIGHT}px + env(safe-area-inset-bottom, 0px))` : undefined }}>
-          <Outlet />
+          {/* Keyed on the hub, so changing hub remounts this and the animation
+              runs again. Nothing is thrown away that was not already going: the
+              routed component under it changes with the hub anyway.
+
+              The transform lives only for the length of the animation, which
+              matters because a transformed ancestor becomes the containing block
+              for any fixed-position descendant. Everything of that kind here is
+              portalled to the body — dialogs, tooltips, the switch overlay — and
+              the dock is a sibling rather than a child. */}
+          <div
+            key={hub}
+            style={reducedMotion ? undefined : { animation: 'lt-hub-rise var(--dur-slow) var(--ease-out) both' }}
+          >
+            <style>
+              {'@keyframes lt-hub-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}'}
+            </style>
+            <Outlet />
+          </div>
         </div>
       </main>
+
+      <Dialog
+        open={naming}
+        onClose={() => setNaming(false)}
+        title="New deck"
+        description={`A deck holds words you are practising in ${workspace.name}.`}
+        width={420}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setNaming(false)}>Cancel</Button>
+            <Button sound={false} onClick={newDeck} disabled={!deckName.trim()}>Create deck</Button>
+          </>
+        }
+      >
+        <div style={{ paddingBottom: 'var(--space-4)' }}>
+          <Input
+            label="Name"
+            placeholder="Everyday phrases"
+            value={deckName}
+            onChange={(e) => setDeckName(e.target.value)}
+            // Enter submits, the way it would have in the prompt this replaces.
+            onKeyDown={(e) => { if (e.key === 'Enter' && deckName.trim()) void newDeck(); }}
+          />
+        </div>
+      </Dialog>
 
       {isMobile && <Dock />}
     </div>

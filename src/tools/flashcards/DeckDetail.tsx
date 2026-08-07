@@ -1,13 +1,17 @@
 import * as React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Badge, Button, Card, Dialog, Icon, IconButton, IllustrationPicker, Input, Tag, Tooltip, playSound, useIsMobile } from 'lingo-ds';
+import { Badge, Button, Card, Dialog, Icon, IconButton, IllustrationPicker, Input, Select, Tag, Tooltip, playSound, useIsMobile } from 'lingo-ds';
 import { TopRight, useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
+import * as db from '../../data/db';
+import { WORKSPACES } from '../../data/seed';
 import { EmptyTool } from '../EmptyTool';
+import { ConfirmDialog } from '../../shell/ConfirmDialog';
 import { formatDue } from '../../data/scheduler';
 import { START_EASE } from '../../data/scheduler';
 import { ILLUSTRATION_GROUPS, ILLUSTRATION_ITEMS, findIllustration, illustrationUrl } from '../../data/illustrations';
-import type { Card as CardModel } from '../../data/types';
+import { CEFR_LEVELS, asLevel, levelRange } from '../../data/types';
+import type { CEFRLevel, Card as CardModel, Deck } from '../../data/types';
 
 const page: React.CSSProperties = {
   maxWidth: 'var(--content-max, 1120px)',
@@ -25,7 +29,7 @@ const STATE_TONE = {
 export function DeckDetail() {
   const { deckId = '' } = useParams();
   const navigate = useNavigate();
-  const { decks, cardsInDeck, dueInDeck, saveCard, removeCard, removeDeck, saveDeck } = useStore();
+  const { ready, decks, language, setLanguage, cardsInDeck, dueInDeck, saveCard, removeCard, removeDeck, saveDeck } = useStore();
 
   const deck = decks.find((d) => d.id === deckId);
   const cards = cardsInDeck(deckId);
@@ -38,9 +42,32 @@ export function DeckDetail() {
   useChrome({
     title: deck?.name ?? 'Flashcards',
     titleIcon: 'layers',
-    parent: { label: 'Flashcards', to: '/app/cards' },
+    // No parent when there is no deck: the crumb is the path down to this
+    // screen, and with nothing here to be a child of it read "Flashcards ›
+    // Flashcards" — a link back to the page it claims you came from.
+    parent: deck ? { label: 'Flashcards', to: '/app/cards' } : undefined,
     sidebar: true,
   });
+
+  /**
+   * A deck id missing from this workspace has two very different explanations,
+   * and the screen used to assert the alarming one. `decks` is filtered by
+   * language, so the back button after a workspace switch lands here and was
+   * told the deck had been deleted from the browser. The database is not
+   * filtered, so it can tell the two apart.
+   *
+   * `undefined` means the question is still open — the screen shows nothing
+   * rather than flashing "not found" for a frame on the way to the answer.
+   */
+  const [elsewhere, setElsewhere] = React.useState<Deck | null | undefined>(undefined);
+  React.useEffect(() => {
+    if (!ready || deck) return undefined;
+    let live = true;
+    void db.getDeck(deckId).then((found) => {
+      if (live) setElsewhere(found && found.language !== language ? found : null);
+    });
+    return () => { live = false; };
+  }, [ready, deck, deckId, language]);
 
   const [editing, setEditing] = React.useState<CardModel | null>(null);
   const [adding, setAdding] = React.useState(false);
@@ -48,13 +75,21 @@ export function DeckDetail() {
   const [back, setBack] = React.useState('');
   const [phonetic, setPhonetic] = React.useState('');
   const [illustration, setIllustration] = React.useState<string | null>(null);
+  const [level, setLevel] = React.useState<CEFRLevel | ''>('');
+  // Renaming and the two deletions were window.prompt and window.confirm,
+  // which a browser is free not to implement — prompt threw and confirm
+  // answered "no" on the reader's behalf, so all three quietly did nothing.
+  const [renaming, setRenaming] = React.useState(false);
+  const [rename, setRename] = React.useState('');
+  const [deletingDeck, setDeletingDeck] = React.useState(false);
+  const [deletingCard, setDeletingCard] = React.useState<CardModel | null>(null);
 
   const openAdd = () => {
-    setEditing(null); setFront(''); setBack(''); setPhonetic(''); setIllustration(null); setAdding(true);
+    setEditing(null); setFront(''); setBack(''); setPhonetic(''); setIllustration(null); setLevel(''); setAdding(true);
   };
   const openEdit = (card: CardModel) => {
     setEditing(card); setFront(card.front); setBack(card.back); setPhonetic(card.phonetic ?? '');
-    setIllustration(card.illustration ?? null); setAdding(true);
+    setIllustration(card.illustration ?? null); setLevel(card.level ?? ''); setAdding(true);
   };
   const close = () => setAdding(false);
 
@@ -84,6 +119,7 @@ export function DeckDetail() {
         back: back.trim(),
         phonetic: phonetic.trim() || undefined,
         illustration: illustration ?? undefined,
+        level: level || undefined,
       });
     } else {
       await saveCard({
@@ -93,6 +129,7 @@ export function DeckDetail() {
         back: back.trim(),
         phonetic: phonetic.trim() || undefined,
         illustration: illustration ?? undefined,
+        level: level || undefined,
         tags: [],
         createdAt: now,
         state: 'new',
@@ -108,16 +145,36 @@ export function DeckDetail() {
   };
 
   if (!deck) {
-    return (
-      <>
+    if (!ready || elsewhere === undefined) return <div style={page} />;
+
+    if (elsewhere) {
+      const home = WORKSPACES.find((w) => w.code === elsewhere.language);
+      return (
         <EmptyTool
-          icon="circle-alert"
-          accent="var(--danger)"
-          title="Deck not found"
-          description="That deck no longer exists. It may have been deleted from this browser."
-          action={<Link to="/app/cards" style={{ textDecoration: 'none' }}><Button variant="secondary">Back to decks</Button></Link>}
+          icon="languages"
+          accent="var(--tool-flashcards)"
+          title={`"${elsewhere.name}" is in ${home?.name ?? 'another'}`}
+          description={`You're in ${WORKSPACES.find((w) => w.code === language)?.name ?? 'another workspace'}. Decks belong to the language you made them for.`}
+          action={
+            <div style={{ display: 'flex', gap: 'var(--gap-inline)' }}>
+              <Link to="/app/cards" style={{ textDecoration: 'none' }}><Button variant="ghost">Back to decks</Button></Link>
+              <Button onClick={() => setLanguage(elsewhere.language)}>
+                Switch to {home?.name ?? elsewhere.language}
+              </Button>
+            </div>
+          }
         />
-      </>
+      );
+    }
+
+    return (
+      <EmptyTool
+        icon="circle-alert"
+        accent="var(--danger)"
+        title="Deck not found"
+        description="That deck no longer exists. It may have been deleted from this browser."
+        action={<Link to="/app/cards" style={{ textDecoration: 'none' }}><Button variant="secondary">Back to decks</Button></Link>}
+      />
     );
   }
 
@@ -149,35 +206,45 @@ export function DeckDetail() {
             <h1 style={{ margin: '6px 0 0', fontFamily: 'var(--font-display)', fontSize: 'var(--fs-32)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.15 }}>
               {deck.name}
             </h1>
-            {deck.tags.length > 0 && (
+            {(levelRange(cards) || deck.tags.length > 0) && (
               <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+                {levelRange(cards) && (
+                  <Tag color="var(--text-muted)" style={{ fontFamily: 'var(--font-mono)' }}>
+                    {levelRange(cards)}
+                  </Tag>
+                )}
                 {deck.tags.map((t) => <Tag key={t} color={deck.accent}>{t}</Tag>)}
               </div>
             )}
           </div>
-          <Button
-            variant="ghost"
-            size={isMobile ? 'lg' : 'sm'}
-            iconLeft={<Icon name="pencil" size={15} />}
-            onClick={async () => {
-              const name = window.prompt('Rename deck', deck.name);
-              if (name?.trim()) await saveDeck({ ...deck, name: name.trim() });
-            }}
+          {/* Side by side on a phone rather than stacked. The header goes to a
+              column at this width so the title gets the full line, which sent
+              these two down it as well — two centred full-width rows spending
+              ~250px above the first card on the things you do least. `display:
+              contents` leaves the desktop row exactly as it was. */}
+          <div style={isMobile
+            ? { display: 'flex', gap: 'var(--gap-inline)' }
+            : { display: 'contents' }}
           >
-            Rename
-          </Button>
-          <Button
-            variant="ghost"
-            size={isMobile ? 'lg' : 'sm'}
-            iconLeft={<Icon name="trash-2" size={15} />}
-            onClick={async () => {
-              if (!window.confirm(`Delete "${deck.name}" and its ${cards.length} cards? This cannot be undone.`)) return;
-              await removeDeck(deck.id);
-              navigate('/app/cards');
-            }}
-          >
-            Delete deck
-          </Button>
+            <Button
+              variant="ghost"
+              size={isMobile ? 'lg' : 'sm'}
+              style={isMobile ? { flex: 1, minWidth: 0 } : undefined}
+              iconLeft={<Icon name="pencil" size={15} />}
+              onClick={() => { setRename(deck.name); setRenaming(true); }}
+            >
+              Rename
+            </Button>
+            <Button
+              variant="ghost"
+              size={isMobile ? 'lg' : 'sm'}
+              style={isMobile ? { flex: 1, minWidth: 0 } : undefined}
+              iconLeft={<Icon name="trash-2" size={15} />}
+              onClick={() => setDeletingDeck(true)}
+            >
+              Delete deck
+            </Button>
+          </div>
         </header>
 
         {cards.length === 0 ? (
@@ -226,6 +293,15 @@ export function DeckDetail() {
                     <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>{card.back}</span>
                   </div>
 
+                  {/* Beside the scheduler's state, not among the card's tags:
+                      it says something about the word rather than about where
+                      the word has got to. Mono and muted so a column of them
+                      reads as a scale. */}
+                  {!isMobile && (
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-11)', fontWeight: 700, color: 'var(--text-muted)', minWidth: 20, textAlign: 'right' }}>
+                      {card.level ?? ''}
+                    </span>
+                  )}
                   {!isMobile && <Badge tone={STATE_TONE[card.state]}>{card.state}</Badge>}
                   {!isMobile && (
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-11)', color: 'var(--text-muted)', minWidth: 44, textAlign: 'right' }}>
@@ -244,11 +320,7 @@ export function DeckDetail() {
                       size="sm"
                       variant="danger"
                       sound={false}
-                      onClick={() => {
-                        if (!window.confirm(`Delete "${card.front}"?`)) return;
-                        playSound('cardRemoved');
-                        void removeCard(card.id);
-                      }}
+                      onClick={() => setDeletingCard(card)}
                     >
                       <Icon name="trash-2" size={15} />
                     </IconButton>
@@ -259,6 +331,67 @@ export function DeckDetail() {
           </div>
         )}
       </div>
+
+      <Dialog
+        open={renaming}
+        onClose={() => setRenaming(false)}
+        title="Rename deck"
+        description="The name is only for you — nothing else refers to it."
+        width={420}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setRenaming(false)}>Cancel</Button>
+            <Button
+              sound={false}
+              disabled={!rename.trim()}
+              onClick={async () => {
+                await saveDeck({ ...deck, name: rename.trim() });
+                setRenaming(false);
+              }}
+            >
+              Save name
+            </Button>
+          </>
+        }
+      >
+        <div style={{ paddingBottom: 'var(--space-4)' }}>
+          <Input
+            label="Name"
+            value={rename}
+            onChange={(e) => setRename(e.target.value)}
+            onKeyDown={async (e) => {
+              if (e.key !== 'Enter' || !rename.trim()) return;
+              await saveDeck({ ...deck, name: rename.trim() });
+              setRenaming(false);
+            }}
+          />
+        </div>
+      </Dialog>
+
+      <ConfirmDialog
+        open={deletingDeck}
+        title={`Delete "${deck.name}"?`}
+        description={`Its ${cards.length} ${cards.length === 1 ? 'card' : 'cards'} go with it, along with everything the scheduler has learned about them. This cannot be undone.`}
+        confirmLabel="Delete deck"
+        onCancel={() => setDeletingDeck(false)}
+        onConfirm={async () => {
+          setDeletingDeck(false);
+          await removeDeck(deck.id);
+          navigate('/app/cards');
+        }}
+      />
+
+      <ConfirmDialog
+        open={!!deletingCard}
+        title={`Delete "${deletingCard?.front ?? ''}"?`}
+        description="The card and its review history go. This cannot be undone."
+        confirmLabel="Delete card"
+        onCancel={() => setDeletingCard(null)}
+        onConfirm={() => {
+          if (deletingCard) { playSound('cardRemoved'); void removeCard(deletingCard.id); }
+          setDeletingCard(null);
+        }}
+      />
 
       <Dialog
         open={adding}
@@ -284,6 +417,15 @@ export function DeckDetail() {
             placeholder="/ɣəˈzɛləx/"
             value={phonetic}
             onChange={(e) => setPhonetic(e.target.value)}
+          />
+          {/* "Ungraded" rather than an empty first option: a card someone
+              wrote themselves does not have to carry a level, and the list
+              should say so instead of leaving a blank to be interpreted. */}
+          <Select
+            label="Level"
+            value={level}
+            options={[{ value: '', label: 'Ungraded' }, ...CEFR_LEVELS]}
+            onChange={(e) => setLevel(asLevel(e.target.value) ?? '')}
           />
           <IllustrationPicker
             label="Illustration"

@@ -2,7 +2,9 @@ import * as React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Badge, Icon, playSound } from 'lingo-ds';
 import { TOOLS } from '../data/seed';
+import { useStore } from '../state/store';
 import { MenuItem } from './MenuItem';
+import { LanguageMenu } from './LanguageMenu';
 
 /** Height of the bar itself, before the home-indicator inset is added under it. */
 export const DOCK_HEIGHT = 58;
@@ -31,6 +33,7 @@ const barItem = (active: boolean): React.CSSProperties => ({
 export function Dock() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { language } = useStore();
   const [moreOpen, setMoreOpen] = React.useState(false);
 
   const path = location.pathname;
@@ -40,7 +43,10 @@ export function Dock() {
   const secondary = TOOLS.filter((t) => !PRIMARY.includes(t.id as typeof PRIMARY[number]));
   const onSecondary = secondary.some((t) => path.startsWith(`/app/${t.path}`)) || path.startsWith('/app/settings');
 
-  React.useEffect(() => { setMoreOpen(false); }, [path]);
+  // On the language too, not only the path. Choosing a workspace from the sheet
+  // navigates Home — but from Home that is not a path change, so the sheet had
+  // nothing to close it and sat there over the workspace it had just switched.
+  React.useEffect(() => { setMoreOpen(false); }, [path, language]);
 
   React.useEffect(() => {
     if (!moreOpen) return undefined;
@@ -69,7 +75,10 @@ export function Dock() {
           style={{
             position: 'fixed', left: 0, right: 0, zIndex: 46,
             bottom: `calc(${DOCK_HEIGHT}px + env(safe-area-inset-bottom, 0px))`,
-            padding: 8, display: 'flex', flexDirection: 'column', gap: 2,
+            padding: 8,
+            paddingLeft: 'calc(8px + env(safe-area-inset-left, 0px))',
+            paddingRight: 'calc(8px + env(safe-area-inset-right, 0px))',
+            display: 'flex', flexDirection: 'column', gap: 2,
             background: 'var(--surface-raised)',
             borderTop: '1px solid var(--border)',
             boxShadow: 'var(--shadow-xl)',
@@ -89,6 +98,10 @@ export function Dock() {
             </MenuItem>
           ))}
           <span style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
+          {/* Beside Settings, which is where it is on a desktop too — the rail
+              has no phone equivalent, and this sheet is what holds the controls
+              that belong to the app rather than to a screen. */}
+          <LanguageMenu variant="row" />
           <MenuItem selected={path.startsWith('/app/settings')} onClick={go('/app/settings')}>
             <Icon name="settings" size={18} style={{ color: 'var(--text-muted)', flex: 'none' }} />
             <span style={{ flex: 1, minWidth: 0 }}>Settings</span>
@@ -96,10 +109,9 @@ export function Dock() {
         </div>
       )}
 
-      {/* Dark whatever the page theme, like the rail it replaces — and declared as
-          such, so its foregrounds resolve against it rather than against the app. */}
+      {/* Follows the page theme, like the rail it stands in for. Both were dark
+          islands; both are now just the deepest surface their theme has. */}
       <nav
-        data-theme="dark"
         aria-label="Tools"
         style={{
           position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 47,
@@ -107,8 +119,13 @@ export function Dock() {
           background: 'var(--surface-rail)',
           boxShadow: '0 -1px 0 var(--border)',
           // The home indicator on a modern iPhone sits under the bar; without
-          // this the last few pixels of every tap target are behind it.
+          // this the last few pixels of every tap target are behind it. Fixed
+          // positioning is relative to the viewport, so the frame's insets do
+          // not apply here and the bar states all three itself — the sides
+          // matter in landscape, where the notch overlaps the end buttons.
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          paddingLeft: 'env(safe-area-inset-left, 0px)',
+          paddingRight: 'env(safe-area-inset-right, 0px)',
         }}
       >
         <button type="button" style={barItem(onHome)} aria-current={onHome || undefined} onClick={go('/app')}>

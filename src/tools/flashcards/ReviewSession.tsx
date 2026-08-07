@@ -234,10 +234,15 @@ export function ReviewSession() {
             flipped={flipped}
             onFlip={(next) => { if (next) playSound('flip'); setFlipped(next); }}
             height={320}
-            hint={flipped ? undefined : 'Click or press Space to flip'}
             // --violet-100, not 300: on the violet back face, where the tag's own 18%
             // tint lifts the backdrop further — 300 measured 3.19, 200 still 4.32.
-            tags={current.tags.map((t) => <Tag key={t} color="var(--violet-100)">{t}</Tag>)}
+            tags={[
+              // On the answer side with the tags, and first. On the prompt it
+              // would be a clue: knowing a word is C1 before you try to recall
+              // it tells you something about the answer.
+              ...(current.level ? [<Tag key="level" color="var(--violet-100)">{current.level}</Tag>] : []),
+              ...current.tags.map((t) => <Tag key={t} color="var(--violet-100)">{t}</Tag>),
+            ]}
           />
         )}
 

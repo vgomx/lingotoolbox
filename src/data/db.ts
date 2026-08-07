@@ -1,5 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { Card, Deck, Grade, LanguageCode, Prefs, ReviewLogEntry } from './types';
+import { asLevel } from './types';
 import { buildSeed, WORKSPACES } from './seed';
 import { schedule } from './scheduler';
 
@@ -45,6 +46,44 @@ function getDB() {
     });
   }
   return dbPromise;
+}
+
+/**
+ * Moves CEFR levels out of `tags`: into `Card.level` on a card, and off a deck
+ * entirely — a deck's span is worked out from its cards now, so a level stored
+ * on one is a second answer to the same question that can disagree with them.
+ *
+ * Not an IndexedDB version upgrade, because the shape of the store has not
+ * changed — only the shape of what is in it, and only for records that predate
+ * the field. It runs at boot and after a restore, since a backup taken before
+ * this can be imported at any point in the future.
+ *
+ * Idempotent, and it reads before it writes: once no card has a level sitting in
+ * its tags there is nothing to do, which is the case on every boot but the one
+ * after this ships.
+ */
+export async function migrateLevels(): Promise<{ cards: number; decks: number }> {
+  const db = await getDB();
+  const [allCards, allDecks] = await Promise.all([db.getAll('cards'), db.getAll('decks')]);
+  const cards = allCards.filter((c) => c.tags.some((t) => asLevel(t)));
+  const decks = allDecks.filter((d) => d.tags.some((t) => asLevel(t)));
+  if (!cards.length && !decks.length) return { cards: 0, decks: 0 };
+
+  const tx = db.transaction(['cards', 'decks'], 'readwrite');
+  await Promise.all([
+    ...cards.map((card) => tx.objectStore('cards').put({
+      ...card,
+      // A card already carrying the field keeps it; the tag is only a fallback.
+      level: card.level ?? asLevel(card.tags.find((t) => asLevel(t))),
+      tags: card.tags.filter((t) => !asLevel(t)),
+    })),
+    ...decks.map((deck) => tx.objectStore('decks').put({
+      ...deck,
+      tags: deck.tags.filter((t) => !asLevel(t)),
+    })),
+    tx.done,
+  ]);
+  return { cards: cards.length, decks: decks.length };
 }
 
 /**
@@ -350,4 +389,9 @@ export async function resetAll(): Promise<void> {
     tx.done,
   ]);
   localStorage.removeItem(PREFS_KEY);
+  // The latch below caches the fact that seeding has already happened, which
+  // emptying the database has just made untrue. Without this, the ensureSeeded()
+  // that follows a reset returns the resolved promise from boot without doing
+  // anything, and the starter decks the button promises never come back.
+  seeding = null;
 }

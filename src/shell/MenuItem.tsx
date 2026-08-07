@@ -5,6 +5,14 @@ export interface MenuItemProps {
   /** Marks the current choice — the language you are in, not the one under the cursor. */
   selected?: boolean;
   onClick?: () => void;
+  /**
+   * A row that opens a menu rather than being one. It keeps the appearance and
+   * the hover, and drops `role="menuitem"` — which would have promised a menu it
+   * is a member of, when what it has is one it opens.
+   */
+  opensMenu?: boolean;
+  expanded?: boolean;
+  label?: string;
 }
 
 /**
@@ -20,13 +28,16 @@ export interface MenuItemProps {
  * for the same job in a different context; if a third menu appears, this belongs
  * there beside it.
  */
-export function MenuItem({ children, selected = false, onClick }: MenuItemProps) {
+export function MenuItem({ children, selected = false, onClick, opensMenu = false, expanded, label }: MenuItemProps) {
   const [active, setActive] = React.useState(false);
 
   return (
     <button
       type="button"
-      role="menuitem"
+      role={opensMenu ? undefined : 'menuitem'}
+      aria-haspopup={opensMenu || undefined}
+      aria-expanded={opensMenu ? expanded : undefined}
+      aria-label={label}
       aria-current={selected || undefined}
       onClick={onClick}
       onMouseEnter={() => setActive(true)}

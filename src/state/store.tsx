@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { setSoundEnabled, unlockSound } from 'lingo-ds';
+import { setSoundEnabled, unlockSound, usePrefersReducedMotion } from 'lingo-ds';
 import type { Card, Deck, Grade, LanguageCode, Prefs } from '../data/types';
 import * as db from '../data/db';
 import { isDue } from '../data/scheduler';
@@ -13,6 +13,15 @@ interface StoreValue {
   language: LanguageCode;
   setLanguage: (code: LanguageCode) => void;
   workspace: (typeof WORKSPACES)[number];
+  /**
+   * The workspace being switched to, while the switch is being shown — the name,
+   * so the overlay can say it. Null the rest of the time.
+   *
+   * Held here rather than in the switcher because it belongs to the state
+   * change, not to the control: the recovery on a deck in another workspace
+   * changes language too, and should look the same doing it.
+   */
+  switching: string | null;
 
   /** Decks in the active language workspace. */
   decks: Deck[];
@@ -39,6 +48,18 @@ interface StoreValue {
 
 const StoreContext = React.createContext<StoreValue | null>(null);
 
+/**
+ * How long the workspace switch is shown for.
+ *
+ * Not how long it takes. Every deck and card is already in this browser, so the
+ * read behind a switch is a few milliseconds and the app could simply cut to the
+ * new workspace. It reads as a glitch when it does — the whole page changes
+ * underneath you with nothing to say it was meant. This is a beat put there on
+ * purpose to name what happened, kept to about the length of the page
+ * transitions around it.
+ */
+const SWITCH_MS = 520;
+
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = React.useState(false);
   const [prefs, setPrefsState] = React.useState<Prefs>(() => db.loadPrefs());
@@ -52,6 +73,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // time — reading a snapshot instead meant a card created after the snapshot
   // (every seeded card, and every card the user adds) counted as not-yet-due
   // until the next tick.
+  const [switching, setSwitching] = React.useState<string | null>(null);
   const [tick, setTick] = React.useState(0);
   React.useEffect(() => {
     const t = setInterval(() => setTick((n) => n + 1), 30_000);
@@ -75,6 +97,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     (async () => {
       await db.ensureSeeded();
+      if (cancelled) return;
+      // Before the first read, so nothing renders a level that is still a tag.
+      await db.migrateLevels();
       if (cancelled) return;
       await refresh(prefs.language);
       if (!cancelled) setReady(true);
@@ -169,6 +194,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const reload = React.useCallback(async () => {
+    await db.migrateLevels();
     await refresh(prefs.language);
   }, [prefs.language, refresh]);
 
@@ -180,13 +206,32 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const workspace = WORKSPACES.find((w) => w.code === prefs.language) ?? WORKSPACES[0];
 
+  const reducedMotion = usePrefersReducedMotion();
+  const switchTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  React.useEffect(() => () => { if (switchTimer.current) clearTimeout(switchTimer.current); }, []);
+
+  const setLanguage = React.useCallback((code: LanguageCode) => {
+    // Switching to the workspace you are already in is not a switch, and should
+    // not put a card over the screen to say so.
+    if (code === prefs.language) return;
+    setPrefs({ language: code });
+    // Someone who has asked for less motion has asked not to be shown a
+    // transition, and this one is entirely a transition — so it is skipped
+    // rather than played still. The switch itself is unaffected.
+    if (reducedMotion) return;
+    setSwitching(WORKSPACES.find((w) => w.code === code)?.name ?? null);
+    if (switchTimer.current) clearTimeout(switchTimer.current);
+    switchTimer.current = setTimeout(() => setSwitching(null), SWITCH_MS);
+  }, [prefs.language, setPrefs, reducedMotion]);
+
   const value: StoreValue = {
     ready,
     prefs,
     setPrefs,
     language: prefs.language,
-    setLanguage: (code) => setPrefs({ language: code }),
+    setLanguage,
     workspace,
+    switching,
     decks,
     cards,
     cardsInDeck,
