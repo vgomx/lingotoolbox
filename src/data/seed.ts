@@ -1,4 +1,4 @@
-import type { CEFRLevel, Card, Deck, LanguageCode, Workspace } from './types';
+import type { CEFRLevel, Card, Deck, LanguageCode, Note, Workspace } from './types';
 import { START_EASE } from './scheduler';
 
 export const WORKSPACES: Workspace[] = [
@@ -23,7 +23,7 @@ export const TOOLS = [
   { id: 'etymology', label: 'Etymology Explorer', short: 'Roots', icon: 'git-branch', path: 'etymology', accent: 'var(--tool-etymology)', released: false, blurb: 'Trace a word back to its root.' },
   { id: 'conjugation', label: 'Conjugation Drill', short: 'Verbs', icon: 'spell-check', path: 'conjugation', accent: 'var(--tool-conjugation)', released: false, blurb: 'Drill the verb forms you keep missing.' },
   { id: 'phrasebook', label: 'Phrasebook', short: 'Phrases', icon: 'message-square-quote', path: 'phrasebook', accent: 'var(--tool-phrasebook)', released: false, blurb: 'Keep whole phrases, not just single words.' },
-  { id: 'grammar', label: 'Grammar Notes', short: 'Grammar', icon: 'scroll-text', path: 'grammar', accent: 'var(--tool-grammar)', released: false, blurb: 'Pull up a short explanation mid-review.' },
+  { id: 'grammar', label: 'Grammar Notes', short: 'Grammar', icon: 'scroll-text', path: 'grammar', accent: 'var(--tool-grammar)', released: true, blurb: 'Pull up a short explanation mid-review.' },
 ] as const;
 
 export type ToolId = (typeof TOOLS)[number]['id'];
@@ -488,4 +488,312 @@ export function buildSeed(now: number = Date.now()): { decks: Deck[]; cards: Car
   });
 
   return { decks, cards };
+}
+
+interface SeedNote {
+  id: string;
+  title: string;
+  body: string;
+  examples?: { form: string; gloss: string }[];
+  tags: string[];
+  level?: CEFRLevel;
+}
+
+/**
+ * The starter notes: the handful of rules a learner of each language keeps
+ * having to look up.
+ *
+ * Tagged in the same words the cards are, because that is the whole join — a
+ * note is offered on a card when they share a tag. `noun` reaches every noun
+ * card in the workspace, which is what a note about articles wants.
+ *
+ * Each is short on purpose. A rule you have to scroll is one you will not read
+ * halfway through a review, which is the moment this exists for.
+ */
+const SEED_NOTES: Record<LanguageCode, SeedNote[]> = {
+  EN: [
+    {
+      id: 'en-phrasal-split',
+      title: 'Can I split a phrasal verb?',
+      body: 'Some phrasal verbs take an object between the two parts, some do not.\n\nIf the object is a pronoun it must go in the middle — "turn it off", never "turn off it". With a noun, either position works.\n\nA few never split at all: you run into someone, never run someone into.',
+      examples: [
+        { form: 'turn the light off / turn off the light', gloss: 'both fine' },
+        { form: 'turn it off', gloss: 'pronoun must sit in the middle' },
+        { form: 'I ran into Ana', gloss: 'never splits' },
+      ],
+      tags: ['verb'],
+      level: 'B1',
+    },
+    {
+      id: 'en-present-perfect',
+      title: 'Present perfect or past simple?',
+      body: 'Past simple puts the event in a finished time — yesterday, last year, when I was ten.\n\nPresent perfect leaves the time open, so the event still counts now. It is the difference between reporting and connecting.',
+      examples: [
+        { form: 'I saw her yesterday', gloss: 'finished time, so past simple' },
+        { form: 'I have seen her', gloss: 'sometime up to now' },
+      ],
+      tags: ['verb'],
+      level: 'B1',
+    },
+    {
+      id: 'en-articles',
+      title: 'a, the, or nothing?',
+      body: 'Use "a" the first time something comes up, "the" once both of you know which one is meant.\n\nPlurals and uncountables take no article when you mean them in general — "I like music", not "the music".',
+      examples: [
+        { form: 'I bought a book. The book was awful.', gloss: 'introduced, then known' },
+        { form: 'Bread is expensive', gloss: 'bread in general takes nothing' },
+      ],
+      tags: ['noun'],
+      level: 'A2',
+    },
+    {
+      id: 'en-adjective-order',
+      title: 'What order do adjectives go in?',
+      body: 'Opinion, then size, then age, then colour, then origin, then material. Nobody is taught this and everybody follows it.\n\nGet it wrong and the sentence is understood but sounds off: "a green lovely big bag".',
+      examples: [{ form: 'a lovely big old green Italian leather bag', gloss: 'the order in full' }],
+      tags: ['adj'],
+      level: 'B2',
+    },
+    {
+      id: 'en-however',
+      title: 'however, but, or although?',
+      body: '"but" joins two halves of one sentence. "however" starts a new one and takes a comma. "although" opens a subordinate clause and cannot stand alone.',
+      examples: [
+        { form: 'It rained, but we went.', gloss: 'one sentence' },
+        { form: 'It rained. However, we went.', gloss: 'new sentence' },
+        { form: 'Although it rained, we went.', gloss: 'clause, needs the second half' },
+      ],
+      tags: ['adverb', 'conjunction'],
+      level: 'B2',
+    },
+    {
+      id: 'en-countable',
+      title: 'much, many, a lot of?',
+      body: '"many" counts things, "much" measures stuff. "a lot of" covers both and is what people actually say.\n\n"much" in a positive statement sounds formal or wrong — "I have much time" is not something anyone says.',
+      examples: [
+        { form: 'many cards / much time', gloss: 'countable / uncountable' },
+        { form: 'a lot of cards, a lot of time', gloss: 'safe either way' },
+      ],
+      tags: ['noun'],
+      level: 'A2',
+    },
+  ],
+  PT: [
+    {
+      id: 'pt-ser-estar',
+      title: 'ser or estar?',
+      body: 'Both are "to be". ser is what something is; estar is how it happens to be right now.\n\nThe same adjective changes meaning depending on which you pick, which is the part worth remembering.',
+      examples: [
+        { form: 'ele é chato', gloss: 'he is boring — as a person' },
+        { form: 'ele está chato', gloss: 'he is being annoying — today' },
+        { form: 'sou brasileiro / estou cansado', gloss: 'what I am / how I am' },
+      ],
+      tags: ['verb'],
+      level: 'A2',
+    },
+    {
+      id: 'pt-gerund',
+      title: 'estou fazendo, not estou a fazer',
+      body: 'Brazilian Portuguese builds the continuous with the gerund: estar plus the -ndo form.\n\nThe "a + infinitive" you may have seen is European. Both are understood everywhere, but only one sounds native here.',
+      examples: [
+        { form: 'estou trabalhando', gloss: 'I am working — Brazil' },
+        { form: 'estou a trabalhar', gloss: 'the same, in Portugal' },
+      ],
+      tags: ['verb'],
+      level: 'A2',
+    },
+    {
+      id: 'pt-voce',
+      title: 'você, tu, or a gente?',
+      body: 'você is the everyday "you" in most of Brazil, and it takes the same verb form as ele.\n\ntu survives in the south and northeast, often with você endings. And a gente has quietly replaced nós in speech — it means "we" but conjugates as "he".',
+      examples: [
+        { form: 'você fala / ele fala', gloss: 'same ending' },
+        { form: 'a gente vai', gloss: 'we go — singular verb' },
+      ],
+      tags: ['phrase'],
+      level: 'A1',
+    },
+    {
+      id: 'pt-contractions',
+      title: 'no, na, do, da',
+      body: 'Prepositions swallow the article that follows them, and it is not optional.\n\nem + o = no, em + a = na, de + o = do, de + a = da. Writing "em o" marks you out instantly.',
+      examples: [
+        { form: 'no mercado', gloss: 'em + o mercado' },
+        { form: 'da minha irmã', gloss: 'de + a minha irmã' },
+      ],
+      tags: ['preposition', 'noun'],
+      level: 'A1',
+    },
+    {
+      id: 'pt-por-para',
+      title: 'por or para?',
+      body: 'para points forward — a destination, a purpose, a recipient. por is the reason behind, the route through, or the exchange.',
+      examples: [
+        { form: 'vou para São Paulo', gloss: 'heading there' },
+        { form: 'passei por São Paulo', gloss: 'went through' },
+        { form: 'obrigado por tudo', gloss: 'in return for' },
+      ],
+      tags: ['preposition'],
+      level: 'B1',
+    },
+    {
+      id: 'pt-diminutive',
+      title: 'Why is everything -inho?',
+      body: 'The -inho ending is not only about size. It softens, warms, or makes something casual — a cafezinho is not a small coffee so much as a friendly one.\n\nIt goes on nouns, adjectives, even adverbs: rapidinho, agorinha.',
+      examples: [
+        { form: 'um cafezinho', gloss: 'a coffee, offered warmly' },
+        { form: 'rapidinho', gloss: 'in a jiffy' },
+      ],
+      tags: ['noun'],
+      level: 'B1',
+    },
+  ],
+  NL: [
+    {
+      id: 'nl-de-het',
+      title: 'de or het?',
+      body: 'Roughly two thirds of nouns take de and there is no reliable rule, so the article is part of the word — learn "het brood", never "brood".\n\nWhat is predictable: every plural takes de, and every diminutive takes het.',
+      examples: [
+        { form: 'het huis / de huizen', gloss: 'plural is always de' },
+        { form: 'het huisje', gloss: 'diminutives are always het' },
+      ],
+      tags: ['noun'],
+      level: 'A1',
+    },
+    {
+      id: 'nl-separable',
+      title: 'Separable verbs come apart',
+      body: 'A separable verb splits in a main clause: the prefix goes to the very end, however far away that is.\n\nIn a subordinate clause it stays whole. That is the tell for which kind of clause you are in.',
+      examples: [
+        { form: 'ik neem het boek mee', gloss: 'meenemen, split' },
+        { form: '... omdat ik het boek meeneem', gloss: 'whole again' },
+      ],
+      tags: ['verb'],
+      level: 'A2',
+    },
+    {
+      id: 'nl-word-order',
+      title: 'The verb goes second',
+      body: 'In a Dutch main clause the finite verb is the second element, whatever comes first.\n\nPut something else at the front for emphasis and the subject moves behind the verb. Any other verbs pile up at the end.',
+      examples: [
+        { form: 'ik ga morgen naar Amsterdam', gloss: 'subject first' },
+        { form: 'morgen ga ik naar Amsterdam', gloss: 'verb still second' },
+      ],
+      tags: ['verb'],
+      level: 'A2',
+    },
+    {
+      id: 'nl-er',
+      title: 'What is er doing there?',
+      body: 'er does four different jobs and is usually untranslatable.\n\nIt props up sentences with no real subject, stands in for a place, carries a number, and pairs with prepositions when the thing is not a person.',
+      examples: [
+        { form: 'er is een probleem', gloss: 'there is a problem' },
+        { form: 'ik ben er nooit geweest', gloss: 'there, a place' },
+        { form: 'ik denk er niet aan', gloss: 'about it' },
+      ],
+      tags: ['particle'],
+      level: 'B1',
+    },
+    {
+      id: 'nl-particles',
+      title: 'toch, wel, even, hoor',
+      body: 'These carry the tone, not the meaning, and Dutch without them sounds blunt to the point of rude.\n\nThey are the difference between an instruction and a request.',
+      examples: [
+        { form: 'kom even hier', gloss: 'pop over — softens it' },
+        { form: 'dat is toch mooi?', gloss: 'nudges you to agree' },
+        { form: 'het is niet duur hoor', gloss: 'reassuring' },
+      ],
+      tags: ['particle'],
+      level: 'B1',
+    },
+    {
+      id: 'nl-adjective-e',
+      title: 'When does the adjective take -e?',
+      body: 'Almost always. The exception is an indefinite het-word in the singular, where the adjective stays bare.',
+      examples: [
+        { form: 'de grote man / het grote huis', gloss: 'definite, so -e' },
+        { form: 'een groot huis', gloss: 'indefinite het-word, bare' },
+      ],
+      tags: ['adj'],
+      level: 'A2',
+    },
+  ],
+  ES: [
+    {
+      id: 'es-ser-estar',
+      title: 'ser or estar?',
+      body: 'ser is what something is; estar is how it is right now, and where it is.\n\nAs in Portuguese, the adjective changes meaning with the verb, which is the part that catches people out.',
+      examples: [
+        { form: 'es aburrido', gloss: 'he is boring' },
+        { form: 'está aburrido', gloss: 'he is bored' },
+        { form: 'está en Madrid', gloss: 'location is always estar' },
+      ],
+      tags: ['verb'],
+      level: 'A2',
+    },
+    {
+      id: 'es-por-para',
+      title: 'por or para?',
+      body: 'para looks ahead — a destination, a deadline, a purpose, who it is for. por looks behind or through — the cause, the route, the exchange, the duration.',
+      examples: [
+        { form: 'es para ti', gloss: 'for you — recipient' },
+        { form: 'gracias por venir', gloss: 'because you came' },
+        { form: 'por la mañana', gloss: 'through the morning' },
+      ],
+      tags: ['preposition'],
+      level: 'B1',
+    },
+    {
+      id: 'es-subjunctive',
+      title: 'What triggers the subjunctive?',
+      body: 'Not a tense so much as a mood: it turns up when the clause is wanted, doubted, denied or reacted to rather than reported.\n\nThe pattern to spot is a verb of wishing, feeling or doubting, followed by que.',
+      examples: [
+        { form: 'quiero que vengas', gloss: 'wanting' },
+        { form: 'no creo que sea verdad', gloss: 'doubting' },
+        { form: 'me alegra que estés aquí', gloss: 'reacting' },
+      ],
+      tags: ['verb'],
+      level: 'B2',
+    },
+    {
+      id: 'es-preterito',
+      title: 'pretérito or imperfecto?',
+      body: 'The preterite is a thing that happened — it has edges. The imperfect is what was going on, what used to happen, what the scene was like.\n\nMost stories use both: the imperfect paints, the preterite moves.',
+      examples: [
+        { form: 'llovía cuando salí', gloss: 'was raining / I left' },
+        { form: 'de niño jugaba mucho', gloss: 'used to' },
+      ],
+      tags: ['verb'],
+      level: 'B1',
+    },
+    {
+      id: 'es-gender',
+      title: 'Gender, and the words that lie about it',
+      body: '-o is usually masculine and -a feminine, but a well-known handful break it — and a few take masculine articles for a sound reason rather than a grammatical one.',
+      examples: [
+        { form: 'el problema, el día, el mapa', gloss: 'masculine despite the -a' },
+        { form: 'la mano, la foto', gloss: 'feminine despite the -o' },
+        { form: 'el agua fría', gloss: 'feminine, but el to avoid a-a' },
+      ],
+      tags: ['noun'],
+      level: 'A2',
+    },
+    {
+      id: 'es-personal-a',
+      title: 'The a before a person',
+      body: 'A direct object that is a person takes an a in front of it, with no equivalent in English. Leave it out and the sentence reads as though you are looking for a thing.',
+      examples: [
+        { form: 'busco a mi hermana', gloss: 'looking for my sister' },
+        { form: 'busco mi libro', gloss: 'no a — it is a thing' },
+      ],
+      tags: ['preposition'],
+      level: 'A2',
+    },
+  ],
+};
+
+/** The starter notes as records, one pass, ids already stable in the data. */
+export function buildSeedNotes(now: number = Date.now()): Note[] {
+  return (Object.keys(SEED_NOTES) as LanguageCode[]).flatMap((language) =>
+    SEED_NOTES[language].map((n) => ({ ...n, language, createdAt: now })));
 }

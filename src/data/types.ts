@@ -172,6 +172,37 @@ export interface Card {
 
 export type Grade = 'again' | 'hard' | 'good' | 'easy';
 
+/**
+ * A short explanation of a rule, to be read rather than reviewed.
+ *
+ * Deliberately not a Card: nothing here is scheduled, graded or turned over.
+ * "de or het?" is something you look up in the moment you are stuck on a card
+ * and then stop thinking about — putting it in a queue would be asking you to
+ * recite grammar rather than use them.
+ */
+export interface Note {
+  id: string;
+  language: LanguageCode;
+  /** The question it answers, phrased as one: "de or het?", "ser or estar?". */
+  title: string;
+  /** A few short paragraphs, split on blank lines. Not markdown. */
+  body: string;
+  /**
+   * Examples as data rather than prose, so the form can take the mono face and
+   * the gloss the muted one, the way a card's phonetic already does. They are
+   * the part a grammar note lives or dies on.
+   */
+  examples?: { form: string; gloss: string }[];
+  /**
+   * What this note is about, in the same words a card uses — `noun`, `verb`,
+   * `particle`. This is the whole join: a note is offered on a card when they
+   * share a tag and a language.
+   */
+  tags: string[];
+  level?: CEFRLevel;
+  createdAt: number;
+}
+
 export interface ReviewLogEntry {
   id: string;
   cardId: string;

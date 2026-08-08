@@ -42,7 +42,7 @@ export function Settings() {
     try {
       const counts = await restoreBackup(parseBackup(await file.text()));
       await reload();
-      const added = counts.decks + counts.cards + counts.reviews;
+      const added = counts.decks + counts.cards + counts.reviews + counts.notes;
       const skipped = counts.skipped.decks + counts.skipped.cards + counts.skipped.reviews;
       setStatus({
         tone: 'ok',

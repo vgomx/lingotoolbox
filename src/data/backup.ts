@@ -1,6 +1,6 @@
 import { exportAll, importAll, type ImportCounts } from './db';
 import { APP_VERSION } from '../legalNotices';
-import type { Card, Deck, ReviewLogEntry } from './types';
+import type { Card, Deck, Note, ReviewLogEntry } from './types';
 
 /** Identifies the file as ours before anything reads its contents. */
 export const BACKUP_FORMAT = 'lingo-toolbox/backup';
@@ -10,7 +10,12 @@ export const BACKUP_FORMAT = 'lingo-toolbox/backup';
  * additions. A reader that ignores fields it does not know can open a v1 file
  * forever; that is the point of writing the version down.
  */
-export const BACKUP_VERSION = 1;
+/**
+ * 2 added notes. A v1 file has no `notes` key at all, which is why the reader
+ * treats it as optional rather than as a missing field — an old backup is still
+ * a complete backup of everything the app had when it was written.
+ */
+export const BACKUP_VERSION = 2;
 
 export interface Backup {
   format: typeof BACKUP_FORMAT;
@@ -20,6 +25,7 @@ export interface Backup {
   decks: Deck[];
   cards: Card[];
   reviews: ReviewLogEntry[];
+  notes: Note[];
 }
 
 /**
@@ -30,7 +36,7 @@ export interface Backup {
  * backup on a laptop should not drag a phone's theme along with it.
  */
 export async function buildBackup(now: number = Date.now()): Promise<Backup> {
-  const { decks, cards, reviews } = await exportAll();
+  const { decks, cards, reviews, notes } = await exportAll();
   return {
     format: BACKUP_FORMAT,
     version: BACKUP_VERSION,
@@ -39,6 +45,7 @@ export async function buildBackup(now: number = Date.now()): Promise<Backup> {
     decks,
     cards,
     reviews,
+    notes,
   };
 }
 
@@ -71,6 +78,9 @@ export function downloadBackup(backup: Backup, filename = backupFilename()): voi
 export class BackupError extends Error {}
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;
+const looksLikeNote = (v: unknown): boolean => isObject(v)
+  && typeof v.id === 'string' && typeof v.language === 'string'
+  && typeof v.title === 'string' && typeof v.body === 'string';
 
 const looksLikeDeck = (v: unknown) => isObject(v)
   && typeof v.id === 'string' && typeof v.name === 'string' && typeof v.language === 'string';
@@ -111,6 +121,11 @@ export function parseBackup(text: string): Backup {
   if (!raw.decks.every(looksLikeDeck)) throw new BackupError('That backup has a deck with missing fields.');
   if (!raw.cards.every(looksLikeCard)) throw new BackupError('That backup has a card with missing fields.');
   if (!raw.reviews.every(looksLikeReview)) throw new BackupError('That backup has a review entry with missing fields.');
+  // Absent in a v1 file, which is not an error — there were no notes to write.
+  // Present but malformed is, so it is only checked when it is there.
+  if (raw.notes !== undefined && (!Array.isArray(raw.notes) || !raw.notes.every(looksLikeNote))) {
+    throw new BackupError('That backup has a note with missing fields.');
+  }
 
   return {
     format: BACKUP_FORMAT,
@@ -120,6 +135,7 @@ export function parseBackup(text: string): Backup {
     decks: raw.decks as Deck[],
     cards: raw.cards as Card[],
     reviews: raw.reviews as ReviewLogEntry[],
+    notes: (raw.notes ?? []) as Note[],
   };
 }
 
