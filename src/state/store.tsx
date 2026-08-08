@@ -38,6 +38,10 @@ interface StoreValue {
   weeklyReviews: number[];
 
   grade: (card: Card, direction: Direction, grade: Grade) => Promise<Card>;
+  /** Takes back the last grade, returning the card it restored, or null. */
+  undo: () => Promise<Card | null>;
+  /** How many grades can still be taken back. */
+  undoDepth: number;
   saveCard: (card: Card) => Promise<void>;
   removeCard: (id: string) => Promise<void>;
   saveDeck: (deck: Deck) => Promise<void>;
@@ -46,6 +50,9 @@ interface StoreValue {
   /** Re-reads the database into the store — used after a restore. */
   reload: () => Promise<void>;
 }
+
+/** How many grades back you can go. Deep enough to fix a slip, not a session. */
+const UNDO_DEPTH = 10;
 
 const StoreContext = React.createContext<StoreValue | null>(null);
 
@@ -75,6 +82,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // (every seeded card, and every card the user adds) counted as not-yet-due
   // until the next tick.
   const [switching, setSwitching] = React.useState<string | null>(null);
+  /**
+   * Cards as they stood before their last few grades, newest last.
+   *
+   * A snapshot rather than something derived from the review log: the log says
+   * what the interval went from and to, which describes a review but cannot
+   * reverse one — the ease, the reps and the lapses have all moved too.
+   *
+   * Held in memory and lost on reload, which is the right lifetime. Undo is for
+   * the answer you just mis-pressed, not for editing history a week later.
+   */
+  const [undoStack, setUndoStack] = React.useState<{ card: Card; entryId: string }[]>([]);
   const [tick, setTick] = React.useState(0);
   React.useEffect(() => {
     const t = setInterval(() => setTick((n) => n + 1), 30_000);
@@ -176,8 +194,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   );
 
   const grade = React.useCallback(async (card: Card, direction: Direction, g: Grade) => {
-    const updated = await db.gradeCard(card, direction, g);
+    const { card: updated, entryId } = await db.gradeCard(card, direction, g);
     setCards((cs) => cs.map((c) => (c.id === updated.id ? updated : c)));
+    // Capped: this is a safety net for the last few answers, not a history.
+    setUndoStack((stack) => [...stack, { card, entryId }].slice(-UNDO_DEPTH));
     const [nextStreak, nextWeek] = await Promise.all([db.computeStreak(), db.reviewsPerDay()]);
     setStreak(nextStreak);
     setWeeklyReviews(nextWeek);
@@ -213,6 +233,26 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     await db.migrateLevels();
     await refresh(prefs.language);
   }, [prefs.language, refresh]);
+
+  /**
+   * Takes back the most recent grade, and says which card it was.
+   *
+   * Returns null when there is nothing to take back, so a caller can tell the
+   * difference between "undone" and "there was nothing there" without reaching
+   * into the stack itself.
+   */
+  const undo = React.useCallback(async () => {
+    const last = undoStack[undoStack.length - 1];
+    if (!last) return null;
+    await db.undoReview(last.entryId, last.card);
+    setCards((cs) => cs.map((c) => (c.id === last.card.id ? last.card : c)));
+    setUndoStack((stack) => stack.slice(0, -1));
+    // The streak and the week are counted from the log, which just lost a row.
+    const [nextStreak, nextWeek] = await Promise.all([db.computeStreak(), db.reviewsPerDay()]);
+    setStreak(nextStreak);
+    setWeeklyReviews(nextWeek);
+    return last.card;
+  }, [undoStack]);
 
   const reset = React.useCallback(async () => {
     await db.resetAll();
@@ -256,6 +296,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     streak,
     weeklyReviews,
     grade,
+    undo,
+    undoDepth: undoStack.length,
     saveCard,
     removeCard,
     saveDeck,

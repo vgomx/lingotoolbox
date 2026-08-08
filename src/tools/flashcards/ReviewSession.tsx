@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Button, Flashcard, Icon, IconButton, ProgressBar, ReviewRating, Tag, Toast, playSound, useIsMobile } from 'lingo-ds';
+import { Button, Flashcard, Icon, IconButton, ProgressBar, ReviewRating, Tag, Toast, Tooltip, playSound, useIsMobile } from 'lingo-ds';
 import { TopRight, useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
@@ -37,7 +37,7 @@ const page: React.CSSProperties = {
 export function ReviewSession() {
   const { deckId } = useParams();
   const navigate = useNavigate();
-  const { decks, cards, dueInDeck, prefs, grade, workspace } = useStore();
+  const { decks, cards, dueInDeck, prefs, grade, undo, undoDepth, workspace } = useStore();
   const isMobile = useIsMobile();
 
   const deck = deckId ? decks.find((d) => d.id === deckId) : undefined;
@@ -78,6 +78,43 @@ export function ReviewSession() {
     if (done) playSound('sessionComplete');
   }, [done]);
 
+  /**
+   * Walks the session back one answer, alongside the store putting the card back.
+   *
+   * The card is not enough on its own: a grade also moved the index, cleared the
+   * flip and, for Again, pushed a second copy of the question onto the end of
+   * the queue. Undoing the schedule while leaving those in place would land you
+   * on the next card with the previous one silently restored behind you, and the
+   * Again copy would still be waiting at the end for a lapse that no longer
+   * happened.
+   */
+  const stepBack = React.useCallback(async () => {
+    const restored = await undo();
+    if (!restored) return;
+
+    /**
+     * Whether the grade being taken back was Again.
+     *
+     * Nothing records the grade itself, but Again is the only one that appends
+     * a second copy of the question to the end of the queue — so a last entry
+     * for this card, sitting beyond the ground already covered, is that copy and
+     * nothing else. Decided once, here, rather than inside each setter: two
+     * updaters asking the same question of a queue one of them is changing is
+     * how they end up disagreeing.
+     */
+    const last = queue?.[queue.length - 1];
+    const wasAgain = !!queue && queue.length > index && last?.card.id === restored.id;
+
+    if (wasAgain) {
+      setQueue((q) => (q ? q.slice(0, -1) : q));
+      setAgain((n) => Math.max(0, n - 1));
+    }
+    setIndex((i) => Math.max(0, i - 1));
+    setGraded((n) => Math.max(0, n - 1));
+    setFlipped(false);
+    setToast('Took back the last answer.');
+  }, [undo, index, queue]);
+
   const answer = React.useCallback(async (key: Grade) => {
     if (!current) return;
     // Before the await, so the sound answers the keypress rather than the write.
@@ -107,6 +144,12 @@ export function ReviewSession() {
       // showed its prompt, so once you had the answer the key that got you
       // there did nothing — the card could be turned back by dragging it or by
       // clicking it, but not by the same key that turned it over.
+      // The shortcut people already have in their fingers for this.
+      if ((e.key === 'z' || e.key === 'Z') && graded > 0) {
+        e.preventDefault();
+        void stepBack();
+        return;
+      }
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
         if (!flipped) playSound('flip');
@@ -123,7 +166,7 @@ export function ReviewSession() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [current, flipped, answer]);
+  }, [current, flipped, answer, graded, stepBack]);
 
   React.useEffect(() => {
     if (!toast) return undefined;
@@ -214,6 +257,16 @@ export function ReviewSession() {
       <TopRight>
         {/* Icon-only on a phone: the words cost ~100px of a 375px bar and
             squeezed the title down to "Re…". */}
+        {/* Only once there is something to take back, and worded as the thing it
+            undoes rather than as the word "undo" — you are putting a card back,
+            not reversing a transaction. */}
+        {undoDepth > 0 && (
+          <Tooltip label="Take back the last answer" shortcut="Z">
+            <IconButton label="Take back the last answer" onClick={() => void stepBack()}>
+              <Icon name="rotate-ccw" size={18} />
+            </IconButton>
+          </Tooltip>
+        )}
         {isMobile ? (
           <IconButton label="End session" onClick={() => navigate(deck ? `/app/cards/${deck.id}` : '/app/cards')}>
             <Icon name="x" size={18} />
