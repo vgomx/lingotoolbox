@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Badge, Button, Card, Icon, ProgressBar, StreakPill, Tag, useIsMobile } from 'lingo-ds';
 import { useChrome } from '../shell/chrome';
 import { useStore } from '../state/store';
+import { HAS_ETYMOLOGY } from '../data/etymology';
 import { NAV_TOOLS } from '../data/seed';
 
 /**
@@ -73,7 +74,7 @@ function WeekChart({ counts }: { counts: number[] }) {
 
 export function Home() {
   const isMobile = useIsMobile();
-  const { decks, cards, dueCount, streak, weeklyReviews, workspace, cardsInDeck, dueInDeck } = useStore();
+  const { decks, cards, notes, dueCount, streak, weeklyReviews, language, workspace, cardsInDeck, dueInDeck } = useStore();
   const navigate = useNavigate();
 
   const mastered = cards.filter((c) => c.state === 'review' && c.interval >= 21).length;
@@ -104,6 +105,19 @@ export function Home() {
     return cards[dayIndex % cards.length];
   }, [cards]);
   const wordDeck = word ? decks.find((d) => d.id === word.deckId) : undefined;
+
+  /** One rule, chosen the same way and on the same clock as the word above. */
+  const rule = React.useMemo(() => {
+    if (!notes.length) return null;
+    const dayIndex = Math.floor(Date.now() / 86_400_000);
+    return notes[dayIndex % notes.length];
+  }, [notes]);
+
+  const toolSubtitle = (id: string): string | null => {
+    if (id === 'cards') return `${dueCount} due · ${decks.length} ${decks.length === 1 ? 'deck' : 'decks'}`;
+    if (id === 'grammar') return notes.length ? `${notes.length} ${notes.length === 1 ? 'note' : 'notes'}` : null;
+    return null;
+  };
 
   const masteryOf = (deckCards: typeof cards) => {
     if (!deckCards.length) return 0;
@@ -203,10 +217,16 @@ export function Home() {
                     {t.label}
                     {!t.released && <Badge tone="neutral">Soon</Badge>}
                   </span>
+                  {/* Each tool counts its own things. This used to print
+                      Flashcards' figures under every card, which was harmless
+                      while Flashcards was the only built tool and became wrong
+                      the moment it wasn't — Grammar Notes announcing "12 due ·
+                      2 decks" is a number about somebody else's screen.
+                      Etymology has no cheap count: the word list is a couple of
+                      megabytes and fetching it to put a figure on the home
+                      screen would be paying for the tool you did not open. */}
                   <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>
-                    {t.released
-                      ? `${dueCount} due · ${decks.length} ${decks.length === 1 ? 'deck' : 'decks'}`
-                      : t.blurb}
+                    {toolSubtitle(t.id) ?? t.blurb}
                   </span>
                 </Card>
               </Link>
@@ -217,7 +237,7 @@ export function Home() {
         {/* Stacked on a phone. A 1.4fr/1fr split of 375px is two ~170px columns,
             which broke "Everyday phrases" onto three lines and clipped the word
             of the day mid-word. */}
-        {(topDecks.length > 0 || word) && (
+        {(topDecks.length > 0 || word || rule) && (
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0, 1fr)' : 'minmax(0, 1.4fr) minmax(0, 1fr)', gap: 'var(--space-5)', alignItems: 'start' }}>
             {topDecks.length > 0 && (
               <div>
@@ -272,14 +292,51 @@ export function Home() {
                     {word.tags.map((t) => <Tag key={t} color="var(--tool-etymology)">{t}</Tag>)}
                   </div>
                 )}
-                {wordDeck && (
-                  <Link to={`/app/cards/${wordDeck.id}`} style={{ textDecoration: 'none' }}>
-                    <Button variant="secondary" size="sm" block iconLeft={<Icon name="layers" size={14} />}>
-                      Open {wordDeck.name}
-                    </Button>
-                  </Link>
-                )}
+                {/* Two ways on from the same word, which is the point of
+                    having more than one tool: the deck it lives in, and where
+                    it came from. The origin link is offered without checking
+                    first — the word list is megabytes and is not worth
+                    fetching here to decide whether to show a button — so the
+                    details screen says plainly when Wiktionary has no entry
+                    rather than this pretending it always will. */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                  {wordDeck && (
+                    <Link to={`/app/cards/${wordDeck.id}`} style={{ textDecoration: 'none' }}>
+                      <Button variant="secondary" size="sm" block iconLeft={<Icon name="layers" size={14} />}>
+                        Open {wordDeck.name}
+                      </Button>
+                    </Link>
+                  )}
+                  {HAS_ETYMOLOGY[language] && (
+                    <Link to={`/app/etymology/${encodeURIComponent(word.front)}`} style={{ textDecoration: 'none' }}>
+                      <Button variant="ghost" size="sm" block iconLeft={<Icon name="git-branch" size={14} />}>
+                        Where it comes from
+                      </Button>
+                    </Link>
+                  )}
+                </div>
               </Card>
+
+              {rule && (
+                <div style={{ marginTop: 'var(--space-6)' }}>
+                  <h2 style={{ ...sectionHeading, marginBottom: 'var(--space-5)' }}>A rule worth knowing</h2>
+                  <Card accent="var(--tool-grammar)">
+                    <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-18)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.2 }}>
+                      {rule.title}
+                    </span>
+                    {/* The first paragraph only. A note runs to a few hundred
+                        words and the home screen is not where you read it. */}
+                    <p style={{ margin: 0, fontSize: 'var(--fs-13)', color: 'var(--text-body)', lineHeight: 'var(--lh-relaxed)' }}>
+                      {rule.body.split('\n\n')[0]}
+                    </p>
+                    <Link to="/app/grammar" style={{ textDecoration: 'none' }}>
+                      <Button variant="ghost" size="sm" block iconLeft={<Icon name="scroll-text" size={14} />}>
+                        All notes
+                      </Button>
+                    </Link>
+                  </Card>
+                </div>
+              )}
             </div>
             )}
           </div>
