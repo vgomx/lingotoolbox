@@ -87,6 +87,23 @@ export default defineConfig({
           // They are runtime-cached instead — and a glyph can only be on a card if
           // the picker was opened, which is what puts it in the cache.
           'openmoji/**',
+          // The latin-ext cut of the two text faces. The four workspaces do not
+          // need it: ã, ç, õ, ë and ñ all sit below U+0100, inside latin.
+          // unicode-range means a browser only fetches these if a character in
+          // the range actually appears, so leaving them out costs nothing until
+          // someone writes a card in Polish, and saves 70 KB on a first visit
+          // for everyone who never does. They are still served and still cached
+          // at runtime once fetched.
+          //
+          // JetBrains Mono is deliberately NOT in this list. It sets the
+          // phonetics, and IPA lives in latin-ext — ˈ is U+02C8 and ɛ is
+          // U+025B — so /ˈlɛkər/ pulls that file on the very first card with a
+          // pronunciation on it. Excluding it would have left the offline case
+          // this whole change exists to fix reaching for the network anyway.
+          // Measured, not assumed: it was the one latin-ext file the app
+          // fetched on load.
+          '**/baloo-2-*latin-ext-*.woff2',
+          '**/nunito-sans-*latin-ext-*.woff2',
         ],
         navigateFallbackDenylist: [/^\/api/],
         runtimeCaching: [
