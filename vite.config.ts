@@ -2,7 +2,12 @@ import { execSync } from 'node:child_process';
 import { defineConfig } from 'vite';
 
 /**
- * The commit this bundle was built from, shown in Settings.
+ * The commit this bundle was built from, shown in Settings → About.
+ *
+ * Briefly shown nowhere at all: the Diagnostics card was its only reader, and
+ * deleting that card left this define with no consumer while this comment went
+ * on claiming otherwise. The stamp is the part worth keeping — it answers the
+ * question below on its own.
  *
  * A service worker can serve an old build for a long time, and on an installed
  * app there is no address bar to reload from — so "is this phone running the fix
