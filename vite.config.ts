@@ -170,5 +170,23 @@ export default defineConfig({
     watch: {
       ignored: ['**/lingo-ds/node_modules/**'],
     },
+    fs: {
+      /*
+       * Let the dev server read the sibling design system.
+       *
+       * lingo-ds is a file: dependency, so node_modules/lingo-ds is a symlink
+       * out of this project and Vite's dev server refuses to serve anything
+       * that resolves outside the workspace root — it answers 403. That never
+       * mattered while the only assets it referenced were remote: the icons are
+       * inlined into the bundle and the fonts were fetched from Google.
+       *
+       * Self-hosting the fonts made tokens/fonts.css point at real files over
+       * there, so every woff2 came back 403 and the whole app rendered in the
+       * system fallback — in dev only. The production build inlines and hashes
+       * those files at build time and never asks the dev server anything, which
+       * is why the built output was fine and this went unnoticed.
+       */
+      allow: ['..'],
+    },
   },
 });
