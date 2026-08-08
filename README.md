@@ -27,7 +27,7 @@ A set of language-learning tools that runs entirely in your browser — not a co
 - **Ask both ways** — turn a deck around and each direction keeps its own schedule, because recognising *brood* and producing it from "bread" are two different things you know to two different degrees. A triage step lets you pick which cards survive the reversal, since plenty of phrases only work in one direction.
 - **Undo the last grade** — `Z`, ten deep, restoring the schedule exactly as it was rather than approximating it.
 - **Grammar Notes** — short explanations tagged the way your cards are, so the rule about *de* or *het* turns up while you're reviewing a noun. `G` opens it mid-review without ending the session.
-- **Etymology** — trace a word back through the languages it passed through. *pond* goes Middle Dutch → Old Dutch → Proto-West Germanic → Proto-Germanic → Latin, and `E` pulls that up mid-review without ending the session.
+- **Etymology** — trace a word back through the languages it passed through. *pond* goes Middle Dutch → Old Dutch → Proto-West Germanic → Proto-Germanic → Latin, and `E` pulls that up mid-review without ending the session. Open a word and it branches: *woordenboek* is *woord* and *boek*, each unfolding into its own descent.
 - **CEFR levels** — cards carry A1–C1, and the home screen breaks today's due count down by level.
 - **Illustrations** — an OpenMoji glyph on a card, from a curated set of 526 vendored locally.
 - **Backup and restore** — a single JSON file holding every deck, card, review and note across all four workspaces. Restoring adds what's missing and leaves what's there alone, so importing twice is harmless.
