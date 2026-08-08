@@ -442,9 +442,19 @@ export function DeckDetail() {
               <Card
                 key={card.id}
                 padding="10px 14px"
-                // Dimmed once unticked, so what stands out is the exceptions you
-                // have carved out rather than the majority you left alone.
-                style={{ opacity: on ? 1 : 0.5, transition: 'var(--transition-surface)' }}
+                // Set aside, not switched off. An excluded row drops to the
+                // sunken surface rather than fading: opacity is this design
+                // system's disabled treatment — Checkbox itself dims to 0.45
+                // when it cannot be pressed — and these can be ticked straight
+                // back. It also has to stay legible, because deciding to put one
+                // back means re-reading the gloss.
+                style={{
+                  // Both arms named. `undefined` does not fall back to the
+                  // card's own background: it replaces it in the style object
+                  // and React skips the property, leaving the row with none.
+                  background: on ? 'var(--surface-card)' : 'var(--surface-sunken)',
+                  transition: 'var(--transition-surface)',
+                }}
               >
                 <Checkbox
                   checked={on}
