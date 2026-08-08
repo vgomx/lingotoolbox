@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Badge, Button, Card, Icon, ProgressBar, StreakPill, Tag, useIsMobile } from 'lingo-ds';
 import { useChrome } from '../shell/chrome';
 import { useStore } from '../state/store';
-import { TOOLS } from '../data/seed';
+import { NAV_TOOLS } from '../data/seed';
 
 /**
  * The dashboard, following ui_kits/app/HomeScreen.jsx.
@@ -186,7 +186,7 @@ export function Home() {
         <div>
           <h2 style={{ ...sectionHeading, marginBottom: 'var(--space-5)' }}>Your toolbox</h2>
           <div style={toolGrid}>
-            {TOOLS.filter((t) => t.id !== 'home').map((t) => (
+            {NAV_TOOLS.filter((t) => t.id !== 'home').map((t) => (
               <Link key={t.id} to={`/app/${t.path}`} style={{ textDecoration: 'none' }}>
                 <Card interactive style={{ height: '100%' }}>
                   {/* Icon in a tinted well of its own accent, as the kit has it —

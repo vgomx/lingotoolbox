@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Badge, Button, Dialog, Icon, IconButton, Input, SidebarItem, RailTile, StreakPill, Tooltip, useBreakpoint, usePrefersReducedMotion } from 'lingo-ds';
 import { useStore } from '../state/store';
-import { TOOLS } from '../data/seed';
+import { NAV_TOOLS, TOOLS } from '../data/seed';
 import { LanguageMenu } from './LanguageMenu';
 import { ChromeProvider, useChromeState } from './chrome';
 import { markAppVisited } from '../data/visit';
@@ -245,7 +245,7 @@ export function AppShell() {
           }}
         />
 
-        {TOOLS.map((t) => (
+        {NAV_TOOLS.map((t) => (
           <div key={t.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, width: '100%', flex: 'none' }}>
             <Tooltip label={t.label} side="right">
               <RailTile

@@ -32,6 +32,22 @@ export const TOOLS = [
 
 export type ToolId = (typeof TOOLS)[number]['id'];
 
+/**
+ * The same tools, in the order anywhere that navigates should show them: what
+ * you can use, then what you cannot.
+ *
+ * TOOLS above stays in roadmap order, which is how it reads as a declaration —
+ * but the rail was rendering it literally, so Grammar Notes shipped behind
+ * three tiles marked SOON. A working tool sat below three that only apologise.
+ *
+ * A derived order rather than a rearranged array, because the arrangement would
+ * have to be maintained by hand at exactly the moment nobody is thinking about
+ * the rail: flipping `released` to true here promotes the tool by itself. The
+ * sort is stable — guaranteed by the spec since ES2019 — so within each group
+ * the declaration order above is what survives.
+ */
+export const NAV_TOOLS = [...TOOLS].sort((a, b) => Number(b.released) - Number(a.released));
+
 interface SeedCard {
   front: string;
   back: string;
