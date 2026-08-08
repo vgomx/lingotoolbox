@@ -1,16 +1,7 @@
 import { Card, Icon, Tag } from 'lingo-ds';
 import type { Chain, Etymologies } from '../../data/etymology';
 import { langName } from '../../data/etymology';
-
-/** How each relation reads in a sentence, rather than as a database value. */
-const RELATION: Record<string, string> = {
-  inherited: 'inherited from',
-  derived: 'derived from',
-  borrowed: 'borrowed from',
-  calque: 'calqued on',
-  'semantic loan': 'sense borrowed from',
-  root: 'ultimately from the root',
-};
+import { RELATION, isNamed } from './relations';
 
 const mono: React.CSSProperties = {
   fontFamily: 'var(--font-mono)',
@@ -21,26 +12,28 @@ const mono: React.CSSProperties = {
 /**
  * One word's lineage, oldest at the bottom.
  *
- * A list rather than a tree, because that is the shape of the data: a word has
- * a spine of ancestors and, occasionally, some siblings. Drawing it as a graph
- * would be a lot of machinery to render what is usually four rows — and would
- * imply you can wander off down a branch, which you cannot: the ancestors are
- * text, not entries, because holding Latin's own etymologies would cost more
- * than every workspace in the app put together.
+ * A list, because a word's ancestry is a line: drawing a line as a tree would
+ * be a lie about the data. The branching lives one level up, in WordDetails,
+ * where a compound opens into the separate descent of each of its parts.
+ *
+ * Upward is where it stops either way. The ancestors here are text rather than
+ * entries — following Latin fenestra to *its* origins needs Latin's own
+ * etymologies, which would cost more than every workspace in the app together.
  *
  * The rail on the left is the point. It makes the descent legible at a glance —
  * you can see that pond goes back four steps without reading any of them.
  */
-export function ChainCard({ word, chain, data, compact = false }: {
+export function ChainCard({ word, chain, data, compact = false, interactive = false }: {
   word: string;
   chain: Chain;
   data: Etymologies;
   compact?: boolean;
+  interactive?: boolean;
 }) {
   const steps = chain.a ?? [];
 
   return (
-    <Card title={compact ? undefined : word}>
+    <Card title={compact ? undefined : word} interactive={interactive} style={{ height: '100%' }}>
       {compact && (
         <span style={{ ...mono, fontSize: 'var(--fs-18)', fontWeight: 'var(--fw-black)' as React.CSSProperties['fontWeight'] }}>
           {word}
@@ -65,7 +58,14 @@ export function ChainCard({ word, chain, data, compact = false }: {
                     {langName(data, code)}
                   </span>
                 </span>
-                <div style={{ ...mono, wordBreak: 'break-word' }}>{term}</div>
+                {/* Wiktionary will say a word is "ultimately Semitic" without
+                    naming a Semitic word for it, and writes that as a bare
+                    hyphen. The claim is real and worth keeping — abacus really
+                    does go back past Greek — but printing the placeholder gave
+                    a mono line containing "-", which reads as a broken record
+                    rather than as an honest "we know the family, not the word".
+                    So the language stands alone and the term line is dropped. */}
+                {isNamed(term) && <div style={{ ...mono, wordBreak: 'break-word' }}>{term}</div>}
               </div>
             </div>
           ))}

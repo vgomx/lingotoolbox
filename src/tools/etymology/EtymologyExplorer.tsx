@@ -179,8 +179,16 @@ export function EtymologyExplorer() {
               gap: 'var(--space-6)', alignItems: 'start',
             }}
           >
+            {/* The card is the way in: clicking a word opens it out, with each
+                part of a compound expandable into its own descent. */}
             {shown.map(({ word, chain }) => (
-              <ChainCard key={word} word={word} chain={chain} data={data!} />
+              <Link
+                key={word}
+                to={`/app/etymology/${encodeURIComponent(word)}`}
+                style={{ textDecoration: 'none', display: 'block', height: '100%' }}
+              >
+                <ChainCard word={word} chain={chain} data={data!} interactive />
+              </Link>
             ))}
           </div>
         </>

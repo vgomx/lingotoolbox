@@ -12,6 +12,7 @@ import { DeckDetail } from './tools/flashcards/DeckDetail';
 import { ReviewSession } from './tools/flashcards/ReviewSession';
 import { ConjugationScreen, PhrasebookScreen } from './tools/Placeholders';
 import { EtymologyExplorer } from './tools/etymology/EtymologyExplorer';
+import { WordDetails } from './tools/etymology/WordDetails';
 import { useStore } from './state/store';
 import { hasVisitedApp } from './data/visit';
 
@@ -102,6 +103,7 @@ export function App() {
           <Route path="review" element={<ReviewSession />} />
           <Route path="review/:deckId" element={<ReviewSession />} />
           <Route path="etymology" element={<EtymologyExplorer />} />
+          <Route path="etymology/:word" element={<WordDetails />} />
           <Route path="conjugation" element={<ConjugationScreen />} />
           <Route path="phrasebook" element={<PhrasebookScreen />} />
           <Route path="grammar" element={<GrammarNotes />} />
