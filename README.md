@@ -1,158 +1,130 @@
+<div align="center">
+
+<img src="public/icons/icon-192.png" width="72" height="72" alt="" />
+
 # Lingo Toolbox
 
-An open-source set of language-learning tools — not a course. Pick a language
-workspace and move between tools that practise and consolidate what you've
-already met elsewhere.
+**Practise the words you nearly know.**
 
-**Live:** https://vgomx.github.io/lingotoolbox/
-**Design system:** [vgomx/lingo-ds](https://github.com/vgomx/lingo-ds) ·
-[component showcase](https://vgomx.github.io/lingo-ds/)
+A set of language-learning tools that runs entirely in your browser — not a course. Pick a language workspace and work on the words you've already met somewhere else: a deck you're mid-way through, a rule you keep looking up, a verb that never sticks.
 
-Everything runs in the browser. There is no server, no account, and no paid
-tier; your cards live in IndexedDB on your own machine.
+[**Open the app →**](https://vgomx.github.io/lingotoolbox/)
 
-## What works today
+[![License: MIT](https://img.shields.io/badge/License-MIT-6A4CF0.svg)](LICENSE)
+![React](https://img.shields.io/badge/React-18-2E7D32.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-C62828.svg)
+![PWA](https://img.shields.io/badge/PWA-installable-6A1B9A.svg)
+[![Design system](https://img.shields.io/badge/design_system-lingo--ds-1565C0.svg)](https://github.com/vgomx/lingo-ds)
 
-| Tool | State |
-| --- | --- |
-| **Flashcards** | Built — decks, card CRUD, a review session on a local SM-2 scheduler, and JSON backup/restore |
-| Etymology Explorer | Designed, empty state only |
-| Conjugation Drill | Designed, empty state only |
-| Phrasebook | Designed, empty state only |
-| Grammar Notes | Designed, empty state only |
+</div>
 
-The marketing landing page at `/` and the dark product shell at `/app` are both
-complete, as is the light/dark theme parity across the whole shell.
+## Features
 
-`/` shows the landing page to a first-time visitor and redirects to `/app` for
-anyone who has used the app before — arriving is the case worth shortcutting,
-while *clicking* the marketing link from inside the app is a deliberate request
-for that page and always honoured. The two are told apart by React Router's
-`location.key`, which is `default` only on the initial entry. The flag is set on
-reaching the app, not on seeing the landing page: someone who bounced off the
-marketing site has decided nothing.
+- **Four workspaces** — English, Brazilian Portuguese, Dutch and Spanish, each with its own decks, notes and schedule. Switching one changes the whole app and takes you home.
+- **Flashcards on a real scheduler** — a local SM-2 implementation with four grades. The labels under the buttons show the actual interval each one buys you, worked out from the card in front of you rather than fixed copy.
+- **Ask both ways** — turn a deck around and each direction keeps its own schedule, because recognising *brood* and producing it from "bread" are two different things you know to two different degrees. A triage step lets you pick which cards survive the reversal, since plenty of phrases only work in one direction.
+- **Undo the last grade** — `Z`, ten deep, restoring the schedule exactly as it was rather than approximating it.
+- **Grammar Notes** — short explanations tagged the way your cards are, so the rule about *de* or *het* turns up while you're reviewing a noun. `G` opens it mid-review without ending the session.
+- **CEFR levels** — cards carry A1–C1, and the home screen breaks today's due count down by level.
+- **Illustrations** — an OpenMoji glyph on a card, from a curated set of 526 vendored locally.
+- **Backup and restore** — a single JSON file holding every deck, card, review and note across all four workspaces. Restoring adds what's missing and leaves what's there alone, so importing twice is harmless.
+- **Installable** — add it to a home screen or dock and it runs in its own window, offline.
+- **Light and dark**, a full keyboard path through review, and a dock built for a thumb on a phone.
 
-## Running it
+Nothing you write leaves your device. There is no server, no account and no paid tier — your cards live in IndexedDB on your own machine, which is also why the backup file matters.
 
-`lingo-ds` is consumed as a `file:` dependency rather than from a registry, so
-**check it out as a sibling directory and build it first**:
+## Keyboard
 
-```bash
+| | |
+|---|---|
+| **Review** | `Space` / `Enter` turn the card · `1`–`4` grade it · `Z` undo the last grade · `G` the rule for this card |
+| **Decks** | `N` add a card |
+| **Anywhere** | `Esc` closes a dialog or a menu |
+
+## Getting started
+
+This app uses [`lingo-ds`](https://github.com/vgomx/lingo-ds), its design system, as a local `file:` dependency — so it expects `lingo-ds` checked out as a **sibling directory**:
+
+```
+some-folder/
+├── lingotoolbox/   (this repo)
+└── lingo-ds/
+```
+
+Built and tested on **Node 20**.
+
+```sh
+# 1. build the design system
 git clone https://github.com/vgomx/lingo-ds
-git clone https://github.com/vgomx/lingotoolbox
 cd lingo-ds && npm install && npm run build
+
+# 2. run the app
+git clone https://github.com/vgomx/lingotoolbox
 cd ../lingotoolbox && npm install && npm run dev
 ```
 
-If `npm install` fails to resolve `lingo-ds`, it's because `lingo-ds/dist` is
-missing — build the design system again.
+If `npm install` can't resolve `lingo-ds`, it's because `lingo-ds/dist` is missing — build the design system again.
 
-| Script | Does |
-| --- | --- |
-| `npm run dev` | Vite dev server |
-| `npm run build` | Typecheck, build to `dist/`, copy `index.html` to `404.html` |
-| `npm run preview` | Serve the production build locally |
-| `npm run typecheck` | `tsc -b --noEmit` |
+### Scripts
 
-## Layout
+| Command | Does |
+|---|---|
+| `npm run dev` | Start the Vite dev server with hot reload. |
+| `npm run build` | Typecheck, check the illustrations, build to `dist/`, copy `index.html` to `404.html`. |
+| `npm run preview` | Serve the production build locally. |
+| `npm run typecheck` | `tsc -b --noEmit`. |
+| `npm run check:illustrations` | Verify every referenced glyph exists. Runs on every build. |
+| `npm run build:illustrations` | Re-download the OpenMoji set and regenerate the catalogue. |
+| `npm run build:icons` | Regenerate the PWA icons from the design system's lockup. |
+
+## Tech
+
+- **[React 18](https://react.dev)** + **TypeScript** (strict), built with **[Vite](https://vite.dev)**.
+- **[lingo-ds](https://github.com/vgomx/lingo-ds)** — the design system: tokens, components and sounds ([showcase](https://vgomx.github.io/lingo-ds/)).
+- **[idb](https://github.com/jakearchibald/idb)** over IndexedDB for storage; no ORM and no server.
+- **[vite-plugin-pwa](https://vite-pwa-org.netlify.app)** / Workbox for the service worker.
+- **[OpenMoji](https://openmoji.org)** for card illustrations.
 
 ```
 src/
-├─ data/       IndexedDB access, the scheduler, starter decks
+├─ data/       IndexedDB access, the scheduler, starter decks and notes
 ├─ state/      the one store the app reads from
-├─ shell/      rail, deck sidebar, top bar, language picker
-├─ tools/      Flashcards, plus empty states for the other four
+├─ shell/      rail, deck sidebar, top bar, dock, language picker
+├─ tools/      Flashcards, Grammar Notes, and empty states for the other three
 ├─ marketing/  the light-theme landing page
 └─ styles/     app-level CSS (everything visual comes from lingo-ds tokens)
 ```
 
-There is no `src/assets/`. Brand artwork is imported straight from the package —
-`import mark from 'lingo-ds/assets/logo/mark-violet.svg'` — so the app cannot
-drift from the design system by holding a stale copy. The one exception is the
-favicon, which has to be a real file at a fixed URL: `npm run sync:assets`
-copies it into `public/` and runs automatically before `dev` and `build`, so it
-is generated rather than committed.
+There is no `src/assets/`. Brand artwork is imported from the package — `import mark from 'lingo-ds/assets/logo/mark-violet.svg'` — so the app can't drift by holding a stale copy. The favicon is the exception, since it has to be a real file at a fixed URL; `sync:assets` copies it into `public/` before `dev` and `build`, so it's generated rather than committed.
 
-## Illustrations
+## How a few things work
 
-Cards can carry an OpenMoji glyph. The design system holds an 18-glyph sample as
-an example of the treatment and says the full set is vendored in the product
-repo; `public/openmoji/` is that — 526 glyphs, 1.4 MB.
+**The scheduler.** `src/data/scheduler.ts` is SM-2 adapted to four grades. New cards step `1m · 6m · 1d · 4d`; after that intervals come from the card's ease factor. Reviews are fuzzed by ±5%, so cards introduced together stop arriving together forever. Grading writes the new state and the review-log entry in a single IndexedDB transaction, so a card can never advance unrecorded.
 
-The set is curated in `scripts/openmoji-selection.mjs`: the **entire**
-`smileys-emotion` group, plus about 360 hand-picked concrete nouns. Expressions
-are taken whole because "annoyed" and "furious" are a vocabulary distinction a
-set of eight faces cannot draw, and because the boundary is then Unicode's rather
-than one we would keep re-drawing. Run `npm run build:illustrations` after
-editing it: the script downloads from jsDelivr, writes the SVGs and regenerates
-`src/data/openmojiCatalog.ts`. The output is committed, so a clone with no
-network still builds.
+**Directions.** A card can be scheduled forwards, backwards, or both, and each direction carries its own interval, ease and due date. Turning a deck off doesn't discard the reverse schedule — it just stops asking, so a preference never behaves like a destructive action.
 
-A card stores the **codepoint** (`1F436`), not the filename, so renaming a file
-or a revised OpenMoji annotation cannot orphan somebody's card.
-`npm run check:illustrations` runs on every build and fails if a codepoint in the
-seed has no glyph, if the catalogue names a file that is missing, or if a file on
-disk is not in the catalogue — none of which TypeScript can see, since the file
-is fetched at runtime.
+**Notes.** A note matches a card when their tags intersect. That's the whole mechanism; there's no per-card link to maintain, so tagging a new card correctly is what earns it the explanation.
 
-They are **not** precached: 526 files would more than double a first visit to
-show pictures most people never open the picker to see. A Workbox `CacheFirst`
-rule caches them as they are fetched, and a glyph can only be on a card if the
-picker was opened, which is what puts it in the cache.
+**Illustrations.** A card stores the **codepoint** (`1F436`), never a filename, so a renamed file or a revised OpenMoji annotation can't orphan somebody's card. The 526 glyphs are curated in `scripts/openmoji-selection.mjs` — the entire `smileys-emotion` group plus ~360 concrete nouns. Expressions are taken whole because "annoyed" and "furious" are a vocabulary distinction eight faces can't draw. They're deliberately **not** precached: that would more than double a first visit to ship pictures most people never open the picker to see.
 
-## The scheduler
+**Storage.** IndexedDB at version 2. Upgrades are guarded on `oldVersion`, so a database that predates a store keeps everything it already had. The backup format carries its own version and stays able to read older files.
 
-`src/data/scheduler.ts` is SM-2 adapted to the four grades the design's
-`ReviewRating` emits. New cards step `1m · 6m · 1d · 4d`; once a card graduates,
-intervals come from its ease factor and the labels under the grade buttons show
-the real numbers rather than fixed copy. Grading writes the card's new state and
-a review-log entry in a single IndexedDB transaction, so a card can never
-advance unrecorded.
+## Known gaps
 
-## Installing it
+- **Self-hosted fonts.** Type still comes from Google Fonts via `@import`, so it's cached at runtime rather than precached — offline works from the *second* visit. Self-hosting the `.woff2` files fixes that, and brings the OFL text along as a shipping requirement.
+- **Three tools are empty.** Etymology Explorer, Conjugation Drill and Phrasebook are designed and routed but not built. They're marked SOON in the rail and sort below what works.
+- **Deep links on Pages.** `dist/404.html` is a copy of `index.html` so the SPA boots; GitHub still returns a 404 *status* for those URLs, though the page renders.
 
-The app is a PWA: `vite-plugin-pwa` generates a manifest and a Workbox service
-worker that precaches the build, so it can be added to a home screen or dock and
-opened in its own window with no connection.
+## Contributing
 
-Icons are generated from the design system's app-icon lockup by
-`npm run build:icons`, committed as a script rather than as binaries dropped in
-by hand. `registerType` is `autoUpdate`: a new deploy simply becomes the app on
-the next visit, since a static build has no versioning story worth prompting
-about.
+Issues and pull requests are welcome. If you're planning something larger than a fix, opening an issue first is the quickest way to find out whether it fits.
 
-The one gap is type. The fonts still come from Google Fonts via `@import` in
-`lingo-ds/tokens/fonts.css`, so they are cached at runtime rather than
-precached — offline works from the **second** visit. Self-hosting the `.woff2`
-files, which the design brief already recommends, would make it work from the
-first, and is the remaining piece.
+Before opening a PR, please make sure `npm run build` passes — it runs the typecheck and the illustration check. The codebase leans on comments that explain *why* a piece of code is the way it is rather than what it does, usually because the obvious version was tried first and didn't work; matching that is the most useful style note.
 
-## Notes for future work
+## License
 
-- **Self-hosted fonts.** See above — the last thing standing between this and a
-  genuinely offline first load. Also fixes the licence question, since OFL text
-  must ship alongside redistributed font files.
-- **Import/export.** There is a reset in Settings but no deck import or export
-  yet, so data is trapped in one browser.
-- **Routing on Pages.** `dist/404.html` is a copy of `index.html` so deep links
-  boot the SPA. Pages still returns a 404 status for them; the page renders.
-- **Vite + the linked package.** `vite.config.ts` sets `resolve.dedupe` for
-  react/react-dom and excludes `lingo-ds` from dependency optimisation. Both are
-  required — without dedupe the production build ships two copies of React and
-  renders a blank page.
+[MIT](LICENSE) © 2026 [Vitor Gomes](https://vitorgomes.design)
 
-## Licences
+Icons are [Lucide](https://lucide.dev) (ISC; 22 of the 76 used are Feather-derived and additionally MIT, © Cole Bemis). Illustrations are [OpenMoji](https://openmoji.org) (CC BY-SA 4.0), used unmodified — 526 glyphs ship in `public/openmoji/`, so the attribution is a real obligation and is carried in `src/legalNotices.ts`. Typefaces are Baloo 2, Nunito Sans and JetBrains Mono, requested from Google Fonts at runtime rather than redistributed.
 
-MIT licensed. The full notices for everything the app ships are in
-`src/legalNotices.ts` and surfaced in the app under Settings → Legal. Only
-things that actually reach the browser are listed — build tooling never ships,
-so it carries no obligation to end users.
-
-Icons are [Lucide](https://lucide.dev) (ISC; 22 of the 76 are Feather-derived
-and additionally MIT, © Cole Bemis). Typefaces are Baloo 2, Nunito Sans and
-JetBrains Mono, requested from Google Fonts at runtime rather than
-redistributed — self-hosting them makes the OFL text a shipping requirement.
-Illustrations are [OpenMoji](https://openmoji.org) (CC BY-SA 4.0), used
-unmodified — 526 of its glyphs ship in `public/openmoji/`, so its attribution is
-a real obligation and is carried in `legalNotices.ts` alongside the full licence
-text.
+Full notices for everything the app ships are in `src/legalNotices.ts` and surfaced in the app under **Settings → Legal**. Only things that actually reach the browser are listed — build tooling never ships, so it carries no obligation to end users.
