@@ -9,7 +9,6 @@ import { WORKSPACES } from '../data/seed';
 import { APP_VERSION } from '../legalNotices';
 import { LegalDialog } from './LegalDialog';
 import { FaqDialog } from './FaqDialog';
-import { Diagnostics } from './Diagnostics';
 import markUrl from 'lingo-ds/assets/logo/mark-violet.svg';
 
 const page: React.CSSProperties = {
@@ -226,8 +225,6 @@ export function Settings() {
             </Button>
           </div>
         </Card>
-
-        <Diagnostics />
 
         <ConfirmDialog
           open={resetting}
