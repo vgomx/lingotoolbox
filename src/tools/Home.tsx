@@ -39,6 +39,17 @@ const sectionHeading: React.CSSProperties = {
   fontWeight: 800, color: 'var(--text-strong)',
 };
 
+/** Heading on the left, the one thing you act on in this section on the right. */
+const sectionHead: React.CSSProperties = {
+  display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
+  gap: 'var(--space-5)', flexWrap: 'wrap', marginBottom: 'var(--space-5)',
+};
+
+const sectionSub: React.CSSProperties = {
+  margin: '4px 0 0', fontSize: 'var(--fs-14)', color: 'var(--text-muted)',
+  maxWidth: 520, lineHeight: 'var(--lh-relaxed)',
+};
+
 const grid3: React.CSSProperties = {
   display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: 'var(--space-5)',
 };
@@ -104,7 +115,6 @@ export function Home() {
     const dayIndex = Math.floor(d.getTime() / 86_400_000);
     return cards[dayIndex % cards.length];
   }, [cards]);
-  const wordDeck = word ? decks.find((d) => d.id === word.deckId) : undefined;
 
   /** One rule, chosen the same way and on the same clock as the word above. */
   const rule = React.useMemo(() => {
@@ -113,81 +123,66 @@ export function Home() {
     return notes[dayIndex % notes.length];
   }, [notes]);
 
-  const toolSubtitle = (id: string): string | null => {
-    if (id === 'cards') return `${dueCount} due · ${decks.length} ${decks.length === 1 ? 'deck' : 'decks'}`;
-    if (id === 'grammar') return notes.length ? `${notes.length} ${notes.length === 1 ? 'note' : 'notes'}` : null;
-    return null;
-  };
-
   const masteryOf = (deckCards: typeof cards) => {
     if (!deckCards.length) return 0;
     return Math.round((deckCards.filter((c) => c.state === 'review' && c.interval >= 21).length / deckCards.length) * 100);
   };
 
-  // No title: the rail already says Home, and the hero names the workspace.
+  // No title: the rail already says Home, and the header names the workspace.
   useChrome({ streakInTopBar: false });
 
+  const soon = NAV_TOOLS.filter((t) => !t.released);
+
   return (
-    <>
-      <div style={page}>
-        {/* Heading left, the two things you act on right — as in the kit, rather
-            than pushing both into the top bar. */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 'var(--space-8)', flexWrap: 'wrap' }}>
+    <div style={page}>
+      {/*
+        * The workspace, not the review queue.
+        *
+        * This used to open with "58 due today" in 40px type, which made a
+        * Flashcards number the headline for the whole app — and left three
+        * buttons of different kinds sitting in a row as though they were
+        * peers, when one starts an activity and two are only doors. "Start
+        * review" also had nothing to be a review *of* up there; it now lives
+        * under the heading that says what it reviews.
+        */}
+      <header>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
+          <span style={eyebrow}>Workspace</span>
+          {/* Status, not an action. Hidden at zero: "0 days" is a fact nobody
+              needs, and the guide is explicit about not nagging about streaks. */}
+          {streak > 0 && <StreakPill days={streak} size="sm" />}
+        </div>
+        <h1 style={{ margin: '6px 0 0', fontFamily: 'var(--font-display)', fontSize: 'var(--fs-40)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.05, letterSpacing: 'var(--ls-tight)' }}>
+          {workspace.name}
+        </h1>
+        <p style={{ margin: '8px 0 0', fontSize: 'var(--fs-16)', color: 'var(--text-muted)', maxWidth: 520, lineHeight: 'var(--lh-relaxed)' }}>
+          {[
+            `${decks.length} ${decks.length === 1 ? 'deck' : 'decks'}`,
+            `${cards.length} ${cards.length === 1 ? 'card' : 'cards'}`,
+            notes.length ? `${notes.length} ${notes.length === 1 ? 'note' : 'notes'}` : null,
+          ].filter(Boolean).join(' · ')}
+        </p>
+      </header>
+
+      {/* ---- Flashcards, everything it owns in one place ------------------- */}
+      <section>
+        <div style={sectionHead}>
           <div>
-            {/* The streak sits with the other context rather than beside the CTA.
-                It is status, not an action, and pairing them made two very
-                differently weighted things compete for the same corner. Hidden at
-                zero — "0 days" is a fact nobody needs, and the guide is explicit
-                about not nagging about streaks. */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
-              <span style={eyebrow}>{workspace.name} workspace</span>
-              {streak > 0 && <StreakPill days={streak} size="sm" />}
-            </div>
-            <h1 style={{ margin: '6px 0 0', fontFamily: 'var(--font-display)', fontSize: 'var(--fs-40)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.05, letterSpacing: 'var(--ls-tight)' }}>
-              {dueCount ? `${dueCount} due today` : 'All caught up'}
-            </h1>
-            <p style={{ margin: '8px 0 0', fontSize: 'var(--fs-16)', color: 'var(--text-muted)', maxWidth: 460, lineHeight: 'var(--lh-relaxed)' }}>
+            <h2 style={sectionHeading}>Flashcards</h2>
+            <p style={sectionSub}>
               {dueCount
-                ? `Across ${decks.length} ${decks.length === 1 ? 'deck' : 'decks'}. Grade each card and the schedule adjusts.`
-                : 'Nothing is due. A good moment to look something up instead.'}
+                ? `${dueCount} due across ${decks.length} ${decks.length === 1 ? 'deck' : 'decks'}. Grade each card and the schedule adjusts.`
+                : 'Nothing due right now. New cards can be added to any deck.'}
             </p>
           </div>
-
-          {/*
-            * Review is the reason most people are here, so it keeps the weight.
-            * The other two sit beside it rather than only in the grid further
-            * down, because a tool nobody has met yet does not get discovered
-            * from the bottom of a page.
-            *
-            * They are also what makes the caught-up state a screen rather than
-            * a dead end. It used to lose its only button the moment nothing was
-            * due and say "come back tomorrow" — turning the one day you have
-            * time into the one day the app has nothing to offer.
-            */}
-          <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 'var(--gap-inline)', flexWrap: 'wrap' }}>
-            {HAS_ETYMOLOGY[language] && (
-              <Link to="/app/etymology" style={{ textDecoration: 'none' }}>
-                <Button variant="secondary" size={dueCount ? 'md' : 'lg'} iconLeft={<Icon name="git-branch" size={16} />}>
-                  Trace a word
-                </Button>
-              </Link>
-            )}
-            {notes.length > 0 && (
-              <Link to="/app/grammar" style={{ textDecoration: 'none' }}>
-                <Button variant="secondary" size={dueCount ? 'md' : 'lg'} iconLeft={<Icon name="scroll-text" size={16} />}>
-                  Read a rule
-                </Button>
-              </Link>
-            )}
-            {dueCount > 0 && (
-              <Button size="xl" iconLeft={<Icon name="play" size={18} />} onClick={() => navigate('/app/review')}>
-                Start review
-              </Button>
-            )}
-          </div>
+          {dueCount > 0 && (
+            <Button size="lg" iconLeft={<Icon name="play" size={18} />} onClick={() => navigate('/app/review')}>
+              Review all decks
+            </Button>
+          )}
         </div>
 
-        <div style={grid3}>
+        <div style={{ ...grid3, marginBottom: 'var(--space-5)' }}>
           <Card>
             <span style={eyebrow}>Due today</span>
             <span style={stat}>{dueCount}</span>
@@ -223,151 +218,142 @@ export function Home() {
           </Card>
         </div>
 
-        <div>
-          <h2 style={{ ...sectionHeading, marginBottom: 'var(--space-5)' }}>Your toolbox</h2>
-          <div style={toolGrid}>
-            {NAV_TOOLS.filter((t) => t.id !== 'home').map((t) => (
-              <Link key={t.id} to={`/app/${t.path}`} style={{ textDecoration: 'none' }}>
-                <Card interactive style={{ height: '100%' }}>
-                  {/* Icon in a tinted well of its own accent, as the kit has it —
-                      the accent identifies the tool without a full-width stripe. */}
-                  <span
-                    style={{
-                      width: 38, height: 38, borderRadius: 'var(--radius-md)', display: 'grid', placeItems: 'center',
-                      background: `color-mix(in oklab, ${t.accent} 18%, transparent)`, color: t.accent,
-                    }}
-                  >
-                    <Icon name={t.icon} size={20} />
-                  </span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 'var(--fs-16)', fontWeight: 800, color: 'var(--text-strong)' }}>
-                    {t.label}
-                    {!t.released && <Badge tone="neutral">Soon</Badge>}
-                  </span>
-                  {/* Each tool counts its own things. This used to print
-                      Flashcards' figures under every card, which was harmless
-                      while Flashcards was the only built tool and became wrong
-                      the moment it wasn't — Grammar Notes announcing "12 due ·
-                      2 decks" is a number about somebody else's screen.
-                      Etymology has no cheap count: the word list is a couple of
-                      megabytes and fetching it to put a figure on the home
-                      screen would be paying for the tool you did not open. */}
-                  <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>
-                    {toolSubtitle(t.id) ?? t.blurb}
-                  </span>
+        {topDecks.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+            {topDecks.map(({ deck, due, cards: deckCards }) => (
+              <Link key={deck.id} to={due > 0 ? `/app/review/${deck.id}` : `/app/cards/${deck.id}`} style={{ textDecoration: 'none' }}>
+                <Card accent={deck.accent} interactive padding="16px">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-5)' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-18)', fontWeight: 800, color: 'var(--text-strong)' }}>
+                          {deck.name}
+                        </span>
+                        {due > 0 && <Badge tone="warning">{due} due</Badge>}
+                      </div>
+                      <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>
+                        {deckCards.length} cards · {masteryOf(deckCards)}% mastered
+                      </span>
+                    </div>
+                    {!isMobile && (
+                      <div style={{ width: 120, flex: 'none' }}>
+                        <ProgressBar value={masteryOf(deckCards)} height={6} color={deck.accent} />
+                      </div>
+                    )}
+                    <Icon name="chevron-right" size={18} style={{ color: 'var(--text-faint)' }} />
+                  </div>
                 </Card>
               </Link>
             ))}
-          </div>
-        </div>
-
-        {/* Stacked on a phone. A 1.4fr/1fr split of 375px is two ~170px columns,
-            which broke "Everyday phrases" onto three lines and clipped the word
-            of the day mid-word. */}
-        {(topDecks.length > 0 || word || rule) && (
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0, 1fr)' : 'minmax(0, 1.4fr) minmax(0, 1fr)', gap: 'var(--space-5)', alignItems: 'start' }}>
-            {topDecks.length > 0 && (
-              <div>
-                <h2 style={{ ...sectionHeading, marginBottom: 'var(--space-5)' }}>Pick up where you left off</h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                  {topDecks.map(({ deck, due, cards: deckCards }) => (
-                    <Link key={deck.id} to={due > 0 ? `/app/review/${deck.id}` : `/app/cards/${deck.id}`} style={{ textDecoration: 'none' }}>
-                      <Card accent={deck.accent} interactive padding="16px">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-5)' }}>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                              <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-18)', fontWeight: 800, color: 'var(--text-strong)' }}>
-                                {deck.name}
-                              </span>
-                              {due > 0 && <Badge tone="warning">{due} due</Badge>}
-                            </div>
-                            <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>
-                              {deckCards.length} cards · {masteryOf(deckCards)}% mastered
-                            </span>
-                          </div>
-                          <div style={{ width: 120, flex: 'none' }}>
-                            <ProgressBar value={masteryOf(deckCards)} height={6} color={deck.accent} />
-                          </div>
-                          <Icon name="chevron-right" size={18} style={{ color: 'var(--text-faint)' }} />
-                        </div>
-                      </Card>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* The heading belongs to the column, not inside the card. With the
-                title on the card, the card had to start level with the heading
-                beside it and so sat 45px above the deck cards it is paired with,
-                reading as though it belonged to a different row. */}
-            {word && (
-            <div>
-              <h2 style={{ ...sectionHeading, marginBottom: 'var(--space-5)' }}>Word of the day</h2>
-              <Card accent="var(--tool-etymology)">
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-32)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.05 }}>
-                  {word.front}
-                </span>
-                {word.phonetic && (
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>{word.phonetic}</span>
-                )}
-                <p style={{ margin: 0, fontSize: 'var(--fs-14)', color: 'var(--text-body)', lineHeight: 'var(--lh-relaxed)' }}>
-                  {word.back}
-                </p>
-                {word.tags.length > 0 && (
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {word.tags.map((t) => <Tag key={t} color="var(--tool-etymology)">{t}</Tag>)}
-                  </div>
-                )}
-                {/* Two ways on from the same word, which is the point of
-                    having more than one tool: the deck it lives in, and where
-                    it came from. The origin link is offered without checking
-                    first — the word list is megabytes and is not worth
-                    fetching here to decide whether to show a button — so the
-                    details screen says plainly when Wiktionary has no entry
-                    rather than this pretending it always will. */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                  {wordDeck && (
-                    <Link to={`/app/cards/${wordDeck.id}`} style={{ textDecoration: 'none' }}>
-                      <Button variant="secondary" size="sm" block iconLeft={<Icon name="layers" size={14} />}>
-                        Open {wordDeck.name}
-                      </Button>
-                    </Link>
-                  )}
-                  {HAS_ETYMOLOGY[language] && (
-                    <Link to={`/app/etymology/${encodeURIComponent(word.front)}`} style={{ textDecoration: 'none' }}>
-                      <Button variant="ghost" size="sm" block iconLeft={<Icon name="git-branch" size={14} />}>
-                        Where it comes from
-                      </Button>
-                    </Link>
-                  )}
-                </div>
-              </Card>
-
-              {rule && (
-                <div style={{ marginTop: 'var(--space-6)' }}>
-                  <h2 style={{ ...sectionHeading, marginBottom: 'var(--space-5)' }}>A rule worth knowing</h2>
-                  <Card accent="var(--tool-grammar)">
-                    <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-18)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.2 }}>
-                      {rule.title}
-                    </span>
-                    {/* The first paragraph only. A note runs to a few hundred
-                        words and the home screen is not where you read it. */}
-                    <p style={{ margin: 0, fontSize: 'var(--fs-13)', color: 'var(--text-body)', lineHeight: 'var(--lh-relaxed)' }}>
-                      {rule.body.split('\n\n')[0]}
-                    </p>
-                    <Link to="/app/grammar" style={{ textDecoration: 'none' }}>
-                      <Button variant="ghost" size="sm" block iconLeft={<Icon name="scroll-text" size={14} />}>
-                        All notes
-                      </Button>
-                    </Link>
-                  </Card>
-                </div>
-              )}
-            </div>
-            )}
+            <Link to="/app/cards" style={{ textDecoration: 'none', alignSelf: 'flex-start' }}>
+              <Button variant="ghost" size="sm" iconLeft={<Icon name="layers" size={15} />}>
+                All decks
+              </Button>
+            </Link>
           </div>
         )}
+      </section>
+
+      {/* ---- The other two, side by side and clearly their own ------------- */}
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0, 1fr)' : 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-5)', alignItems: 'start' }}>
+        {HAS_ETYMOLOGY[language] && word && (
+          <section>
+            <div style={sectionHead}>
+              <div>
+                <h2 style={sectionHeading}>Etymology</h2>
+                <p style={sectionSub}>Where a word came from, and what it is related to.</p>
+              </div>
+            </div>
+            <Card accent="var(--tool-etymology)">
+              <span style={eyebrow}>Word of the day</span>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-32)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.05 }}>
+                {word.front}
+              </span>
+              {word.phonetic && (
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>{word.phonetic}</span>
+              )}
+              <p style={{ margin: 0, fontSize: 'var(--fs-14)', color: 'var(--text-body)', lineHeight: 'var(--lh-relaxed)' }}>
+                {word.back}
+              </p>
+              {/* Offered without checking first: the word list is megabytes and
+                  is not worth fetching here to decide whether to draw a button,
+                  so the details screen says plainly when Wiktionary has nothing
+                  rather than this pretending it always will. */}
+              <Link to={`/app/etymology/${encodeURIComponent(word.front)}`} style={{ textDecoration: 'none' }}>
+                <Button variant="secondary" size="sm" block iconLeft={<Icon name="git-branch" size={14} />}>
+                  Where it comes from
+                </Button>
+              </Link>
+              <Link to="/app/etymology" style={{ textDecoration: 'none' }}>
+                <Button variant="ghost" size="sm" block>Trace another word</Button>
+              </Link>
+            </Card>
+          </section>
+        )}
+
+        {rule && (
+          <section>
+            <div style={sectionHead}>
+              <div>
+                <h2 style={sectionHeading}>Grammar</h2>
+                <p style={sectionSub}>Short rules, tagged the way your cards are.</p>
+              </div>
+            </div>
+            <Card accent="var(--tool-grammar)">
+              <span style={eyebrow}>A rule worth knowing</span>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-18)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.2 }}>
+                {rule.title}
+              </span>
+              {/* The first paragraph only. A note runs to a few hundred words
+                  and the home screen is not where you read it. */}
+              <p style={{ margin: 0, fontSize: 'var(--fs-14)', color: 'var(--text-body)', lineHeight: 'var(--lh-relaxed)' }}>
+                {rule.body.split('\n\n')[0]}
+              </p>
+              {rule.tags.length > 0 && (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {rule.tags.map((t) => <Tag key={t} color="var(--tool-grammar)">{t}</Tag>)}
+                </div>
+              )}
+              <Link to="/app/grammar" style={{ textDecoration: 'none' }}>
+                <Button variant="secondary" size="sm" block iconLeft={<Icon name="scroll-text" size={14} />}>
+                  All notes
+                </Button>
+              </Link>
+            </Card>
+          </section>
+        )}
       </div>
-    </>
+
+      {/* ---- What is not built yet, said once ------------------------------ */}
+      {soon.length > 0 && (
+        <section>
+          <div style={sectionHead}>
+            <div>
+              <h2 style={sectionHeading}>Still to come</h2>
+              <p style={sectionSub}>Designed, not built. They are in the rail so you know they are coming.</p>
+            </div>
+          </div>
+          <div style={toolGrid}>
+            {soon.map((t) => (
+              <Card key={t.id}>
+                <span
+                  style={{
+                    width: 38, height: 38, borderRadius: 'var(--radius-md)', display: 'grid', placeItems: 'center',
+                    background: `color-mix(in oklab, ${t.accent} 18%, transparent)`, color: t.accent,
+                  }}
+                >
+                  <Icon name={t.icon} size={20} />
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 'var(--fs-16)', fontWeight: 800, color: 'var(--text-strong)' }}>
+                  {t.label}
+                  <Badge tone="neutral">Soon</Badge>
+                </span>
+                <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>{t.blurb}</span>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
   );
 }
