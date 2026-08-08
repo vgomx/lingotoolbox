@@ -191,9 +191,12 @@ export async function gradeCard(
   direction: Direction,
   grade: Grade,
   now: number = Date.now(),
-): Promise<Card> {
+): Promise<{ card: Card; entryId: string }> {
   const before = scheduleOf(card, direction);
-  const next = schedule(before, grade, now);
+  // Math.random here rather than inside the scheduler, so the preview the
+  // reader was shown stays exact and only the grade they actually pressed
+  // spreads. See the note on FUZZ_RATIO.
+  const next = schedule(before, grade, now, Math.random);
   const updated = withSchedule(card, direction, next);
 
   const entry: ReviewLogEntry = {
@@ -218,7 +221,29 @@ export async function gradeCard(
     tx.done,
   ]);
 
-  return updated;
+  return { card: updated, entryId: entry.id };
+}
+
+/**
+ * Puts a card back the way it was before a grade, and unwrites the grade.
+ *
+ * The card is restored wholesale from a snapshot taken before it was graded
+ * rather than reconstructed from the log, because the log records what the
+ * interval went from and to but not the ease, the reps or the lapses — enough to
+ * describe a review, not enough to reverse one.
+ *
+ * Both halves in one transaction: a card put back while its review still counted
+ * would leave the streak and the week's totals claiming work that no longer
+ * exists anywhere.
+ */
+export async function undoReview(entryId: string, restored: Card): Promise<void> {
+  const db = await getDB();
+  const tx = db.transaction(['cards', 'reviews'], 'readwrite');
+  await Promise.all([
+    tx.objectStore('cards').put(restored),
+    tx.objectStore('reviews').delete(entryId),
+    tx.done,
+  ]);
 }
 
 export async function reviewsSince(since: number): Promise<ReviewLogEntry[]> {

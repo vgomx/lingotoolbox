@@ -17,6 +17,31 @@ const START_EASE = 2.5;
 /** Nothing is worth scheduling more than a year out. */
 const MAX_INTERVAL_DAYS = 365;
 
+/**
+ * How far an interval may be nudged either side of what the formula said.
+ *
+ * Without this, cards learned on the same day are scheduled by the same
+ * multiplier from the same date and never come apart: seed a deck on a Sunday
+ * and every card in it falls due together for the rest of its life, so a session
+ * is either forty cards or none. The spread costs nothing in accuracy — a review
+ * a day either side of ten days is the same review — and buys a queue that
+ * levels out.
+ *
+ * A percentage alone does nothing at short intervals, where 5% of three days
+ * rounds back to three, so the short end gets a whole day instead.
+ */
+const FUZZ_RATIO = 0.05;
+const FUZZ_MIN_INTERVAL = 2;
+
+/** Spreads an interval, given something that returns 0..1. */
+function fuzzInterval(days: number, rand: () => number): number {
+  if (days < FUZZ_MIN_INTERVAL) return days;
+  const spread = Math.max(1, Math.round(days * FUZZ_RATIO));
+  // -spread..+spread inclusive.
+  const shift = Math.round((rand() * 2 - 1) * spread);
+  return Math.max(1, days + shift);
+}
+
 /** Minute-scale steps for cards that have not graduated yet. */
 const AGAIN_STEP_MIN = 1;
 const HARD_STEP_MIN = 6;
@@ -39,7 +64,19 @@ const clampInterval = (d: number) => Math.min(MAX_INTERVAL_DAYS, Math.max(0, d))
  * function never wanted the word or its meaning — only where the memory stood.
  * `now` is injected so sessions and tests are deterministic.
  */
-export function schedule(card: Schedule, grade: Grade, now: number = Date.now()): SchedulerResult {
+export function schedule(
+  card: Schedule,
+  grade: Grade,
+  now: number = Date.now(),
+  /**
+   * Supply a random source to spread the interval; omit for the exact number.
+   *
+   * Off by default on purpose. gradePreview puts a figure on each of the four
+   * buttons before you press one, and a preview that says 10d while the grade
+   * quietly books 11 is a preview that lies. Only the real grade fuzzes.
+   */
+  rand?: () => number,
+): SchedulerResult {
   const learning = card.state === 'new' || card.state === 'learning';
   const relearning = card.state === 'relearning';
 
@@ -101,11 +138,12 @@ export function schedule(card: Schedule, grade: Grade, now: number = Date.now())
       : card.ease;
 
   const base = Math.max(1, card.interval);
-  const days = clampInterval(Math.round(
+  const exact = Math.round(
     grade === 'hard' ? base * 1.2
       : grade === 'easy' ? base * ease * 1.3
         : base * ease,
-  ));
+  );
+  const days = clampInterval(rand ? fuzzInterval(exact, rand) : exact);
 
   return {
     state: 'review',
