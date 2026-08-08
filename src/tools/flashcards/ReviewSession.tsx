@@ -1,9 +1,10 @@
 import * as React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Button, Flashcard, Icon, IconButton, ProgressBar, ReviewRating, Tag, Toast, Tooltip, playSound, useIsMobile } from 'lingo-ds';
+import { Button, Dialog, Flashcard, Icon, IconButton, ProgressBar, ReviewRating, Tag, Toast, Tooltip, playSound, useIsMobile } from 'lingo-ds';
 import { TopRight, useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
+import { NoteCard } from '../grammar/NoteCard';
 import { dueDirections, gradePreview, scheduleOf, sortForSession } from '../../data/scheduler';
 import { findIllustration, illustrationUrl } from '../../data/illustrations';
 import type { SoundName } from 'lingo-ds';
@@ -37,7 +38,7 @@ const page: React.CSSProperties = {
 export function ReviewSession() {
   const { deckId } = useParams();
   const navigate = useNavigate();
-  const { decks, cards, dueInDeck, prefs, grade, undo, undoDepth, workspace } = useStore();
+  const { decks, cards, dueInDeck, prefs, grade, undo, undoDepth, notesFor, workspace } = useStore();
   const isMobile = useIsMobile();
 
   const deck = deckId ? decks.find((d) => d.id === deckId) : undefined;
@@ -52,6 +53,7 @@ export function ReviewSession() {
   const [graded, setGraded] = React.useState(0);
   const [again, setAgain] = React.useState(0);
   const [toast, setToast] = React.useState<string | null>(null);
+  const [notesOpen, setNotesOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (queue) return;
@@ -71,6 +73,24 @@ export function ReviewSession() {
 
   const current = queue?.[index];
   const done = !!queue && index >= queue.length;
+
+  /**
+   * Which way round this question runs, and what it is made of.
+   *
+   * Up here rather than beside the render because the key handler needs them
+   * too — a shortcut that opens the notes has to know whether there are any.
+   */
+  const card = current?.card;
+  const reverse = current?.direction === 'reverse';
+  /**
+   * The rules this card touches, matched on the tags it already carries.
+   *
+   * Offered on both faces on purpose. Looking a rule up before answering is not
+   * cheating at anything — the grade is self-reported, so the only person a peek
+   * costs is the person taking it, and reading the rule at the moment you needed
+   * it is most of how it sticks.
+   */
+  const notes = card ? notesFor(card) : [];
 
   // The one celebration, and only on the edge into done — not on every render of
   // the completed screen, which a re-render would otherwise replay.
@@ -140,16 +160,34 @@ export function ReviewSession() {
       // Without this, Cmd+1 graded a card on its way to switching browser tab.
       if (e.metaKey || e.ctrlKey || e.altKey) return;
 
-      // Turns, rather than only opening. It used to fire only while the card
-      // showed its prompt, so once you had the answer the key that got you
-      // there did nothing — the card could be turned back by dragging it or by
-      // clicking it, but not by the same key that turned it over.
+      // G opens the rule and closes it again. Allowed through the gate below,
+      // because the key that opened it is the one you reach for to dismiss it.
+      if ((e.key === 'g' || e.key === 'G') && notes.length > 0) {
+        e.preventDefault();
+        setNotesOpen((o) => !o);
+        return;
+      }
+      /*
+       * Nothing else while the rule is up.
+       *
+       * The dialog covers the card, so every shortcut past here would act on
+       * something you cannot see — and the first version of this shipped that
+       * way: Space flipped the hidden card and 3 graded it, meaning reading the
+       * explanation could mark the card you were reading about as known. Escape
+       * still closes, since that is the Dialog's own handler, not this one.
+       */
+      if (notesOpen) return;
+
       // The shortcut people already have in their fingers for this.
       if ((e.key === 'z' || e.key === 'Z') && graded > 0) {
         e.preventDefault();
         void stepBack();
         return;
       }
+      // Turns, rather than only opening. It used to fire only while the card
+      // showed its prompt, so once you had the answer the key that got you
+      // there did nothing — the card could be turned back by dragging it or by
+      // clicking it, but not by the same key that turned it over.
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
         if (!flipped) playSound('flip');
@@ -166,7 +204,11 @@ export function ReviewSession() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [current, flipped, answer, graded, stepBack]);
+  }, [current, flipped, answer, graded, stepBack, notes.length, notesOpen]);
+
+  // A note belongs to the card it was opened from; leaving it up over the next
+  // one would be answering a different question with the last one's rule.
+  React.useEffect(() => { setNotesOpen(false); }, [index]);
 
   React.useEffect(() => {
     if (!toast) return undefined;
@@ -241,8 +283,6 @@ export function ReviewSession() {
    * faces trade places, along with the side the picture sits on: a picture of
    * the answer sitting on the prompt would turn recall into naming a picture.
    */
-  const card = current?.card;
-  const reverse = current?.direction === 'reverse';
   const previews = current ? gradePreview(scheduleOf(current.card, current.direction)) : [];
   const grades = GRADE_KEYS.map((key, i) => ({
     key,
@@ -260,6 +300,15 @@ export function ReviewSession() {
         {/* Only once there is something to take back, and worded as the thing it
             undoes rather than as the word "undo" — you are putting a card back,
             not reversing a transaction. */}
+        {/* Only when there is something to show. A button that opens an empty
+            sheet teaches you to stop pressing it. */}
+        {notes.length > 0 && (
+          <Tooltip label={notes.length === 1 ? notes[0].title : `${notes.length} notes for this card`} shortcut="G">
+            <IconButton label="Grammar notes for this card" onClick={() => setNotesOpen(true)}>
+              <Icon name="scroll-text" size={18} />
+            </IconButton>
+          </Tooltip>
+        )}
         {undoDepth > 0 && (
           <Tooltip label="Take back the last answer" shortcut="Z">
             <IconButton label="Take back the last answer" onClick={() => void stepBack()}>
@@ -339,6 +388,18 @@ export function ReviewSession() {
           </Button>
         )}
       </div>
+
+      <Dialog
+        open={notesOpen}
+        onClose={() => setNotesOpen(false)}
+        title={notes.length === 1 ? 'One rule for this card' : 'Rules for this card'}
+        description="Close it and carry on — your place is kept."
+        width={520}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', paddingBottom: 'var(--space-4)' }}>
+          {notes.map((note) => <NoteCard key={note.id} note={note} />)}
+        </div>
+      </Dialog>
 
       {toast && (
         <div style={{ position: 'fixed', left: '50%', bottom: 24, transform: 'translateX(-50%)', zIndex: 60 }}>

@@ -4,11 +4,12 @@ import { AppShell } from './shell/AppShell';
 import { Splash, SPLASH_EXIT_MS, SPLASH_MIN_MS, prefersReducedMotion } from './shell/Splash';
 import { Landing } from './marketing/Landing';
 import { Home } from './tools/Home';
+import { GrammarNotes } from './tools/grammar/GrammarNotes';
 import { Settings } from './tools/Settings';
 import { DeckList } from './tools/flashcards/DeckList';
 import { DeckDetail } from './tools/flashcards/DeckDetail';
 import { ReviewSession } from './tools/flashcards/ReviewSession';
-import { ConjugationScreen, EtymologyScreen, GrammarScreen, PhrasebookScreen } from './tools/Placeholders';
+import { ConjugationScreen, EtymologyScreen, PhrasebookScreen } from './tools/Placeholders';
 import { useStore } from './state/store';
 import { hasVisitedApp } from './data/visit';
 
@@ -95,7 +96,7 @@ export function App() {
         <Route path="etymology" element={<EtymologyScreen />} />
         <Route path="conjugation" element={<ConjugationScreen />} />
         <Route path="phrasebook" element={<PhrasebookScreen />} />
-        <Route path="grammar" element={<GrammarScreen />} />
+        <Route path="grammar" element={<GrammarNotes />} />
         <Route path="settings" element={<Settings />} />
       </Route>
 

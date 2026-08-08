@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { setSoundEnabled, unlockSound, usePrefersReducedMotion } from 'lingo-ds';
-import type { Card, Deck, Direction, Grade, LanguageCode, Prefs, ReviewItem } from '../data/types';
+import type { Card, Deck, Direction, Grade, LanguageCode, Note, Prefs, ReviewItem } from '../data/types';
 import * as db from '../data/db';
 import { dueDirections } from '../data/scheduler';
 import { WORKSPACES } from '../data/seed';
@@ -27,6 +27,16 @@ interface StoreValue {
   decks: Deck[];
   /** Every card across those decks. */
   cards: Card[];
+  /** Grammar notes for the active workspace. */
+  notes: Note[];
+  /**
+   * The notes worth offering on a card — same language, at least one tag in
+   * common. The tags are the join, which is why a note is written in the same
+   * words a card is.
+   */
+  notesFor: (card: Card) => Note[];
+  saveNote: (note: Note) => Promise<void>;
+  removeNote: (id: string) => Promise<void>;
 
   cardsInDeck: (deckId: string) => Card[];
   /** The questions a deck owes now — two per card where it is asked both ways. */
@@ -73,6 +83,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [prefs, setPrefsState] = React.useState<Prefs>(() => db.loadPrefs());
   const [decks, setDecks] = React.useState<Deck[]>([]);
   const [cards, setCards] = React.useState<Card[]>([]);
+  const [notes, setNotes] = React.useState<Note[]>([]);
   const [streak, setStreak] = React.useState(0);
   const [weeklyReviews, setWeeklyReviews] = React.useState<number[]>(() => Array(7).fill(0));
 
@@ -100,14 +111,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refresh = React.useCallback(async (language: LanguageCode) => {
-    const [nextDecks, nextCards, nextStreak, nextWeek] = await Promise.all([
+    const [nextDecks, nextCards, nextNotes, nextStreak, nextWeek] = await Promise.all([
       db.listDecks(language),
       db.listCardsForLanguage(language),
+      db.listNotes(language),
       db.computeStreak(),
       db.reviewsPerDay(),
     ]);
     setDecks(nextDecks);
     setCards(nextCards);
+    setNotes(nextNotes);
     setStreak(nextStreak);
     setWeeklyReviews(nextWeek);
   }, []);
@@ -116,6 +129,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     (async () => {
       await db.ensureSeeded();
+      if (cancelled) return;
+      // Its own gate, so a reader who already had decks still gets the notes.
+      await db.ensureNotesSeeded();
       if (cancelled) return;
       // Before the first read, so nothing renders a level that is still a tag.
       await db.migrateLevels();
@@ -254,9 +270,25 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return last.card;
   }, [undoStack]);
 
+  const notesFor = React.useCallback(
+    (card: Card) => notes.filter((n) => n.tags.some((t) => card.tags.includes(t))),
+    [notes],
+  );
+
+  const saveNote = React.useCallback(async (note: Note) => {
+    await db.putNote(note);
+    await refresh(prefs.language);
+  }, [prefs.language, refresh]);
+
+  const removeNote = React.useCallback(async (id: string) => {
+    await db.deleteNote(id);
+    await refresh(prefs.language);
+  }, [prefs.language, refresh]);
+
   const reset = React.useCallback(async () => {
     await db.resetAll();
     await db.ensureSeeded();
+    await db.ensureNotesSeeded();
     await refresh(prefs.language);
   }, [prefs.language, refresh]);
 
@@ -290,6 +322,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     switching,
     decks,
     cards,
+    notes,
+    notesFor,
+    saveNote,
+    removeNote,
     cardsInDeck,
     dueInDeck,
     dueCount,

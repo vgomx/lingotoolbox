@@ -1,11 +1,17 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { Card, Deck, Direction, Grade, LanguageCode, Prefs, ReviewLogEntry } from './types';
+import type { Card, Deck, Direction, Grade, LanguageCode, Note, Prefs, ReviewLogEntry } from './types';
 import { asLevel } from './types';
-import { buildSeed, WORKSPACES } from './seed';
+import { buildSeed, buildSeedNotes, WORKSPACES } from './seed';
 import { schedule, scheduleOf, withSchedule } from './scheduler';
 
 const DB_NAME = 'lingo-toolbox';
-const DB_VERSION = 1;
+/**
+ * 2 added the notes store. The upgrade below is written to run from whatever
+ * version a reader is on rather than assuming an empty database, which is what
+ * version 1's did — it created all three stores unconditionally, which is only
+ * correct the first time anyone opens the app.
+ */
+const DB_VERSION = 2;
 const PREFS_KEY = 'lingo-toolbox:prefs';
 
 interface LingoDB extends DBSchema {
@@ -24,6 +30,11 @@ interface LingoDB extends DBSchema {
     value: ReviewLogEntry;
     indexes: { 'by-card': string; 'by-time': number };
   };
+  notes: {
+    key: string;
+    value: Note;
+    indexes: { 'by-language': LanguageCode };
+  };
 }
 
 let dbPromise: Promise<IDBPDatabase<LingoDB>> | null = null;
@@ -31,17 +42,26 @@ let dbPromise: Promise<IDBPDatabase<LingoDB>> | null = null;
 function getDB() {
   if (!dbPromise) {
     dbPromise = openDB<LingoDB>(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        const decks = db.createObjectStore('decks', { keyPath: 'id' });
-        decks.createIndex('by-language', 'language');
+      // Each step guarded by where the reader actually is, and each creating
+      // only what that step added. A database opened for the first time runs
+      // every step; one already on 1 runs only the second and keeps its cards.
+      upgrade(db, oldVersion) {
+        if (oldVersion < 1) {
+          const decks = db.createObjectStore('decks', { keyPath: 'id' });
+          decks.createIndex('by-language', 'language');
 
-        const cards = db.createObjectStore('cards', { keyPath: 'id' });
-        cards.createIndex('by-deck', 'deckId');
-        cards.createIndex('by-due', 'due');
+          const cards = db.createObjectStore('cards', { keyPath: 'id' });
+          cards.createIndex('by-deck', 'deckId');
+          cards.createIndex('by-due', 'due');
 
-        const reviews = db.createObjectStore('reviews', { keyPath: 'id' });
-        reviews.createIndex('by-card', 'cardId');
-        reviews.createIndex('by-time', 'reviewedAt');
+          const reviews = db.createObjectStore('reviews', { keyPath: 'id' });
+          reviews.createIndex('by-card', 'cardId');
+          reviews.createIndex('by-time', 'reviewedAt');
+        }
+        if (oldVersion < 2) {
+          const notes = db.createObjectStore('notes', { keyPath: 'id' });
+          notes.createIndex('by-language', 'language');
+        }
       },
     });
   }
@@ -246,6 +266,37 @@ export async function undoReview(entryId: string, restored: Card): Promise<void>
   ]);
 }
 
+export async function listNotes(language: LanguageCode): Promise<Note[]> {
+  const db = await getDB();
+  const notes = await db.getAllFromIndex('notes', 'by-language', language);
+  return notes.sort((a, b) => a.title.localeCompare(b.title));
+}
+
+export async function putNote(note: Note): Promise<void> {
+  const db = await getDB();
+  await db.put('notes', note);
+}
+
+export async function deleteNote(id: string): Promise<void> {
+  const db = await getDB();
+  await db.delete('notes', id);
+}
+
+/**
+ * Writes the starter notes, gated on the notes store rather than on decks.
+ *
+ * Anyone already using the app has decks, so hanging this off ensureSeeded's
+ * emptiness check would mean the starter notes only ever reached people who
+ * installed after they existed.
+ */
+export async function ensureNotesSeeded(): Promise<void> {
+  const db = await getDB();
+  if (await db.count('notes')) return;
+  const notes = buildSeedNotes();
+  const tx = db.transaction('notes', 'readwrite');
+  await Promise.all([...notes.map((n: Note) => tx.store.put(n)), tx.done]);
+}
+
 export async function reviewsSince(since: number): Promise<ReviewLogEntry[]> {
   const db = await getDB();
   return db.getAllFromIndex('reviews', 'by-time', IDBKeyRange.lowerBound(since));
@@ -314,19 +365,20 @@ export async function reviewsPerDay(days = 7, now: number = Date.now()): Promise
  * only the workspace you happen to be looking at would produce a file that looks
  * complete and quietly isn't.
  */
-export async function exportAll(): Promise<{ decks: Deck[]; cards: Card[]; reviews: ReviewLogEntry[] }> {
+export async function exportAll(): Promise<{ decks: Deck[]; cards: Card[]; reviews: ReviewLogEntry[]; notes: Note[] }> {
   const db = await getDB();
-  const [decks, cards, reviews] = await Promise.all([
+  const [decks, cards, reviews, notes] = await Promise.all([
     db.getAll('decks'),
     db.getAll('cards'),
     db.getAll('reviews'),
+    db.getAll('notes'),
   ]);
-  return { decks, cards, reviews };
+  return { decks, cards, reviews, notes };
 }
 
 export interface ImportCounts {
-  decks: number; cards: number; reviews: number;
-  skipped: { decks: number; cards: number; reviews: number };
+  decks: number; cards: number; reviews: number; notes: number;
+  skipped: { decks: number; cards: number; reviews: number; notes: number };
 }
 
 /**
@@ -342,27 +394,33 @@ export interface ImportCounts {
  * database as it was rather than half-restored.
  */
 export async function importAll(
-  data: { decks: Deck[]; cards: Card[]; reviews: ReviewLogEntry[] },
+  // notes optional: a backup written before they existed simply has none, and
+  // is still a perfectly good backup of everything it did have.
+  data: { decks: Deck[]; cards: Card[]; reviews: ReviewLogEntry[]; notes?: Note[] },
 ): Promise<ImportCounts> {
   const db = await getDB();
   const existing = await exportAll();
+  const incomingNotes = data.notes ?? [];
   const has = {
     decks: new Set(existing.decks.map((d) => d.id)),
     cards: new Set(existing.cards.map((c) => c.id)),
     reviews: new Set(existing.reviews.map((r) => r.id)),
+    notes: new Set(existing.notes.map((n) => n.id)),
   };
 
   const fresh = {
     decks: data.decks.filter((d) => !has.decks.has(d.id)),
     cards: data.cards.filter((c) => !has.cards.has(c.id)),
     reviews: data.reviews.filter((r) => !has.reviews.has(r.id)),
+    notes: incomingNotes.filter((n) => !has.notes.has(n.id)),
   };
 
-  const tx = db.transaction(['decks', 'cards', 'reviews'], 'readwrite');
+  const tx = db.transaction(['decks', 'cards', 'reviews', 'notes'], 'readwrite');
   await Promise.all([
     ...fresh.decks.map((d) => tx.objectStore('decks').put(d)),
     ...fresh.cards.map((c) => tx.objectStore('cards').put(c)),
     ...fresh.reviews.map((r) => tx.objectStore('reviews').put(r)),
+    ...fresh.notes.map((n) => tx.objectStore('notes').put(n)),
     tx.done,
   ]);
 
@@ -370,10 +428,12 @@ export async function importAll(
     decks: fresh.decks.length,
     cards: fresh.cards.length,
     reviews: fresh.reviews.length,
+    notes: fresh.notes.length,
     skipped: {
       decks: data.decks.length - fresh.decks.length,
       cards: data.cards.length - fresh.cards.length,
       reviews: data.reviews.length - fresh.reviews.length,
+      notes: incomingNotes.length - fresh.notes.length,
     },
   };
 }
@@ -416,11 +476,12 @@ export function savePrefs(prefs: Prefs): void {
 /** Clears every store — used by the "Reset local data" action in Settings. */
 export async function resetAll(): Promise<void> {
   const db = await getDB();
-  const tx = db.transaction(['decks', 'cards', 'reviews'], 'readwrite');
+  const tx = db.transaction(['decks', 'cards', 'reviews', 'notes'], 'readwrite');
   await Promise.all([
     tx.objectStore('decks').clear(),
     tx.objectStore('cards').clear(),
     tx.objectStore('reviews').clear(),
+    tx.objectStore('notes').clear(),
     tx.done,
   ]);
   localStorage.removeItem(PREFS_KEY);
