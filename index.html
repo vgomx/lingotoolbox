@@ -25,10 +25,39 @@
       if (window.navigator.standalone) document.documentElement.dataset.standalone = 'true';
     </script>
     <title>Lingo Toolbox — practise the words you nearly know</title>
+    <!-- Names the two tools that exist. It used to list all five, which read as
+         a feature list rather than a roadmap: someone arriving from a link had
+         been promised an etymology explorer and a conjugation drill that are
+         still empty screens behind a SOON badge. -->
     <meta
       name="description"
-      content="An open-source set of language-learning tools: flashcards with spaced repetition, an etymology explorer, conjugation drills, a phrasebook and grammar notes."
+      content="An open-source set of language-learning tools that runs entirely in your browser: flashcards with spaced repetition, and grammar notes that turn up while you review. No account, no server, no paid tier."
     />
+
+    <!--
+      Link previews.
+
+      The URLs are absolute and hardcoded to the deployed site, which is the
+      only place a preview is ever generated: a scraper fetching a shared link
+      has no page context to resolve `./social-card.png` against the way a
+      browser does, and `base` differs between a local build and Pages anyway.
+      A relative og:image is the usual reason a card renders with no picture.
+    -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Lingo Toolbox" />
+    <meta property="og:url" content="https://vgomx.github.io/lingotoolbox/" />
+    <meta property="og:title" content="Lingo Toolbox — practise the words you nearly know" />
+    <meta
+      property="og:description"
+      content="An open-source set of language-learning tools that runs entirely in your browser: flashcards with spaced repetition, and grammar notes that turn up while you review."
+    />
+    <meta property="og:image" content="https://vgomx.github.io/lingotoolbox/social-card.png" />
+    <!-- Stated so a scraper can lay the card out before the image has loaded;
+         without them some fall back to the small square treatment. -->
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="The Lingo Toolbox mark on a dark violet ground" />
+    <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>
     <div id="root"></div>
