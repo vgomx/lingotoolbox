@@ -27,10 +27,22 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      // The app is a static build with no versioning story of its own, so a new
-      // deploy should simply become the app. Prompting to reload would be asking
-      // about something the reader has no way to reason about.
-      registerType: 'autoUpdate',
+      /*
+       * The new build waits to be invited in.
+       *
+       * This was 'autoUpdate', on the reasoning that a static build has no
+       * versioning story worth prompting about — which is true, and was still
+       * the wrong call. autoUpdate does not mean "update now": the worker
+       * fetches the new build and keeps serving the old one until the next
+       * launch, so a deploy took two visits to appear and an installed app,
+       * whose window is never really closed, could sit on an old build for
+       * days. The symptom was a rail that kept showing yesterday's order.
+       *
+       * 'prompt' plus UpdatePrompt makes it one visit and one button. The
+       * button matters: reloading unasked would throw away a review queue that
+       * only exists in memory.
+       */
+      registerType: 'prompt',
       includeAssets: ['mark-violet.svg', 'icons/*.png'],
       manifest: {
         name: 'Lingo Toolbox',

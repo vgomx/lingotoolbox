@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AppShell } from './shell/AppShell';
+import { UpdatePrompt } from './shell/UpdatePrompt';
 import { Splash, SPLASH_EXIT_MS, SPLASH_MIN_MS, prefersReducedMotion } from './shell/Splash';
 import { Landing } from './marketing/Landing';
 import { Home } from './tools/Home';
@@ -79,28 +80,35 @@ function NotFound() {
 
 export function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Entry />} />
+    <>
+      {/* Outside the routes, so a deploy landing while you are three screens
+          deep is still noticed — and so the prompt is not unmounted by the
+          navigation someone makes while ignoring it. */}
+      <UpdatePrompt />
 
-      {/* One shell for every screen under /app. As a layout route it stays
-          mounted across navigations, so the rail can animate and the deck list
-          keeps its scroll — neither of which was possible when each screen
-          rendered its own copy. */}
-      <Route path="/app" element={<Boot><AppShell /></Boot>}>
-        <Route index element={<Home />} />
-        <Route path="home" element={<Navigate to="/app" replace />} />
-        <Route path="cards" element={<DeckList />} />
-        <Route path="cards/:deckId" element={<DeckDetail />} />
-        <Route path="review" element={<ReviewSession />} />
-        <Route path="review/:deckId" element={<ReviewSession />} />
-        <Route path="etymology" element={<EtymologyScreen />} />
-        <Route path="conjugation" element={<ConjugationScreen />} />
-        <Route path="phrasebook" element={<PhrasebookScreen />} />
-        <Route path="grammar" element={<GrammarNotes />} />
-        <Route path="settings" element={<Settings />} />
-      </Route>
+      <Routes>
+        <Route path="/" element={<Entry />} />
 
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+        {/* One shell for every screen under /app. As a layout route it stays
+            mounted across navigations, so the rail can animate and the deck list
+            keeps its scroll — neither of which was possible when each screen
+            rendered its own copy. */}
+        <Route path="/app" element={<Boot><AppShell /></Boot>}>
+          <Route index element={<Home />} />
+          <Route path="home" element={<Navigate to="/app" replace />} />
+          <Route path="cards" element={<DeckList />} />
+          <Route path="cards/:deckId" element={<DeckDetail />} />
+          <Route path="review" element={<ReviewSession />} />
+          <Route path="review/:deckId" element={<ReviewSession />} />
+          <Route path="etymology" element={<EtymologyScreen />} />
+          <Route path="conjugation" element={<ConjugationScreen />} />
+          <Route path="phrasebook" element={<PhrasebookScreen />} />
+          <Route path="grammar" element={<GrammarNotes />} />
+          <Route path="settings" element={<Settings />} />
+        </Route>
+
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
   );
 }
