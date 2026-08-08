@@ -87,6 +87,10 @@ export default defineConfig({
           // They are runtime-cached instead — and a glyph can only be on a card if
           // the picker was opened, which is what puts it in the cache.
           'openmoji/**',
+          // 4.8 MB of etymologies across three languages, for a tool most
+          // sessions never open — and you only ever need the workspace you are
+          // in. Fetched on demand and cached below, like the illustrations.
+          'etymology/**',
           // The latin-ext cut of the two text faces. The four workspaces do not
           // need it: ã, ç, õ, ë and ñ all sit below U+0100, inside latin.
           // unicode-range means a browser only fetches these if a character in
@@ -115,6 +119,17 @@ export default defineConfig({
               // Comfortably above the vendored set, so browsing the whole picker
               // once does not start evicting glyphs already on someone's cards.
               expiration: { maxEntries: 600, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /\/etymology\/[A-Z]{2}\.json$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'etymology-shards',
+              // One per workspace, and they only change when the dump is
+              // rebuilt — which is a new filename anyway.
+              expiration: { maxEntries: 6, maxAgeSeconds: 60 * 60 * 24 * 365 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },

@@ -5,6 +5,8 @@ import { TopRight, useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
 import { NoteCard } from '../grammar/NoteCard';
+import { ChainCard } from '../etymology/ChainCard';
+import { hasContent, loadEtymology, lookup, type Etymologies } from '../../data/etymology';
 import { dueDirections, gradePreview, scheduleOf, sortForSession } from '../../data/scheduler';
 import { findIllustration, illustrationUrl } from '../../data/illustrations';
 import type { SoundName } from 'lingo-ds';
@@ -38,7 +40,7 @@ const page: React.CSSProperties = {
 export function ReviewSession() {
   const { deckId } = useParams();
   const navigate = useNavigate();
-  const { decks, cards, dueInDeck, prefs, grade, undo, undoDepth, notesFor, workspace } = useStore();
+  const { decks, cards, dueInDeck, prefs, grade, undo, undoDepth, notesFor, language, workspace } = useStore();
   const isMobile = useIsMobile();
 
   const deck = deckId ? decks.find((d) => d.id === deckId) : undefined;
@@ -54,6 +56,8 @@ export function ReviewSession() {
   const [again, setAgain] = React.useState(0);
   const [toast, setToast] = React.useState<string | null>(null);
   const [notesOpen, setNotesOpen] = React.useState(false);
+  const [etymOpen, setEtymOpen] = React.useState(false);
+  const [etym, setEtym] = React.useState<Etymologies | null>(null);
 
   React.useEffect(() => {
     if (queue) return;
@@ -91,6 +95,15 @@ export function ReviewSession() {
    * it is most of how it sticks.
    */
   const notes = card ? notesFor(card) : [];
+  /*
+   * The word's ancestry, if the workspace has a list and the word is in it.
+   *
+   * card.front is always the target-language side whichever way round the card
+   * is being asked, so this looks the same up in both directions — the English
+   * gloss has no etymology worth showing here.
+   */
+  const chain = card && etym ? lookup(etym, card.front) : null;
+  const hasChain = hasContent(chain);
 
   // The one celebration, and only on the edge into done — not on every render of
   // the completed screen, which a re-render would otherwise replay.
@@ -160,6 +173,12 @@ export function ReviewSession() {
       // Without this, Cmd+1 graded a card on its way to switching browser tab.
       if (e.metaKey || e.ctrlKey || e.altKey) return;
 
+      if ((e.key === 'e' || e.key === 'E') && hasChain) {
+        e.preventDefault();
+        setEtymOpen((o) => !o);
+        setNotesOpen(false);
+        return;
+      }
       // G opens the rule and closes it again. Allowed through the gate below,
       // because the key that opened it is the one you reach for to dismiss it.
       if ((e.key === 'g' || e.key === 'G') && notes.length > 0) {
@@ -176,7 +195,7 @@ export function ReviewSession() {
        * explanation could mark the card you were reading about as known. Escape
        * still closes, since that is the Dialog's own handler, not this one.
        */
-      if (notesOpen) return;
+      if (notesOpen || etymOpen) return;
 
       // The shortcut people already have in their fingers for this.
       if ((e.key === 'z' || e.key === 'Z') && graded > 0) {
@@ -204,11 +223,18 @@ export function ReviewSession() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [current, flipped, answer, graded, stepBack, notes.length, notesOpen]);
+  }, [current, flipped, answer, graded, stepBack, notes.length, notesOpen, etymOpen, hasChain]);
 
   // A note belongs to the card it was opened from; leaving it up over the next
   // one would be answering a different question with the last one's rule.
-  React.useEffect(() => { setNotesOpen(false); }, [index]);
+  React.useEffect(() => { setNotesOpen(false); setEtymOpen(false); }, [index]);
+
+  // Fetched once per language and shared with the Etymology screen.
+  React.useEffect(() => {
+    let live = true;
+    void loadEtymology(language).then((d) => { if (live) setEtym(d); });
+    return () => { live = false; };
+  }, [language]);
 
   React.useEffect(() => {
     if (!toast) return undefined;
@@ -304,8 +330,16 @@ export function ReviewSession() {
             sheet teaches you to stop pressing it. */}
         {notes.length > 0 && (
           <Tooltip label={notes.length === 1 ? notes[0].title : `${notes.length} notes for this card`} shortcut="G">
-            <IconButton label="Grammar notes for this card" onClick={() => setNotesOpen(true)}>
+            <IconButton label="Grammar notes for this card" onClick={() => { setNotesOpen(true); setEtymOpen(false); }}>
               <Icon name="scroll-text" size={18} />
+            </IconButton>
+          </Tooltip>
+        )}
+        {/* Same rule as the notes button: only when there is a chain to show. */}
+        {hasChain && (
+          <Tooltip label="Where this word comes from" shortcut="E">
+            <IconButton label="Etymology for this card" onClick={() => { setEtymOpen(true); setNotesOpen(false); }}>
+              <Icon name="git-branch" size={18} />
             </IconButton>
           </Tooltip>
         )}
@@ -388,6 +422,18 @@ export function ReviewSession() {
           </Button>
         )}
       </div>
+
+      <Dialog
+        open={etymOpen}
+        onClose={() => setEtymOpen(false)}
+        title="Where this word comes from"
+        description="Close it and carry on — your place is kept."
+        width={520}
+      >
+        <div style={{ paddingBottom: 'var(--space-4)' }}>
+          {card && chain && etym && <ChainCard word={card.front} chain={chain} data={etym} compact />}
+        </div>
+      </Dialog>
 
       <Dialog
         open={notesOpen}

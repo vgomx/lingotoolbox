@@ -249,6 +249,23 @@ FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.`,
   },
   {
+    name: 'Wiktionary',
+    packages: 'Etymologies — where the words on your cards came from',
+    license: 'CC BY-SA 4.0',
+    text: `The Etymology Explorer's word histories are extracted from Wiktionary
+using wiktextract (MIT), and ship with the app as three per-language files.
+
+Wiktionary text is licensed CC BY-SA 4.0. Redistributing it here means the
+attribution and the share-alike term travel with it, which is what this notice
+is for. The source articles and their authors are at https://www.wiktionary.org
+and the extraction tool at https://github.com/tatuylonen/wiktextract.
+
+Wiktionary is written by volunteers and its etymologies are not systematically
+verified. Some are disputed, some are folk etymology, and some are simply
+absent — a word with no entry here has not been ruled out, only not written up.
+Treat a surprising ancestry as a lead worth checking rather than as a fact.`,
+  },
+  {
     name: 'OpenMoji',
     packages: '526 illustrations — the pictures on your flashcards',
     license: 'CC BY-SA 4.0',

@@ -27,6 +27,7 @@ A set of language-learning tools that runs entirely in your browser — not a co
 - **Ask both ways** — turn a deck around and each direction keeps its own schedule, because recognising *brood* and producing it from "bread" are two different things you know to two different degrees. A triage step lets you pick which cards survive the reversal, since plenty of phrases only work in one direction.
 - **Undo the last grade** — `Z`, ten deep, restoring the schedule exactly as it was rather than approximating it.
 - **Grammar Notes** — short explanations tagged the way your cards are, so the rule about *de* or *het* turns up while you're reviewing a noun. `G` opens it mid-review without ending the session.
+- **Etymology** — trace a word back through the languages it passed through. *pond* goes Middle Dutch → Old Dutch → Proto-West Germanic → Proto-Germanic → Latin, and `E` pulls that up mid-review without ending the session.
 - **CEFR levels** — cards carry A1–C1, and the home screen breaks today's due count down by level.
 - **Illustrations** — an OpenMoji glyph on a card, from a curated set of 526 vendored locally.
 - **Backup and restore** — a single JSON file holding every deck, card, review and note across all four workspaces. Restoring adds what's missing and leaves what's there alone, so importing twice is harmless.
@@ -39,7 +40,7 @@ Nothing you write leaves your device. There is no server, no account and no paid
 
 | | |
 |---|---|
-| **Review** | `Space` / `Enter` turn the card · `1`–`4` grade it · `Z` undo the last grade · `G` the rule for this card |
+| **Review** | `Space` / `Enter` turn the card · `1`–`4` grade it · `Z` undo the last grade · `G` the rule for this card · `E` where the word comes from |
 | **Decks** | `N` add a card |
 | **Anywhere** | `Esc` closes a dialog or a menu |
 
@@ -77,6 +78,8 @@ If `npm install` can't resolve `lingo-ds`, it's because `lingo-ds/dist` is missi
 | `npm run typecheck` | `tsc -b --noEmit`. |
 | `npm run check:illustrations` | Verify every referenced glyph exists. Runs on every build. |
 | `npm run build:illustrations` | Re-download the OpenMoji set and regenerate the catalogue. |
+| `npm run build:etymology` | Re-stream the Wiktionary dumps and rebuild the etymology shards. Slow; the output is committed. |
+| `npm run check:etymology` | Verify the shards parse, are complete and still carry multi-step chains. Runs on every build. |
 | `npm run build:icons` | Regenerate the PWA icons from the design system's lockup. |
 | `npm run build:social-card` | Regenerate the card at the top of this file. |
 
@@ -87,6 +90,7 @@ If `npm install` can't resolve `lingo-ds`, it's because `lingo-ds/dist` is missi
 - **[idb](https://github.com/jakearchibald/idb)** over IndexedDB for storage; no ORM and no server.
 - **[vite-plugin-pwa](https://vite-pwa-org.netlify.app)** / Workbox for the service worker.
 - **[OpenMoji](https://openmoji.org)** for card illustrations.
+- **[Wiktionary](https://www.wiktionary.org)** via **[wiktextract](https://github.com/tatuylonen/wiktextract)** for etymologies (CC BY-SA 4.0).
 
 ```
 src/
@@ -114,11 +118,15 @@ There is no `src/assets/`. Brand artwork is imported from the package — `impor
 
 The latin-ext cut of the two text faces is deliberately left out of the precache: the four workspaces are covered by latin, and `unicode-range` means a browser only fetches it if such a character appears. JetBrains Mono's latin-ext *is* precached — IPA lives in that range, so `/ˈlɛkər/` needs it on the first card with a pronunciation.
 
+**Etymology.** The chains come from Wiktionary via wiktextract, not from the obvious source. [etymology-db](https://github.com/droher/etymology-db) publishes the same information as an *edge list*, one row per relation — so following a chain means joining across languages, and every extra step of depth costs a whole language's worth of rows. Measured that way, 99% of words dead-end after a single ancestor. kaikki denormalises the chain into each word's own record instead, so `venster` arrives already carrying Middle Dutch, Old Dutch and Latin: half of Dutch words have two or more steps against 0.8% in the edge list, and depth costs nothing extra because there is nothing to follow.
+
+The shards total 4.6 MB across three workspaces and are **not** precached — you only ever need the language you are in, and most sessions never open the tool. English has no shard: it is the language the others are glossed into, and its dump is 3 GB. The screen says so rather than pretending.
+
 **Storage.** IndexedDB at version 2. Upgrades are guarded on `oldVersion`, so a database that predates a store keeps everything it already had. The backup format carries its own version and stays able to read older files.
 
 ## Known gaps
 
-- **Three tools are empty.** Etymology Explorer, Conjugation Drill and Phrasebook are designed and routed but not built. They're marked SOON in the rail and sort below what works.
+- **Two tools are empty.** Conjugation Drill and Phrasebook are designed and routed but not built. They're marked SOON in the rail and sort below what works.
 - **Deep links on Pages.** `dist/404.html` is a copy of `index.html` so the SPA boots; GitHub still returns a 404 *status* for those URLs, though the page renders.
 
 ## Contributing
