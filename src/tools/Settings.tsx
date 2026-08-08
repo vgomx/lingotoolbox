@@ -77,7 +77,7 @@ export function Settings() {
         <Card title="Appearance">
           <Switch
             label="Light theme"
-            hint="Dark is the product default; light is the same tokens retuned."
+            hint="Easier on the eyes in a bright room."
             checked={prefs.theme === 'light'}
             onChange={(next) => setPrefs({ theme: next ? 'light' : 'dark' })}
           />

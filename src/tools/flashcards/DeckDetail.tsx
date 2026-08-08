@@ -514,7 +514,7 @@ export function DeckDetail() {
       <ConfirmDialog
         open={deletingDeck}
         title={`Delete "${deck.name}"?`}
-        description={`Its ${cards.length} ${cards.length === 1 ? 'card' : 'cards'} go with it, along with everything the scheduler has learned about them. This cannot be undone.`}
+        description={`Its ${cards.length} ${cards.length === 1 ? 'card' : 'cards'} go with it, along with everything it has learned about how well you know them. This cannot be undone.`}
         confirmLabel="Delete deck"
         onCancel={() => setDeletingDeck(false)}
         onConfirm={async () => {
