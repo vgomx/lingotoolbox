@@ -11,6 +11,15 @@ import { LegalDialog } from './LegalDialog';
 import { FaqDialog } from './FaqDialog';
 import markUrl from 'lingo-ds/assets/logo/mark-violet.svg';
 
+/**
+ * The commit this bundle was built from, or 'dev' outside a git checkout.
+ *
+ * Read through a guard rather than used bare: __BUILD__ is a define, so it does
+ * not exist in any context Vite has not substituted it in, and a bare reference
+ * would throw rather than degrade.
+ */
+const BUILD = typeof __BUILD__ === 'string' ? __BUILD__ : 'dev';
+
 const page: React.CSSProperties = {
   maxWidth: 720,
   margin: '0 auto',
@@ -177,8 +186,19 @@ export function Settings() {
               <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-18)', fontWeight: 800, color: 'var(--text-strong)' }}>
                 Lingo Toolbox
               </span>
+              {/*
+                * The build, not just the version.
+                *
+                * A service worker can serve an old build for a long time, and an
+                * installed app has no address bar to reload from — so "is this
+                * running the fix or the version before it" is a question that
+                * otherwise gets answered by hunting for a visual change and
+                * hoping the one you picked had actually shipped. It is the
+                * commit, so it can be compared against the repository rather
+                * than only against another device.
+                */}
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-11)', color: 'var(--text-muted)' }}>
-                Version {APP_VERSION}
+                Version {APP_VERSION} · build {BUILD}
               </span>
             </div>
           </div>
