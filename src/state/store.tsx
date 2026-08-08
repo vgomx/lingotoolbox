@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { setSoundEnabled, unlockSound, usePrefersReducedMotion } from 'lingo-ds';
-import type { Card, Deck, Grade, LanguageCode, Prefs } from '../data/types';
+import type { Card, Deck, Direction, Grade, LanguageCode, Prefs, ReviewItem } from '../data/types';
 import * as db from '../data/db';
-import { isDue } from '../data/scheduler';
+import { dueDirections } from '../data/scheduler';
 import { WORKSPACES } from '../data/seed';
 
 interface StoreValue {
@@ -29,14 +29,15 @@ interface StoreValue {
   cards: Card[];
 
   cardsInDeck: (deckId: string) => Card[];
-  dueInDeck: (deckId: string) => Card[];
+  /** The questions a deck owes now — two per card where it is asked both ways. */
+  dueInDeck: (deckId: string) => ReviewItem[];
   dueCount: number;
   /** Consecutive days with at least one card graded. */
   streak: number;
   /** Reviews graded per day over the last week, oldest first, ending today. */
   weeklyReviews: number[];
 
-  grade: (card: Card, grade: Grade) => Promise<Card>;
+  grade: (card: Card, direction: Direction, grade: Grade) => Promise<Card>;
   saveCard: (card: Card) => Promise<void>;
   removeCard: (id: string) => Promise<void>;
   saveDeck: (deck: Deck) => Promise<void>;
@@ -147,20 +148,35 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [cards],
   );
 
+  /**
+   * Everything owed in a deck, as questions rather than cards.
+   *
+   * A card asked both ways owes two, and each falls due on its own schedule — so
+   * a deck of eight words can owe anything from nothing to sixteen. Callers that
+   * only want a number still read `.length`; the review screen wants the items.
+   */
   const dueInDeck = React.useCallback(
-    (deckId: string) => cards.filter((c) => c.deckId === deckId && isDue(c)),
+    (deckId: string): ReviewItem[] => {
+      const now = Date.now();
+      return cards
+        .filter((c) => c.deckId === deckId)
+        .flatMap((card) => dueDirections(card, now).map((direction) => ({ card, direction })));
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- tick forces a re-derive
     [cards, tick],
   );
 
   const dueCount = React.useMemo(
-    () => cards.filter((c) => isDue(c)).length,
+    () => {
+      const now = Date.now();
+      return cards.reduce((n, card) => n + dueDirections(card, now).length, 0);
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- tick forces a re-derive
     [cards, tick],
   );
 
-  const grade = React.useCallback(async (card: Card, g: Grade) => {
-    const updated = await db.gradeCard(card, g);
+  const grade = React.useCallback(async (card: Card, direction: Direction, g: Grade) => {
+    const updated = await db.gradeCard(card, direction, g);
     setCards((cs) => cs.map((c) => (c.id === updated.id ? updated : c)));
     const [nextStreak, nextWeek] = await Promise.all([db.computeStreak(), db.reviewsPerDay()]);
     setStreak(nextStreak);

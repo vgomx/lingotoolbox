@@ -42,6 +42,8 @@ interface SeedCard {
    */
   illustration?: string;
   level?: CEFRLevel;
+  /** Overrides the deck for a card that does not survive the trip. */
+  reversed?: boolean;
   tags: string[];
 }
 
@@ -49,6 +51,15 @@ interface SeedDeck {
   id: string;
   name: string;
   accent: string;
+  /**
+   * Whether this deck's cards are also asked backwards, meaning to word.
+   *
+   * On where the glosses point back at exactly one word — a market stall, a
+   * verb, a station. Off where they do not: "yeah, exactly — agreeing with a
+   * sigh" fits a dozen phrases, and asking for `pois é` from it would teach
+   * guessing rather than the phrase.
+   */
+  reversed?: boolean;
   tags: string[];
   cards: SeedCard[];
 }
@@ -61,6 +72,7 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
   EN: [
     {
       id: 'en-phrasal',
+      reversed: true,
       name: 'Phrasal verbs',
       accent: 'var(--tool-flashcards)',
       tags: ['verbs'],
@@ -77,6 +89,7 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
     },
     {
       id: 'en-precise',
+      reversed: true,
       name: 'Words worth knowing',
       accent: 'var(--cyan-500)',
       tags: ['vocabulary'],
@@ -106,6 +119,7 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
     },
     {
       id: 'en-directions',
+      reversed: true,
       name: 'Getting around',
       accent: 'var(--mint-500)',
       tags: ['travel'],
@@ -122,6 +136,7 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
     },
     {
       id: 'en-work',
+      reversed: true,
       name: 'At work',
       accent: 'var(--amber-500)',
       tags: ['work'],
@@ -139,6 +154,7 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
     // Abstract by nature, so no illustrations — see the note on SeedCard.
     {
       id: 'en-linking',
+      reversed: true,
       name: 'Linking words',
       accent: 'var(--violet-500)',
       tags: ['grammar'],
@@ -186,6 +202,7 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
     },
     {
       id: 'pt-cafe',
+      reversed: true,
       name: 'At the café',
       accent: 'var(--coral-500)',
       tags: ['food'],
@@ -202,6 +219,7 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
     },
     {
       id: 'pt-verbs',
+      reversed: true,
       name: 'Everyday verbs',
       accent: 'var(--cyan-500)',
       tags: ['verbs'],
@@ -250,6 +268,7 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
     },
     {
       id: 'nl-separable',
+      reversed: true,
       name: 'Separable verbs',
       accent: 'var(--amber-500)',
       tags: ['verbs'],
@@ -264,6 +283,7 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
     },
     {
       id: 'nl-market',
+      reversed: true,
       name: 'At the market',
       accent: 'var(--mint-500)',
       tags: ['food'],
@@ -280,6 +300,7 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
     },
     {
       id: 'nl-work',
+      reversed: true,
       name: 'At work',
       accent: 'var(--amber-500)',
       tags: ['work'],
@@ -315,6 +336,7 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
   ES: [
     {
       id: 'es-kitchen',
+      reversed: true,
       name: 'Kitchen Spanish',
       accent: 'var(--tool-flashcards)',
       tags: ['food'],
@@ -345,6 +367,7 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
     },
     {
       id: 'es-verbs',
+      reversed: true,
       name: 'Irregular verbs',
       accent: 'var(--pink-500)',
       tags: ['verbs'],
@@ -360,6 +383,7 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
     },
     {
       id: 'es-travel',
+      reversed: true,
       name: 'Getting around',
       accent: 'var(--cyan-500)',
       tags: ['travel'],
@@ -392,6 +416,7 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
     },
     {
       id: 'es-linking',
+      reversed: true,
       name: 'Linking words',
       accent: 'var(--violet-500)',
       tags: ['grammar'],
@@ -430,6 +455,7 @@ export function buildSeed(now: number = Date.now()): { decks: Deck[]; cards: Car
         language,
         name: seedDeck.name,
         accent: seedDeck.accent,
+        reversed: seedDeck.reversed,
         tags: seedDeck.tags,
         createdAt: now,
       });
@@ -447,6 +473,8 @@ export function buildSeed(now: number = Date.now()): { decks: Deck[]; cards: Car
           illustration: c.illustration,
           tags: c.tags,
           level: c.level,
+          // The deck's answer, unless the card carries its own.
+          reversed: c.reversed ?? seedDeck.reversed,
           createdAt: now,
           state: seeded ? 'review' : 'new',
           due: seeded ? now - (i + 1) * 60 * 60 * 1000 : now,

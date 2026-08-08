@@ -1,4 +1,4 @@
-import type { Card, CardState, Grade } from './types';
+import type { Card, Direction, Grade, Schedule } from './types';
 
 /**
  * SM-2, adapted to the four grades the design's ReviewRating emits.
@@ -26,23 +26,20 @@ const RELEARN_STEP_MIN = 10;
 const GRADUATE_GOOD_DAYS = 1;
 const GRADUATE_EASY_DAYS = 4;
 
-export interface SchedulerResult {
-  state: CardState;
-  due: number;
-  interval: number;
-  ease: number;
-  reps: number;
-  lapses: number;
-}
+/** Identical to Schedule; kept as a name for what a grade returns. */
+export type SchedulerResult = Schedule;
 
 const clampEase = (e: number) => Math.max(MIN_EASE, Math.round(e * 100) / 100);
 const clampInterval = (d: number) => Math.min(MAX_INTERVAL_DAYS, Math.max(0, d));
 
 /**
- * Applies a grade to a card and returns its next scheduler state.
+ * Applies a grade to one schedule and returns the next.
+ *
+ * Takes a Schedule rather than a Card, because a card has two of them and this
+ * function never wanted the word or its meaning — only where the memory stood.
  * `now` is injected so sessions and tests are deterministic.
  */
-export function schedule(card: Card, grade: Grade, now: number = Date.now()): SchedulerResult {
+export function schedule(card: Schedule, grade: Grade, now: number = Date.now()): SchedulerResult {
   const learning = card.state === 'new' || card.state === 'learning';
   const relearning = card.state === 'relearning';
 
@@ -134,8 +131,8 @@ export function formatDue(ms: number): string {
   return `${Math.round(months / 12)}y`;
 }
 
-/** The four grades with the interval each would actually produce for this card. */
-export function gradePreview(card: Card, now: number = Date.now()) {
+/** The four grades with the interval each would actually produce from here. */
+export function gradePreview(card: Schedule, now: number = Date.now()) {
   const grades: Grade[] = ['again', 'hard', 'good', 'easy'];
   return grades.map((key) => ({
     key,
@@ -143,16 +140,53 @@ export function gradePreview(card: Card, now: number = Date.now()) {
   }));
 }
 
-export function isDue(card: Card, now: number = Date.now()): boolean {
+export function isDue(card: Schedule, now: number = Date.now()): boolean {
   return card.due <= now;
 }
 
-/** New cards first, then whatever has been waiting longest. */
-export function sortForSession(cards: Card[]): Card[] {
-  return [...cards].sort((a, b) => {
-    if (a.state === 'new' && b.state !== 'new') return -1;
-    if (b.state === 'new' && a.state !== 'new') return 1;
-    return a.due - b.due;
+/** A direction that has never been asked, waiting from the card's own birthday. */
+const freshSchedule = (createdAt: number): Schedule => ({
+  state: 'new', due: createdAt, interval: 0, ease: START_EASE, reps: 0, lapses: 0,
+});
+
+/**
+ * The schedule for one direction of a card.
+ *
+ * Forward reads the flat fields; reverse reads `card.reverse`, or a fresh
+ * schedule if that direction has never been asked. See the note on `Card.reverse`
+ * for why the two are not stored alike.
+ */
+export function scheduleOf(card: Card, direction: Direction): Schedule {
+  if (direction === 'forward') {
+    const { state, due, interval, ease, reps, lapses } = card;
+    return { state, due, interval, ease, reps, lapses };
+  }
+  return card.reverse ?? freshSchedule(card.createdAt);
+}
+
+/** Puts a graded schedule back on the card, in the place that direction lives. */
+export function withSchedule(card: Card, direction: Direction, next: Schedule): Card {
+  return direction === 'forward' ? { ...card, ...next } : { ...card, reverse: next };
+}
+
+/** The directions this card is currently asked in — one, or both. */
+export function directionsOf(card: Card): Direction[] {
+  return card.reversed ? ['forward', 'reverse'] : ['forward'];
+}
+
+/** Every question this card owes right now, as queue items. */
+export function dueDirections(card: Card, now: number = Date.now()): Direction[] {
+  return directionsOf(card).filter((d) => isDue(scheduleOf(card, d), now));
+}
+
+/** New questions first, then whatever has been waiting longest. */
+export function sortForSession(items: { card: Card; direction: Direction }[]) {
+  return [...items].sort((a, b) => {
+    const sa = scheduleOf(a.card, a.direction);
+    const sb = scheduleOf(b.card, b.direction);
+    if (sa.state === 'new' && sb.state !== 'new') return -1;
+    if (sb.state === 'new' && sa.state !== 'new') return 1;
+    return sa.due - sb.due;
   });
 }
 

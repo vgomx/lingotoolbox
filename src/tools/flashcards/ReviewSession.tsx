@@ -4,10 +4,10 @@ import { Button, Flashcard, Icon, IconButton, ProgressBar, ReviewRating, Tag, To
 import { TopRight, useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
-import { gradePreview, sortForSession } from '../../data/scheduler';
+import { dueDirections, gradePreview, scheduleOf, sortForSession } from '../../data/scheduler';
 import { findIllustration, illustrationUrl } from '../../data/illustrations';
 import type { SoundName } from 'lingo-ds';
-import type { Card as CardModel, Grade } from '../../data/types';
+import type { Grade, ReviewItem } from '../../data/types';
 
 const GRADE_KEYS: Grade[] = ['again', 'hard', 'good', 'easy'];
 
@@ -46,7 +46,7 @@ export function ReviewSession() {
    * The queue is captured once when the session starts. Grading mutates card
    * state, so re-deriving it every render would reshuffle mid-session.
    */
-  const [queue, setQueue] = React.useState<CardModel[] | null>(null);
+  const [queue, setQueue] = React.useState<ReviewItem[] | null>(null);
   const [index, setIndex] = React.useState(0);
   const [flipped, setFlipped] = React.useState(false);
   const [graded, setGraded] = React.useState(0);
@@ -55,9 +55,13 @@ export function ReviewSession() {
 
   React.useEffect(() => {
     if (queue) return;
+    const now = Date.now();
     const pool = deckId
       ? dueInDeck(deckId)
-      : cards.filter((c) => c.due <= Date.now());
+      // Across every deck in the workspace: each card contributes the directions
+      // it owes, which is one question for most and two for a card asked both
+      // ways whose halves have both come due.
+      : cards.flatMap((card) => dueDirections(card, now).map((direction) => ({ card, direction })));
     setQueue(sortForSession(pool).slice(0, prefs.sessionLimit));
     // Building a queue always starts a session from the top, so the index can
     // never point past the end of a freshly built one.
@@ -78,11 +82,12 @@ export function ReviewSession() {
     if (!current) return;
     // Before the await, so the sound answers the keypress rather than the write.
     playSound(GRADE_SOUND[key]);
-    await grade(current, key);
+    await grade(current.card, current.direction, key);
     setGraded((n) => n + 1);
     if (key === 'again') {
       setAgain((n) => n + 1);
-      // A card graded Again comes back at the end of this session, not in a minute.
+      // A question graded Again comes back at the end of this session rather
+      // than in a minute — and only that question, not the card's other one.
       setQueue((q) => (q ? [...q, current] : q));
     }
     setFlipped(false);
@@ -185,7 +190,17 @@ export function ReviewSession() {
     );
   }
 
-  const previews = current ? gradePreview(current) : [];
+  /**
+   * Which way round this question runs.
+   *
+   * Forward shows the word and asks for the meaning; reverse shows the meaning
+   * and asks for the word. The card is the same record either way — only the
+   * faces trade places, along with the side the picture sits on: a picture of
+   * the answer sitting on the prompt would turn recall into naming a picture.
+   */
+  const card = current?.card;
+  const reverse = current?.direction === 'reverse';
+  const previews = current ? gradePreview(scheduleOf(current.card, current.direction)) : [];
   const grades = GRADE_KEYS.map((key, i) => ({
     key,
     label: GRADE_META[key].label,
@@ -218,23 +233,32 @@ export function ReviewSession() {
           color={deck?.accent ?? 'var(--tool-flashcards)'}
         />
 
-        {current && (
+        {current && card && (
           <Flashcard
-            key={current.id + index}
-            front={current.front}
-            back={current.back}
-            phonetic={current.phonetic}
-            // Answer side only. A picture of the answer sitting on the prompt
-            // turns recall into reading — you name the picture, not the word.
-            illustration={current.illustration && (
+            // The direction is in the key: the same card can be asked both ways
+            // in one session, and without it React would reconcile the second
+            // question onto the first and keep it turned over.
+            key={`${card.id}:${current.direction}:${index}`}
+            front={reverse ? card.back : card.front}
+            back={reverse ? card.front : card.back}
+            // The pronunciation belongs to the word, so it goes wherever the
+            // word is — a hint on the prompt when the word is the answer would
+            // give it away.
+            phonetic={reverse ? undefined : card.phonetic}
+            illustration={card.illustration && (
               <img
-                src={illustrationUrl(current.illustration)}
-                alt={findIllustration(current.illustration)?.name ?? ''}
+                src={illustrationUrl(card.illustration)}
+                alt={findIllustration(card.illustration)?.name ?? ''}
                 width={56}
                 height={56}
               />
             )}
-            language={workspace.name}
+            illustrationSide={reverse ? 'front' : 'back'}
+            // Which way it is asking, not just which language the deck is. Read
+            // "→ Dutch" as "give me the Dutch": without the arrow you cannot
+            // tell whether to produce the word or recall the meaning, and you
+            // would grade yourself against whichever you happened to think of.
+            language={reverse ? `→ ${workspace.name}` : workspace.name}
             flipped={flipped}
             onFlip={(next) => { if (next) playSound('flip'); setFlipped(next); }}
             height={320}
@@ -244,8 +268,8 @@ export function ReviewSession() {
               // On the answer side with the tags, and first. On the prompt it
               // would be a clue: knowing a word is C1 before you try to recall
               // it tells you something about the answer.
-              ...(current.level ? [<Tag key="level" color="var(--violet-100)">{current.level}</Tag>] : []),
-              ...current.tags.map((t) => <Tag key={t} color="var(--violet-100)">{t}</Tag>),
+              ...(card.level ? [<Tag key="level" color="var(--violet-100)">{card.level}</Tag>] : []),
+              ...card.tags.map((t) => <Tag key={t} color="var(--violet-100)">{t}</Tag>),
             ]}
           />
         )}
