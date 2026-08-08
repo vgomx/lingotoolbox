@@ -12,6 +12,9 @@ const RELATION: Record<string, string> = {
   root: 'ultimately from the root',
 };
 
+/** Did Wiktionary actually name a word here, or only a family? */
+const isNamed = (term: string) => !['-', '—', '', '*', '?'].includes(term.trim());
+
 const mono: React.CSSProperties = {
   fontFamily: 'var(--font-mono)',
   fontSize: 'var(--fs-14)',
@@ -65,7 +68,14 @@ export function ChainCard({ word, chain, data, compact = false }: {
                     {langName(data, code)}
                   </span>
                 </span>
-                <div style={{ ...mono, wordBreak: 'break-word' }}>{term}</div>
+                {/* Wiktionary will say a word is "ultimately Semitic" without
+                    naming a Semitic word for it, and writes that as a bare
+                    hyphen. The claim is real and worth keeping — abacus really
+                    does go back past Greek — but printing the placeholder gave
+                    a mono line containing "-", which reads as a broken record
+                    rather than as an honest "we know the family, not the word".
+                    So the language stands alone and the term line is dropped. */}
+                {isNamed(term) && <div style={{ ...mono, wordBreak: 'break-word' }}>{term}</div>}
               </div>
             </div>
           ))}
