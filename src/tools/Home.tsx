@@ -149,16 +149,42 @@ export function Home() {
             <p style={{ margin: '8px 0 0', fontSize: 'var(--fs-16)', color: 'var(--text-muted)', maxWidth: 460, lineHeight: 'var(--lh-relaxed)' }}>
               {dueCount
                 ? `Across ${decks.length} ${decks.length === 1 ? 'deck' : 'decks'}. Grade each card and the schedule adjusts.`
-                : 'Nothing is due. Add cards to a deck, or come back tomorrow.'}
+                : 'Nothing is due. A good moment to look something up instead.'}
             </p>
           </div>
-          {dueCount > 0 && (
-            <div style={{ flex: 'none' }}>
+
+          {/*
+            * Review is the reason most people are here, so it keeps the weight.
+            * The other two sit beside it rather than only in the grid further
+            * down, because a tool nobody has met yet does not get discovered
+            * from the bottom of a page.
+            *
+            * They are also what makes the caught-up state a screen rather than
+            * a dead end. It used to lose its only button the moment nothing was
+            * due and say "come back tomorrow" — turning the one day you have
+            * time into the one day the app has nothing to offer.
+            */}
+          <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 'var(--gap-inline)', flexWrap: 'wrap' }}>
+            {HAS_ETYMOLOGY[language] && (
+              <Link to="/app/etymology" style={{ textDecoration: 'none' }}>
+                <Button variant="secondary" size={dueCount ? 'md' : 'lg'} iconLeft={<Icon name="git-branch" size={16} />}>
+                  Trace a word
+                </Button>
+              </Link>
+            )}
+            {notes.length > 0 && (
+              <Link to="/app/grammar" style={{ textDecoration: 'none' }}>
+                <Button variant="secondary" size={dueCount ? 'md' : 'lg'} iconLeft={<Icon name="scroll-text" size={16} />}>
+                  Read a rule
+                </Button>
+              </Link>
+            )}
+            {dueCount > 0 && (
               <Button size="xl" iconLeft={<Icon name="play" size={18} />} onClick={() => navigate('/app/review')}>
                 Start review
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         <div style={grid3}>
