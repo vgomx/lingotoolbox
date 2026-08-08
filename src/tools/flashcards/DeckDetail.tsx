@@ -431,21 +431,37 @@ export function DeckDetail() {
         }
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', paddingBottom: 'var(--space-4)' }}>
-          {cards.map((card) => (
-            <Checkbox
-              key={card.id}
-              checked={!!triage?.has(card.id)}
-              onChange={(_, next) => setTriage((prev) => {
-                const set = new Set(prev ?? []);
-                if (next) set.add(card.id); else set.delete(card.id);
-                return set;
-              })}
-              // The gloss is the whole point of showing this list: you are
-              // judging whether it points back at one word, so it has to be
-              // readable beside the word itself.
-              label={<span><strong style={{ fontWeight: 800 }}>{card.front}</strong>{' — '}{card.back}</span>}
-            />
-          ))}
+          {cards.map((card) => {
+            const on = !!triage?.has(card.id);
+            return (
+              // A container each, so eight glosses read as eight things to weigh
+              // rather than a paragraph with boxes in it. No onClick on the
+              // card: the checkbox inside is already the button, and both
+              // would fire on the same press. It fills the card instead, which
+              // makes the whole row the target.
+              <Card
+                key={card.id}
+                padding="10px 14px"
+                // Dimmed once unticked, so what stands out is the exceptions you
+                // have carved out rather than the majority you left alone.
+                style={{ opacity: on ? 1 : 0.5, transition: 'var(--transition-surface)' }}
+              >
+                <Checkbox
+                  checked={on}
+                  onChange={(_, next) => setTriage((prev) => {
+                    const set = new Set(prev ?? []);
+                    if (next) set.add(card.id); else set.delete(card.id);
+                    return set;
+                  })}
+                  style={{ width: '100%' }}
+                  // The gloss is the whole point of the list: you are judging
+                  // whether it points back at one word, so it has to sit beside
+                  // the word itself.
+                  label={<span><strong style={{ fontWeight: 800 }}>{card.front}</strong>{' — '}{card.back}</span>}
+                />
+              </Card>
+            );
+          })}
         </div>
       </Dialog>
 
