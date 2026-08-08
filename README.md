@@ -16,6 +16,8 @@ A set of language-learning tools that runs entirely in your browser — not a co
 ![PWA](https://img.shields.io/badge/PWA-installable-6A1B9A.svg)
 [![Design system](https://img.shields.io/badge/design_system-lingo--ds-1565C0.svg)](https://github.com/vgomx/lingo-ds)
 
+<img src="public/social-card.png" width="720" alt="The Lingo Toolbox mark on a dark violet ground" />
+
 </div>
 
 ## Features
@@ -76,6 +78,7 @@ If `npm install` can't resolve `lingo-ds`, it's because `lingo-ds/dist` is missi
 | `npm run check:illustrations` | Verify every referenced glyph exists. Runs on every build. |
 | `npm run build:illustrations` | Re-download the OpenMoji set and regenerate the catalogue. |
 | `npm run build:icons` | Regenerate the PWA icons from the design system's lockup. |
+| `npm run build:social-card` | Regenerate the card at the top of this file. |
 
 ## Tech
 

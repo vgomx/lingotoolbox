@@ -14,7 +14,8 @@
     "build:illustrations": "node scripts/build-openmoji.mjs",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
-    "build:icons": "node scripts/build-icons.mjs"
+    "build:icons": "node scripts/build-icons.mjs",
+    "build:social-card": "node scripts/build-social-card.mjs"
   },
   "dependencies": {
     "idb": "^8.0.0",
