@@ -145,7 +145,7 @@ export function Dock() {
         </button>
         <button type="button" style={barItem(onCards)} aria-current={onCards || undefined} onClick={go('/app/cards')}>
           <Icon name="layers" size={20} />
-          Cards
+          Flashcards
         </button>
         <button
           type="button"

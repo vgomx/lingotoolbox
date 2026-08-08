@@ -19,7 +19,11 @@ export const WORKSPACES: Workspace[] = [
  */
 export const TOOLS = [
   { id: 'home', label: 'Home', short: 'Home', icon: 'house', path: 'home', accent: 'var(--brand)', released: true, blurb: 'Everything due today, at a glance.' },
-  { id: 'cards', label: 'Flashcards', short: 'Cards', icon: 'layers', path: 'cards', accent: 'var(--tool-flashcards)', released: true, blurb: 'Spaced repetition that schedules itself.' },
+  // The one short form that is not a shortening. The others drop a trailing
+  // word and keep the head noun — Grammar Notes stays Grammar — but Cards
+  // dropped the head noun itself, for a word this app already uses to mean the
+  // individual item the sidebar counts. It fits the rail at 55 of 60px.
+  { id: 'cards', label: 'Flashcards', short: 'Flashcards', icon: 'layers', path: 'cards', accent: 'var(--tool-flashcards)', released: true, blurb: 'Spaced repetition that schedules itself.' },
   { id: 'etymology', label: 'Etymology Explorer', short: 'Roots', icon: 'git-branch', path: 'etymology', accent: 'var(--tool-etymology)', released: false, blurb: 'Trace a word back to its root.' },
   { id: 'conjugation', label: 'Conjugation Drill', short: 'Verbs', icon: 'spell-check', path: 'conjugation', accent: 'var(--tool-conjugation)', released: false, blurb: 'Drill the verb forms you keep missing.' },
   { id: 'phrasebook', label: 'Phrasebook', short: 'Phrases', icon: 'message-square-quote', path: 'phrasebook', accent: 'var(--tool-phrasebook)', released: false, blurb: 'Keep whole phrases, not just single words.' },
