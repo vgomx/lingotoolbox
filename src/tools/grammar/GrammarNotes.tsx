@@ -204,7 +204,7 @@ export function GrammarNotes() {
             label="Level"
             value={level}
             options={[{ value: '', label: 'Ungraded' }, ...CEFR_LEVELS]}
-            onChange={(e) => setLevel(asLevel(e.target.value) ?? '')}
+            onChange={(v) => setLevel(asLevel(v) ?? '')}
           />
         </div>
       </Dialog>

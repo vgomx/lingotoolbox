@@ -19,7 +19,11 @@ export const WORKSPACES: Workspace[] = [
  */
 export const TOOLS = [
   { id: 'home', label: 'Home', short: 'Home', icon: 'house', path: 'home', accent: 'var(--brand)', released: true, blurb: 'Everything due today, at a glance.' },
-  { id: 'cards', label: 'Flashcards', short: 'Cards', icon: 'layers', path: 'cards', accent: 'var(--tool-flashcards)', released: true, blurb: 'Spaced repetition that schedules itself.' },
+  // The one short form that is not a shortening. The others drop a trailing
+  // word and keep the head noun — Grammar Notes stays Grammar — but Cards
+  // dropped the head noun itself, for a word this app already uses to mean the
+  // individual item the sidebar counts. It fits the rail at 55 of 60px.
+  { id: 'cards', label: 'Flashcards', short: 'Flashcards', icon: 'layers', path: 'cards', accent: 'var(--tool-flashcards)', released: true, blurb: 'Spaced repetition that schedules itself.' },
   { id: 'etymology', label: 'Etymology Explorer', short: 'Roots', icon: 'git-branch', path: 'etymology', accent: 'var(--tool-etymology)', released: false, blurb: 'Trace a word back to its root.' },
   { id: 'conjugation', label: 'Conjugation Drill', short: 'Verbs', icon: 'spell-check', path: 'conjugation', accent: 'var(--tool-conjugation)', released: false, blurb: 'Drill the verb forms you keep missing.' },
   { id: 'phrasebook', label: 'Phrasebook', short: 'Phrases', icon: 'message-square-quote', path: 'phrasebook', accent: 'var(--tool-phrasebook)', released: false, blurb: 'Keep whole phrases, not just single words.' },
@@ -27,6 +31,22 @@ export const TOOLS = [
 ] as const;
 
 export type ToolId = (typeof TOOLS)[number]['id'];
+
+/**
+ * The same tools, in the order anywhere that navigates should show them: what
+ * you can use, then what you cannot.
+ *
+ * TOOLS above stays in roadmap order, which is how it reads as a declaration —
+ * but the rail was rendering it literally, so Grammar Notes shipped behind
+ * three tiles marked SOON. A working tool sat below three that only apologise.
+ *
+ * A derived order rather than a rearranged array, because the arrangement would
+ * have to be maintained by hand at exactly the moment nobody is thinking about
+ * the rail: flipping `released` to true here promotes the tool by itself. The
+ * sort is stable — guaranteed by the spec since ES2019 — so within each group
+ * the declaration order above is what survives.
+ */
+export const NAV_TOOLS = [...TOOLS].sort((a, b) => Number(b.released) - Number(a.released));
 
 interface SeedCard {
   front: string;

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Badge, Icon, playSound } from 'lingo-ds';
-import { TOOLS } from '../data/seed';
+import { NAV_TOOLS } from '../data/seed';
 import { useStore } from '../state/store';
 import { MenuItem } from './MenuItem';
 import { LanguageMenu } from './LanguageMenu';
@@ -10,12 +10,17 @@ import { LanguageMenu } from './LanguageMenu';
 export const DOCK_HEIGHT = 58;
 
 /**
- * The two tools that are built, plus everything else.
+ * What the bar itself carries; `More` holds everything else.
  *
  * A rail can afford seven destinations down the side of a desktop; a dock across
- * a 375px phone fits about four before the labels stop fitting. So the bar
- * carries what you can actually do today and `More` holds the rest — four tools
- * that are designed but not built, and Settings.
+ * a 375px phone fits about four before the labels stop fitting.
+ *
+ * This used to be "the tools that are built" and is not any more — Grammar Notes
+ * shipped and is still in the sheet. There is room for it here (four items at
+ * 375px leaves each about 94px, and the longest label measures 55), so promoting
+ * it is a decision waiting to be made rather than a constraint. What the sheet no
+ * longer does is bury it: `secondary` comes off NAV_TOOLS, so what is available
+ * sorts above what is not.
  */
 const PRIMARY = ['home', 'cards'] as const;
 
@@ -40,7 +45,7 @@ export function Dock() {
   // /app/review belongs to Flashcards; it has no destination of its own.
   const onCards = path.startsWith('/app/cards') || path.startsWith('/app/review');
   const onHome = path === '/app' || path === '/app/';
-  const secondary = TOOLS.filter((t) => !PRIMARY.includes(t.id as typeof PRIMARY[number]));
+  const secondary = NAV_TOOLS.filter((t) => !PRIMARY.includes(t.id as typeof PRIMARY[number]));
   const onSecondary = secondary.some((t) => path.startsWith(`/app/${t.path}`)) || path.startsWith('/app/settings');
 
   // On the language too, not only the path. Choosing a workspace from the sheet
@@ -145,7 +150,7 @@ export function Dock() {
         </button>
         <button type="button" style={barItem(onCards)} aria-current={onCards || undefined} onClick={go('/app/cards')}>
           <Icon name="layers" size={20} />
-          Cards
+          Flashcards
         </button>
         <button
           type="button"

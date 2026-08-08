@@ -77,7 +77,7 @@ export function Settings() {
         <Card title="Appearance">
           <Switch
             label="Light theme"
-            hint="Dark is the product default; light is the same tokens retuned."
+            hint="Easier on the eyes in a bright room."
             checked={prefs.theme === 'light'}
             onChange={(next) => setPrefs({ theme: next ? 'light' : 'dark' })}
           />
@@ -87,17 +87,18 @@ export function Settings() {
           <Select
             label="Language track"
             value={prefs.language}
-            // No flag here: a native <option> renders text only, and the picker
-            // in the top bar is where the flags live. The name was always the
-            // identifier anyway.
+            // No flag here. It was forced when this was a native <option>,
+            // which renders text and nothing else; now it is a choice. The
+            // picker in the top bar is where the flags live, and the name was
+            // always the identifier anyway.
             options={WORKSPACES.map((w) => ({ value: w.code, label: w.name }))}
-            onChange={(e) => setPrefs({ language: e.target.value as typeof prefs.language })}
+            onChange={(v) => setPrefs({ language: v as typeof prefs.language })}
           />
           <Select
             label="Cards per session"
             value={String(prefs.sessionLimit)}
             options={['10', '20', '40', '100'].map((v) => ({ value: v, label: `${v} cards` }))}
-            onChange={(e) => setPrefs({ sessionLimit: Number(e.target.value) })}
+            onChange={(v) => setPrefs({ sessionLimit: Number(v) })}
           />
           <Switch
             label="Show keyboard shortcuts"
