@@ -13,16 +13,16 @@ export const DOCK_HEIGHT = 58;
  * What the bar itself carries; `More` holds everything else.
  *
  * A rail can afford seven destinations down the side of a desktop; a dock across
- * a 375px phone fits about four before the labels stop fitting.
+ * a 375px phone fits about four before the labels stop fitting. Four is what
+ * this is: Home, Flashcards, Roots, More — each about 94px wide, against a
+ * longest label of 55.
  *
- * This used to be "the tools that are built" and is not any more — Grammar Notes
- * shipped and is still in the sheet. There is room for it here (four items at
- * 375px leaves each about 94px, and the longest label measures 55), so promoting
- * it is a decision waiting to be made rather than a constraint. What the sheet no
- * longer does is bury it: `secondary` comes off NAV_TOOLS, so what is available
- * sorts above what is not.
+ * Grammar Notes stays in the sheet, which is the honest ranking rather than a
+ * limitation: it is a thing you consult while doing something else, and its own
+ * best entry point is the button on the review screen. Etymology is a place you
+ * go on purpose.
  */
-const PRIMARY = ['home', 'cards'] as const;
+const PRIMARY = ['home', 'cards', 'etymology'] as const;
 
 const barItem = (active: boolean): React.CSSProperties => ({
   flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -44,6 +44,7 @@ export function Dock() {
   const path = location.pathname;
   // /app/review belongs to Flashcards; it has no destination of its own.
   const onCards = path.startsWith('/app/cards') || path.startsWith('/app/review');
+  const onRoots = path.startsWith('/app/etymology');
   const onHome = path === '/app' || path === '/app/';
   const secondary = NAV_TOOLS.filter((t) => !PRIMARY.includes(t.id as typeof PRIMARY[number]));
   const onSecondary = secondary.some((t) => path.startsWith(`/app/${t.path}`)) || path.startsWith('/app/settings');
@@ -151,6 +152,10 @@ export function Dock() {
         <button type="button" style={barItem(onCards)} aria-current={onCards || undefined} onClick={go('/app/cards')}>
           <Icon name="layers" size={20} />
           Flashcards
+        </button>
+        <button type="button" style={barItem(onRoots)} aria-current={onRoots || undefined} onClick={go('/app/etymology')}>
+          <Icon name="git-branch" size={20} />
+          Roots
         </button>
         <button
           type="button"

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useIsTouch } from 'lingo-ds';
 
 export interface MenuItemProps {
   children: React.ReactNode;
@@ -30,6 +31,18 @@ export interface MenuItemProps {
  */
 export function MenuItem({ children, selected = false, onClick, opensMenu = false, expanded, label }: MenuItemProps) {
   const [active, setActive] = React.useState(false);
+  /*
+   * Bigger under a thumb than under a cursor.
+   *
+   * 38px is comfortable to click and under the 44px anyone designing for touch
+   * aims at — and these rows are stacked, so the miss lands on the neighbour
+   * rather than on nothing. That matters most in the dock's More sheet, where
+   * the rows are the only way to reach half the app on a phone.
+   *
+   * Keyed on touch rather than on width: a narrow desktop window is still a
+   * mouse, and does not need the extra height.
+   */
+  const touch = useIsTouch();
 
   return (
     <button
@@ -45,8 +58,8 @@ export function MenuItem({ children, selected = false, onClick, opensMenu = fals
       onFocus={() => setActive(true)}
       onBlur={() => setActive(false)}
       style={{
-        display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-        height: 38, padding: '0 10px', border: 'none', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', gap: touch ? 12 : 10, width: '100%',
+        height: touch ? 48 : 38, padding: touch ? '0 14px' : '0 10px', border: 'none', cursor: 'pointer',
         borderRadius: 'var(--radius-md)',
         // Selected is a state of the data; active is a state of the pointer. A
         // selected row still has to answer the cursor, so it gets the brighter
