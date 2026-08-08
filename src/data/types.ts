@@ -20,6 +20,12 @@ export interface Deck {
   id: string;
   language: LanguageCode;
   name: string;
+  /**
+   * Whether new cards in this deck are asked both ways, and what the deck
+   * screen's switch reads. The cards themselves each carry the answer — this is
+   * the default they are given, not the authority.
+   */
+  reversed?: boolean;
   /** A --tool-* or accent token, drawn as the card's 3px top stripe. */
   accent: string;
   tags: string[];
@@ -75,6 +81,33 @@ export function levelRange(cards: readonly { level?: CEFRLevel }[]): string | un
   return lo === hi ? CEFR_LEVELS[lo] : `${CEFR_LEVELS[lo]}–${CEFR_LEVELS[hi]}`;
 }
 
+/**
+ * Everything the scheduler knows about one question.
+ *
+ * Pulled out as a shape of its own because a card asks up to two of them — the
+ * word from its meaning, and the meaning from its word — and those are separate
+ * memories that fade at their own rates. Recognising `de kaas` says nothing
+ * about whether you could produce it from "cheese", so one interval covering
+ * both would be governed by whichever direction is easier.
+ */
+export interface Schedule {
+  state: CardState;
+  due: number;
+  interval: number;
+  ease: number;
+  reps: number;
+  lapses: number;
+}
+
+/** Which way round a card is being asked. */
+export type Direction = 'forward' | 'reverse';
+
+/** A card and the direction of the question, which is what a queue holds. */
+export interface ReviewItem {
+  card: Card;
+  direction: Direction;
+}
+
 /** Where a card sits in the scheduler's lifecycle. */
 export type CardState = 'new' | 'learning' | 'review' | 'relearning';
 
@@ -95,6 +128,28 @@ export interface Card {
    * Optional: a card someone writes themselves does not have to be graded.
    */
   level?: CEFRLevel;
+  /**
+   * Whether this card is also asked back-to-front — the meaning shown, the word
+   * recalled. Off by default: plenty of cards do not survive the trip. "yeah,
+   * exactly — agreeing with a sigh" has a dozen phrases that fit it, so asking
+   * for `pois é` from that teaches guessing.
+   *
+   * The deck sets this for its cards; a card can disagree with its deck.
+   */
+  reversed?: boolean;
+  /**
+   * The reverse direction's own schedule.
+   *
+   * Kept even when `reversed` is off, so turning the deck's switch off and on
+   * again resumes rather than restarts — a preference should not quietly destroy
+   * weeks of scheduling.
+   *
+   * The forward direction's schedule stays flat on this record rather than
+   * moving into a matching `forward` field. That asymmetry is deliberate: it
+   * would otherwise mean rewriting the shape of every card already in every
+   * reader's browser, for a tidiness nobody can see.
+   */
+  reverse?: Schedule;
   /**
    * OpenMoji codepoint, e.g. `1F436`. The codepoint rather than the filename, so
    * a renamed asset — or a revised OpenMoji annotation — cannot orphan the card.
@@ -126,6 +181,11 @@ export interface ReviewLogEntry {
   /** Interval in days before and after this review, for the stats surface. */
   intervalBefore: number;
   intervalAfter: number;
+  /**
+   * Which direction was graded. Optional: entries written before cards could be
+   * asked both ways are all forward, and absent means exactly that.
+   */
+  direction?: Direction;
 }
 
 export interface Prefs {

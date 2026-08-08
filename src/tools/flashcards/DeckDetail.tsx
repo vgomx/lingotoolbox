@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Badge, Button, Card, Dialog, Icon, IconButton, IllustrationPicker, Input, Select, Tag, Tooltip, playSound, useIsMobile } from 'lingo-ds';
+import { Badge, Button, Card, Checkbox, Dialog, Icon, IconButton, IllustrationPicker, Input, Select, Switch, Tag, Tooltip, playSound, useIsMobile } from 'lingo-ds';
 import { TopRight, useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import * as db from '../../data/db';
@@ -76,6 +76,7 @@ export function DeckDetail() {
   const [phonetic, setPhonetic] = React.useState('');
   const [illustration, setIllustration] = React.useState<string | null>(null);
   const [level, setLevel] = React.useState<CEFRLevel | ''>('');
+  const [bothWays, setBothWays] = React.useState(false);
   // Renaming and the two deletions were window.prompt and window.confirm,
   // which a browser is free not to implement — prompt threw and confirm
   // answered "no" on the reader's behalf, so all three quietly did nothing.
@@ -83,13 +84,29 @@ export function DeckDetail() {
   const [rename, setRename] = React.useState('');
   const [deletingDeck, setDeletingDeck] = React.useState(false);
   const [deletingCard, setDeletingCard] = React.useState<CardModel | null>(null);
+  const [reversed, setReversed] = React.useState(false);
+  /**
+   * Which cards survive being asked backwards, decided while the deck is in
+   * front of you rather than card by card later.
+   *
+   * This is the moment the judgement is actually possible: reading `sei lá`
+   * against "I dunno — a shrug with words" you can see at once that a dozen
+   * phrases fit that gloss, and that asking for it teaches guessing. Buried in
+   * each card's edit dialog, nobody would ever revisit it.
+   */
+  const [triage, setTriage] = React.useState<Set<string> | null>(null);
+
+  React.useEffect(() => { setReversed(!!deck?.reversed); }, [deck?.reversed]);
 
   const openAdd = () => {
-    setEditing(null); setFront(''); setBack(''); setPhonetic(''); setIllustration(null); setLevel(''); setAdding(true);
+    setEditing(null); setFront(''); setBack(''); setPhonetic(''); setIllustration(null); setLevel('');
+    // A new card inherits the deck's answer, which is what the switch is for.
+    setBothWays(!!deck?.reversed); setAdding(true);
   };
   const openEdit = (card: CardModel) => {
     setEditing(card); setFront(card.front); setBack(card.back); setPhonetic(card.phonetic ?? '');
-    setIllustration(card.illustration ?? null); setLevel(card.level ?? ''); setAdding(true);
+    setIllustration(card.illustration ?? null); setLevel(card.level ?? '');
+    setBothWays(!!card.reversed); setAdding(true);
   };
   const close = () => setAdding(false);
 
@@ -109,6 +126,23 @@ export function DeckDetail() {
     return () => window.removeEventListener('keydown', onKey);
   });
 
+  /**
+   * Turns the deck's cards on or off as a set.
+   *
+   * Off does not delete anything: `card.reverse` holds the schedule that
+   * direction has built up, and only `reversed` stops it being asked. A switch
+   * that looked reversible but threw away weeks of intervals would be a
+   * destructive action wearing a preference's clothes.
+   */
+  const applyDirections = async (chosen: Set<string>) => {
+    await saveDeck({ ...deck!, reversed: chosen.size > 0 });
+    await Promise.all(cards.map((card) => {
+      const next = chosen.has(card.id);
+      if (!!card.reversed === next) return Promise.resolve();
+      return saveCard({ ...card, reversed: next || undefined });
+    }));
+  };
+
   const submit = async () => {
     if (!front.trim() || !back.trim()) return;
     const now = Date.now();
@@ -120,6 +154,7 @@ export function DeckDetail() {
         phonetic: phonetic.trim() || undefined,
         illustration: illustration ?? undefined,
         level: level || undefined,
+        reversed: bothWays || undefined,
       });
     } else {
       await saveCard({
@@ -130,6 +165,7 @@ export function DeckDetail() {
         phonetic: phonetic.trim() || undefined,
         illustration: illustration ?? undefined,
         level: level || undefined,
+        reversed: bothWays || undefined,
         tags: [],
         createdAt: now,
         state: 'new',
@@ -247,6 +283,34 @@ export function DeckDetail() {
           </div>
         </header>
 
+        {/* A deck-level setting, which is why it sits with Rename and Delete
+            rather than in the list of decks. That list is a page of links — a
+            switch inside one either navigates when you press it or has to be
+            taught not to — and this is a decision made once, not while
+            browsing. The list reports it instead. */}
+        {cards.length > 0 && (
+          <div style={{ marginBottom: 'var(--space-7)' }}>
+            <Switch
+              label="Ask both ways"
+              hint={reversed
+                ? `${cards.filter((c) => c.reversed).length} of ${cards.length} cards also ask for the word from its meaning.`
+                : 'Also ask for the word from its meaning — the harder direction, and the one that lets you say it rather than only recognise it.'}
+              checked={reversed}
+              onChange={(next) => {
+                if (next) {
+                  // Everything ticked to begin with, then pared down: the deck
+                  // was written in one direction and most of it will survive
+                  // the other, so the work is spotting the exceptions.
+                  setTriage(new Set(cards.map((c) => c.id)));
+                } else {
+                  setReversed(false);
+                  void applyDirections(new Set());
+                }
+              }}
+            />
+          </div>
+        )}
+
         {cards.length === 0 ? (
           <EmptyTool
             icon="layers"
@@ -293,6 +357,16 @@ export function DeckDetail() {
                     <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>{card.back}</span>
                   </div>
 
+                  {/* Which way this card is asked, where a column of them reads
+                      at a glance. Only shown when it is both, because one
+                      direction is the ordinary case and does not need saying. */}
+                  {card.reversed && (
+                    <Tooltip label="Asked both ways">
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-12)', color: 'var(--text-muted)', flex: 'none' }} aria-label="Asked both ways">
+                        ↔
+                      </span>
+                    </Tooltip>
+                  )}
                   {/* Beside the scheduler's state, not among the card's tags:
                       it says something about the word rather than about where
                       the word has got to. Mono and muted so a column of them
@@ -331,6 +405,49 @@ export function DeckDetail() {
           </div>
         )}
       </div>
+
+      <Dialog
+        open={triage !== null}
+        onClose={() => { setTriage(null); setReversed(!!deck.reversed); }}
+        title="Which cards work backwards?"
+        description="A card reverses well when its meaning points at one word and no other. Untick the ones it does not."
+        width={520}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => { setTriage(null); setReversed(!!deck.reversed); }}>Cancel</Button>
+            <Button
+              sound={false}
+              disabled={!triage || triage.size === 0}
+              onClick={async () => {
+                const chosen = triage ?? new Set<string>();
+                setTriage(null);
+                setReversed(true);
+                await applyDirections(chosen);
+              }}
+            >
+              Ask {triage?.size ?? 0} both ways
+            </Button>
+          </>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', paddingBottom: 'var(--space-4)' }}>
+          {cards.map((card) => (
+            <Checkbox
+              key={card.id}
+              checked={!!triage?.has(card.id)}
+              onChange={(_, next) => setTriage((prev) => {
+                const set = new Set(prev ?? []);
+                if (next) set.add(card.id); else set.delete(card.id);
+                return set;
+              })}
+              // The gloss is the whole point of showing this list: you are
+              // judging whether it points back at one word, so it has to be
+              // readable beside the word itself.
+              label={<span><strong style={{ fontWeight: 800 }}>{card.front}</strong>{' — '}{card.back}</span>}
+            />
+          ))}
+        </div>
+      </Dialog>
 
       <Dialog
         open={renaming}
@@ -426,6 +543,12 @@ export function DeckDetail() {
             value={level}
             options={[{ value: '', label: 'Ungraded' }, ...CEFR_LEVELS]}
             onChange={(e) => setLevel(asLevel(e.target.value) ?? '')}
+          />
+          <Checkbox
+            label="Ask both ways"
+            hint="Also show the meaning and ask for the word. Leave off for anything whose meaning fits more than one word."
+            checked={bothWays}
+            onChange={(_, next) => setBothWays(next)}
           />
           <IllustrationPicker
             label="Illustration"

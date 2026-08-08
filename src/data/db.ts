@@ -1,8 +1,8 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { Card, Deck, Grade, LanguageCode, Prefs, ReviewLogEntry } from './types';
+import type { Card, Deck, Direction, Grade, LanguageCode, Prefs, ReviewLogEntry } from './types';
 import { asLevel } from './types';
 import { buildSeed, WORKSPACES } from './seed';
-import { schedule } from './scheduler';
+import { schedule, scheduleOf, withSchedule } from './scheduler';
 
 const DB_NAME = 'lingo-toolbox';
 const DB_VERSION = 1;
@@ -186,18 +186,28 @@ export async function deleteCard(id: string): Promise<void> {
  * Applies a grade: advances the card's scheduler state and appends a log entry.
  * Both writes share one transaction so a card can never advance unrecorded.
  */
-export async function gradeCard(card: Card, grade: Grade, now: number = Date.now()): Promise<Card> {
-  const next = schedule(card, grade, now);
-  const updated: Card = { ...card, ...next };
+export async function gradeCard(
+  card: Card,
+  direction: Direction,
+  grade: Grade,
+  now: number = Date.now(),
+): Promise<Card> {
+  const before = scheduleOf(card, direction);
+  const next = schedule(before, grade, now);
+  const updated = withSchedule(card, direction, next);
 
   const entry: ReviewLogEntry = {
-    id: `${card.id}:${now}`,
+    // The direction is in the key: both of a card's questions can be graded
+    // inside the same millisecond, and the second would have overwritten the
+    // first when the id was only the card and the clock.
+    id: `${card.id}:${direction}:${now}`,
     cardId: card.id,
     deckId: card.deckId,
     grade,
     reviewedAt: now,
-    intervalBefore: card.interval,
+    intervalBefore: before.interval,
     intervalAfter: next.interval,
+    direction,
   };
 
   const db = await getDB();

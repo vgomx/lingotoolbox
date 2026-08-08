@@ -180,6 +180,15 @@ export function DeckList() {
                             {levelRange(cards)}
                           </Tag>
                         )}
+                        {/* Reported, not offered. The control for this lives on
+                            the deck's own screen — a switch inside a link either
+                            navigates when pressed or has to be taught not to,
+                            and this is set once rather than while browsing. */}
+                        {cards.some((c) => c.reversed) && (
+                          <Tag color="var(--text-muted)" style={{ fontFamily: 'var(--font-mono)' }}>
+                            ↔ both ways
+                          </Tag>
+                        )}
                         {deck.tags.map((t) => <Tag key={t} color={deck.accent}>{t}</Tag>)}
                       </div>
                     )}
