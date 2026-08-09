@@ -115,11 +115,36 @@ export function ChainCard({ word, chain, data, compact = false, interactive = fa
       )}
 
       {chain.c && chain.c.length > 0 && (
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{ fontSize: 'var(--fs-12)', color: 'var(--text-muted)', marginRight: 2 }}>Compare</span>
-          {chain.c.slice(0, 6).map(([code, term], i) => (
-            <CognateTag key={`${code}-${term}-${i}`} language={langName(data, code)} term={term} />
-          ))}
+        /*
+         * A block of its own, because it is a list rather than a line.
+         *
+         * Six cognates wrap over three rows, and set loose on the card that
+         * ran straight on from the ancestry above with nothing to say the
+         * subject had changed — the descent is what this word did, the
+         * cognates are what its relatives did instead. The label moves onto
+         * its own line for the same reason: inline, "Compare" read as the
+         * first item in the row it was introducing.
+         */
+        <div
+          style={{
+            display: 'flex', flexDirection: 'column', gap: 'var(--space-4)',
+            padding: 'var(--space-5)', borderRadius: 'var(--radius-md)',
+            background: 'var(--surface-sunken)',
+          }}
+        >
+          <span
+            style={{
+              fontSize: 'var(--fs-11)', fontWeight: 'var(--fw-black)' as React.CSSProperties['fontWeight'],
+              letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: 'var(--text-muted)',
+            }}
+          >
+            Compare
+          </span>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+            {chain.c.slice(0, 6).map(([code, term], i) => (
+              <CognateTag key={`${code}-${term}-${i}`} language={langName(data, code)} term={term} />
+            ))}
+          </div>
         </div>
       )}
     </Card>
