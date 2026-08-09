@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Badge, Button, Card, Checkbox, Dialog, Icon, IconButton, IllustrationPicker, Input, Select, Switch, Tag, Tooltip, playSound, useIsMobile } from 'lingo-ds';
+import { Badge, Button, Card, Checkbox, Dialog, Icon, IconButton, IllustrationPicker, Input, Select, Switch, Tag, TagInput, Tooltip, playSound, useIsMobile } from 'lingo-ds';
 import { TopRight, useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import * as db from '../../data/db';
@@ -29,7 +29,7 @@ const STATE_TONE = {
 export function DeckDetail() {
   const { deckId = '' } = useParams();
   const navigate = useNavigate();
-  const { ready, decks, language, setLanguage, cardsInDeck, dueInDeck, saveCard, removeCard, removeDeck, saveDeck } = useStore();
+  const { ready, decks, cards: allCards, notes, language, setLanguage, cardsInDeck, dueInDeck, saveCard, removeCard, removeDeck, saveDeck } = useStore();
 
   const deck = decks.find((d) => d.id === deckId);
   const cards = cardsInDeck(deckId);
@@ -76,6 +76,7 @@ export function DeckDetail() {
   const [phonetic, setPhonetic] = React.useState('');
   const [illustration, setIllustration] = React.useState<string | null>(null);
   const [level, setLevel] = React.useState<CEFRLevel | ''>('');
+  const [tags, setTags] = React.useState<string[]>([]);
   const [bothWays, setBothWays] = React.useState(false);
   // Renaming and the two deletions were window.prompt and window.confirm,
   // which a browser is free not to implement — prompt threw and confirm
@@ -99,13 +100,13 @@ export function DeckDetail() {
   React.useEffect(() => { setReversed(!!deck?.reversed); }, [deck?.reversed]);
 
   const openAdd = () => {
-    setEditing(null); setFront(''); setBack(''); setPhonetic(''); setIllustration(null); setLevel('');
+    setEditing(null); setFront(''); setBack(''); setPhonetic(''); setIllustration(null); setLevel(''); setTags([]);
     // A new card inherits the deck's answer, which is what the switch is for.
     setBothWays(!!deck?.reversed); setAdding(true);
   };
   const openEdit = (card: CardModel) => {
     setEditing(card); setFront(card.front); setBack(card.back); setPhonetic(card.phonetic ?? '');
-    setIllustration(card.illustration ?? null); setLevel(card.level ?? '');
+    setIllustration(card.illustration ?? null); setLevel(card.level ?? ''); setTags(card.tags ?? []);
     setBothWays(!!card.reversed); setAdding(true);
   };
   const close = () => setAdding(false);
@@ -143,9 +144,25 @@ export function DeckDetail() {
     }));
   };
 
+  /**
+   * Every tag this workspace already uses, commonest first.
+   *
+   * Cards and notes together, because the whole point of tagging a card is to
+   * meet a note halfway: they only find each other by sharing a word.
+   */
+  const tagsInUse = React.useMemo(() => {
+    const count = new Map<string, number>();
+    for (const c of allCards) for (const t of c.tags ?? []) count.set(t, (count.get(t) ?? 0) + 1);
+    for (const n of notes) for (const t of n.tags) count.set(t, (count.get(t) ?? 0) + 1);
+    return [...count.entries()].sort((a, b) => b[1] - a[1]).map(([t]) => t);
+  }, [allCards, notes]);
+
   const submit = async () => {
     if (!front.trim() || !back.trim()) return;
     const now = Date.now();
+    // Lowercased on save rather than in the field, and deduped, so the join
+    // with a note's tags is a plain string match on both sides.
+    const cleanTags = [...new Set(tags.map((t) => t.trim().toLowerCase()).filter(Boolean))];
     if (editing) {
       await saveCard({
         ...editing,
@@ -155,6 +172,7 @@ export function DeckDetail() {
         illustration: illustration ?? undefined,
         level: level || undefined,
         reversed: bothWays || undefined,
+        tags: cleanTags,
       });
     } else {
       await saveCard({
@@ -166,7 +184,7 @@ export function DeckDetail() {
         illustration: illustration ?? undefined,
         level: level || undefined,
         reversed: bothWays || undefined,
-        tags: [],
+        tags: cleanTags,
         createdAt: now,
         state: 'new',
         due: now,
@@ -569,6 +587,19 @@ export function DeckDetail() {
             value={level}
             options={[{ value: '', label: 'Ungraded' }, ...CEFR_LEVELS]}
             onChange={(v) => setLevel(asLevel(v) ?? '')}
+          />
+          {/* Tags are how a card meets a grammar note — the note screen matches
+              on them, and a card with none can never be offered one. Seeded
+              cards arrive tagged; before this, anything you wrote yourself did
+              not, and silently sat outside the feature. */}
+          <TagInput
+            label="Tags"
+            hint="What connects this card to a grammar note. Reuse a word your other cards use."
+            placeholder="noun"
+            color="var(--tool-flashcards)"
+            value={tags}
+            onChange={setTags}
+            suggestions={tagsInUse}
           />
           <Checkbox
             label="Ask both ways"
