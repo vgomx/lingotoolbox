@@ -1,5 +1,6 @@
 import { Card, Icon, IconButton, Tag, Tooltip } from 'lingo-ds';
 import type { Note } from '../../data/types';
+import { Highlight } from './Highlight';
 
 /**
  * One note, read rather than reviewed.
@@ -9,14 +10,16 @@ import type { Note } from '../../data/types';
  * can use. So they get the mono face and their own row, the way a card's
  * phonetic does, instead of being folded into the paragraph.
  */
-export function NoteCard({ note, onEdit, onDelete }: {
+export function NoteCard({ note, onEdit, onDelete, highlight = '' }: {
   note: Note;
   onEdit?: () => void;
   onDelete?: () => void;
+  /** The current search, marked wherever it appears. */
+  highlight?: string;
 }) {
   return (
     <Card
-      title={note.title}
+      title={<Highlight text={note.title} query={highlight} />}
       actions={onEdit && onDelete ? (
         <>
           <Tooltip label="Edit note">
@@ -37,7 +40,7 @@ export function NoteCard({ note, onEdit, onDelete }: {
           key={i}
           style={{ margin: 0, fontSize: 'var(--fs-14)', color: 'var(--text-body)', lineHeight: 'var(--lh-relaxed)' }}
         >
-          {para}
+          <Highlight text={para} query={highlight} />
         </p>
       ))}
 

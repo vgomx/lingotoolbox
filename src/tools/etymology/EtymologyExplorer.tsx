@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link } from 'react-router-dom';
-import { Button, Icon, Input, useIsMobile } from 'lingo-ds';
+import { Button, Icon, IconButton, Input, useIsMobile } from 'lingo-ds';
 import { useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
@@ -135,15 +135,32 @@ export function EtymologyExplorer() {
           makes it stick.
         </p>
 
-        <div style={{ marginTop: 'var(--space-6)', maxWidth: 360 }}>
+        {/* Full size, like the one on the Grammar screen: this is the way into
+            45,000 words, not a filter tucked into a toolbar. */}
+        <div style={{ marginTop: 'var(--space-6)', maxWidth: 460, display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
           <Input
             placeholder={state === 'loading' ? 'Loading word list…' : 'Search a word…'}
-            size="sm"
             value={query}
             disabled={state === 'loading'}
             onChange={(e) => setQuery(e.target.value)}
-            iconLeft={<Icon name="search" size={14} />}
+            iconLeft={<Icon name="search" size={16} />}
+            iconRight={query ? (
+              <IconButton label="Clear search" size="sm" onClick={() => setQuery('')}>
+                <Icon name="x" size={14} />
+              </IconButton>
+            ) : undefined}
           />
+          {/* The list is capped, so "24" without "of" would read as the whole
+              answer when it is the first page of it. */}
+          {query.trim() && state === 'ready' && (
+            <span style={{ fontSize: 'var(--fs-12)', color: 'var(--text-muted)' }}>
+              {hits.length === 0
+                ? 'No matches'
+                : hits.length >= MAX_HITS
+                  ? `First ${MAX_HITS} matches`
+                  : `${hits.length} ${hits.length === 1 ? 'match' : 'matches'}`}
+            </span>
+          )}
         </div>
       </header>
 

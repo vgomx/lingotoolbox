@@ -124,15 +124,31 @@ export function GrammarNotes() {
             nouns turns up while you are reviewing one.
           </p>
 
+          {/* Was `sm` in a 360px box, which is the size of a filter tucked into
+              a toolbar rather than of the main way into a screen — and on a
+              phone it left a 28px target. */}
           {notes.length > 0 && (
-            <div style={{ marginTop: 'var(--space-6)', maxWidth: 360 }}>
+            <div style={{ marginTop: 'var(--space-6)', maxWidth: 460, display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
               <Input
-                placeholder="Search notes…"
-                size="sm"
+                placeholder="Search notes, or a word inside one…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                iconLeft={<Icon name="search" size={14} />}
+                iconLeft={<Icon name="search" size={16} />}
+                iconRight={search ? (
+                  <IconButton label="Clear search" size="sm" onClick={() => setSearch('')}>
+                    <Icon name="x" size={14} />
+                  </IconButton>
+                ) : undefined}
               />
+              {/* Says the filter did something, which an empty-handed grid
+                  otherwise leaves you guessing about. */}
+              {search.trim() && (
+                <span style={{ fontSize: 'var(--fs-12)', color: 'var(--text-muted)' }}>
+                  {shown.length === 0
+                    ? 'No matches'
+                    : `${shown.length} of ${notes.length} ${notes.length === 1 ? 'note' : 'notes'}`}
+                </span>
+              )}
             </div>
           )}
         </header>
@@ -159,6 +175,7 @@ export function GrammarNotes() {
               <NoteCard
                 key={note.id}
                 note={note}
+                highlight={search}
                 onEdit={() => openEdit(note)}
                 onDelete={() => setDeleting(note)}
               />
