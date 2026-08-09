@@ -1,9 +1,8 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Icon, IconButton, Tooltip } from 'lingo-ds';
+import { Icon, IconButton, MenuItem, Tooltip } from 'lingo-ds';
 import { FaqDialog } from '../tools/FaqDialog';
 import { ShortcutsDialog } from '../tools/ShortcutsDialog';
-import { MenuItem } from './MenuItem';
 
 type Panel = 'faq' | 'shortcuts' | null;
 

@@ -1,9 +1,8 @@
 import * as React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Badge, Icon, playSound } from 'lingo-ds';
+import { Badge, Icon, MenuItem, playSound } from 'lingo-ds';
 import { NAV_TOOLS } from '../data/seed';
 import { useStore } from '../state/store';
-import { MenuItem } from './MenuItem';
 import { LanguageMenu } from './LanguageMenu';
 
 /** Height of the bar itself, before the home-indicator inset is added under it. */
