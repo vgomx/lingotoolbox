@@ -31,7 +31,25 @@ function Steps({ data, steps }: { data: Etymologies; steps: [string, string, str
               {RELATION[rel] ?? rel}{' '}
               <span style={{ fontWeight: 'var(--fw-bold)' as React.CSSProperties['fontWeight'] }}>{langName(data, code)}</span>
             </span>
-            {isNamed(term) && <div style={{ ...mono, fontSize: 'var(--fs-13)', wordBreak: 'break-word' }}>{term}</div>}
+            {/* Matching the Explorer's cards: the word is a specimen, so it
+                gets an edge. The same --surface-sunken at every depth — a
+                branch is already indented and ruled, so it does not need the
+                well to get lighter as it nests to say where it is. */}
+            {isNamed(term) && (
+              <div
+                style={{
+                  ...mono, fontSize: 'var(--fs-13)', wordBreak: 'break-word', marginTop: 3,
+                  // fit-content rather than inline-block: it has to hug the word but
+                      // stay on its own line, or it rides up beside the label and
+                      // wraps "Proto-West Germanic" across two.
+                      width: 'fit-content', padding: '2px 8px',
+                  background: 'var(--surface-sunken)',
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                {term}
+              </div>
+            )}
           </div>
         </div>
       ))}

@@ -66,7 +66,26 @@ export function ChainCard({ word, chain, data, compact = false, interactive = fa
                     a mono line containing "-", which reads as a broken record
                     rather than as an honest "we know the family, not the word".
                     So the language stands alone and the term line is dropped. */}
-                {isNamed(term) && <div style={{ ...mono, wordBreak: 'break-word' }}>{term}</div>}
+                {/* The word sits in a well of its own, the way a grammar
+                    note's examples do. It is a specimen rather than prose —
+                    reconstructed forms carry asterisks and macrons that matter
+                    — and set bare it ran together with the label above it into
+                    one column of text with no edges. */}
+                {isNamed(term) && (
+                  <div
+                    style={{
+                      ...mono, wordBreak: 'break-word', marginTop: 3,
+                      // fit-content rather than inline-block: it has to hug the word but
+                      // stay on its own line, or it rides up beside the label and
+                      // wraps "Proto-West Germanic" across two.
+                      width: 'fit-content', padding: '3px 10px',
+                      background: 'var(--surface-sunken)',
+                      borderRadius: 'var(--radius-sm)',
+                    }}
+                  >
+                    {term}
+                  </div>
+                )}
               </div>
             </div>
           ))}
