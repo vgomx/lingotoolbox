@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Badge, Button, Dialog, Icon, IconButton, Input, SidebarItem, RailTile, StreakPill, Tooltip, useBreakpoint, usePrefersReducedMotion } from 'lingo-ds';
 import { useStore } from '../state/store';
+import horizontalLogo from 'lingo-ds/assets/logo/horizontal-violet.svg';
 import { NAV_TOOLS, TOOLS } from '../data/seed';
 import { LanguageMenu } from './LanguageMenu';
 import { ChromeProvider, useChromeState } from './chrome';
@@ -71,7 +72,7 @@ const styles: Record<string, React.CSSProperties> = {
  */
 export function AppShell() {
   const { chrome, set } = useChromeState();
-  const { title, titleIcon, parent, sidebar, streakInTopBar } = chrome;
+  const { title, titleIcon, parent, sidebar, streakInTopBar, logo } = chrome;
   // Callback ref rather than useRef: <TopRight> portals into this node, and a
   // ref object's mutation would not re-render the consumers waiting for it.
   const [topRightSlot, setTopRightSlot] = React.useState<HTMLElement | null>(null);
@@ -453,6 +454,24 @@ export function AppShell() {
                 <Icon name="chevron-left" size={20} />
               </IconButton>
             </Link>
+          )}
+          {/*
+            * Centred on the bar itself rather than placed in the flex row, so
+            * it sits in the middle of the screen regardless of what the right
+            * side is carrying. Home has no title, so there is nothing for it to
+            * collide with; pointer-events off so it never eats a tap meant for
+            * something behind it.
+            */}
+          {logo && isMobile && (
+            <img
+              src={horizontalLogo}
+              alt="Lingo Toolbox"
+              style={{
+                position: 'absolute', left: '50%', top: '50%',
+                transform: 'translate(-50%, -50%)',
+                height: 22, width: 'auto', pointerEvents: 'none',
+              }}
+            />
           )}
           <span style={styles.topTitle}>
             {/* Not on a phone. The dock already says which tool you are in, and

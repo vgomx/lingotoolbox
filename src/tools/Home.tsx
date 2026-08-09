@@ -5,7 +5,6 @@ import { useChrome } from '../shell/chrome';
 import { useStore } from '../state/store';
 import { HAS_ETYMOLOGY } from '../data/etymology';
 import { NAV_TOOLS } from '../data/seed';
-import horizontalLogo from 'lingo-ds/assets/logo/horizontal-violet.svg';
 
 /**
  * The dashboard, following ui_kits/app/HomeScreen.jsx.
@@ -130,7 +129,7 @@ export function Home() {
   };
 
   // No title: the rail already says Home, and the header names the workspace.
-  useChrome({ streakInTopBar: false });
+  useChrome({ streakInTopBar: false, logo: true });
 
   const soon = NAV_TOOLS.filter((t) => !t.released);
 
@@ -147,25 +146,6 @@ export function Home() {
         * under the heading that says what it reviews.
         */}
       <header>
-        {/*
-          * The only place the logo appears inside the app, and only on a phone.
-          *
-          * A desktop has the rail, which carries the mark permanently; a phone
-          * has the dock, which does not — so the app never says its own name
-          * anywhere. Home is where that belongs: it is the screen you land on,
-          * and the one place a brand mark is not competing with a task.
-          *
-          * The horizontal lockup rather than the stack, because a header wants
-          * width rather than height, and a baked variant rather than -brand,
-          * because currentColor has nothing to inherit through an <img>.
-          */}
-        {isMobile && (
-          <img
-            src={horizontalLogo}
-            alt="Lingo Toolbox"
-            style={{ display: 'block', height: 26, width: 'auto', margin: '0 auto var(--space-7)' }}
-          />
-        )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
           <span style={eyebrow}>Workspace</span>
           {/* Status, not an action. Hidden at zero: "0 days" is a fact nobody
