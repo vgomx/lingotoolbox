@@ -1,7 +1,8 @@
-import { Card, Icon, Tag } from 'lingo-ds';
+import { Card, Icon } from 'lingo-ds';
 import type { Chain, Etymologies } from '../../data/etymology';
 import { langName } from '../../data/etymology';
 import { RELATION, isNamed } from './relations';
+import { CognateTag } from './CognateTag';
 
 const mono: React.CSSProperties = {
   fontFamily: 'var(--font-mono)',
@@ -98,9 +99,7 @@ export function ChainCard({ word, chain, data, compact = false, interactive = fa
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
           <span style={{ fontSize: 'var(--fs-12)', color: 'var(--text-muted)', marginRight: 2 }}>Compare</span>
           {chain.c.slice(0, 6).map(([code, term], i) => (
-            <Tag key={`${code}-${term}-${i}`} color="var(--text-muted)">
-              {langName(data, code)} {term}
-            </Tag>
+            <CognateTag key={`${code}-${term}-${i}`} language={langName(data, code)} term={term} />
           ))}
         </div>
       )}

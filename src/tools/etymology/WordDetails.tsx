@@ -5,6 +5,7 @@ import { useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
 import { WordTree } from './WordTree';
+import { CognateTag } from './CognateTag';
 import { langName, loadEtymology, lookup, hasContent, type Chain, type Etymologies } from '../../data/etymology';
 
 const page: React.CSSProperties = {
@@ -109,9 +110,7 @@ export function WordDetails() {
                   only its own. A cognate that looked clickable and was not
                   would be worse than one that plainly is not. */}
               {chain.c.map(([code, term], i) => (
-                <Tag key={`${code}-${term}-${i}`} color="var(--text-muted)">
-                  {langName(data, code)} {term}
-                </Tag>
+                <CognateTag key={`${code}-${term}-${i}`} language={langName(data, code)} term={term} />
               ))}
             </div>
           </Card>
