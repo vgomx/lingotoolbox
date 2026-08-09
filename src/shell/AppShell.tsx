@@ -433,14 +433,35 @@ export function AppShell() {
               </IconButton>
             </Tooltip>
           )}
+          {/*
+            * The way back, as an arrow on a phone and a crumb on a desktop.
+            *
+            * The crumb is hidden on mobile because "Etymology Explorer › venster"
+            * cannot fit a 375px bar — but hiding it left nothing at all, and a
+            * subpage reached from a card had no way back except the dock, which
+            * returns you to the top of a tool rather than to where you were. An
+            * arrow costs one control and says the same thing.
+            *
+            * It navigates to the parent rather than calling history.back(): a
+            * word opened from a shared link, or after a reload, has no history
+            * to go back to, and a back button that does nothing is worse than
+            * the absence it replaced.
+            */}
+          {parent && isMobile && (
+            <Link to={parent.to} style={{ textDecoration: 'none', flex: 'none', display: 'flex' }}>
+              <IconButton label={`Back to ${parent.label}`}>
+                <Icon name="chevron-left" size={20} />
+              </IconButton>
+            </Link>
+          )}
           <span style={styles.topTitle}>
             {/* Not on a phone. The dock already says which tool you are in, and
                 the icon was costing 26px of a bar where the deck name had been
                 squeezed to "E..". */}
             {titleIcon && !isMobile && <Icon name={titleIcon} size={18} style={{ color: 'var(--text-muted)', flex: 'none' }} />}
-            {/* The way back up. Muted so the current screen stays the loudest
-                thing in the bar, and a real link so it is keyboard-reachable and
-                opens in a new tab like any other. */}
+            {/* Muted so the current screen stays the loudest thing in the bar,
+                and a real link so it is keyboard-reachable and opens in a new
+                tab like any other. */}
             {parent && !isMobile && (
               <>
                 <NavLink to={parent.to} style={styles.crumb}>{parent.label}</NavLink>
