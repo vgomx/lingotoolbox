@@ -1,11 +1,10 @@
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Icon } from 'lingo-ds';
+import { Badge, Icon, MenuItem } from 'lingo-ds';
 import { useStore } from '../state/store';
 import { WORKSPACES } from '../data/seed';
 import { flagUrl } from '../data/illustrations';
-import { MenuItem } from './MenuItem';
 
 /**
  * The workspace switcher. Flags never appear alone — always beside the language
