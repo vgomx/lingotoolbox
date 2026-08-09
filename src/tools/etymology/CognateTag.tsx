@@ -15,7 +15,7 @@ import { Tag } from 'lingo-ds';
  */
 export function CognateTag({ language, term }: { language: string; term: string }) {
   return (
-    <Tag color="var(--text-muted)" style={{ height: 26 }}>
+    <Tag color="var(--text-muted)">
       {/* One flex item holding normal inline flow, rather than two items spaced
           by `gap`. A gap is layout, not a character: the chip's text content
           came out as "Middle Low Germanerdappel", which is what a screen reader

@@ -74,15 +74,31 @@ export function EtymologyExplorer() {
     const exact = lookup(data, q);
     const out: { word: string; chain: NonNullable<ReturnType<typeof lookup>> }[] = [];
     if (hasContent(exact)) out.push({ word: q, chain: exact });
+
+    /*
+     * Prefixes first, then anything containing the query.
+     *
+     * Prefix alone was wrong for these languages in particular: Dutch builds
+     * words by gluing them together, so searching `appel` found nothing while
+     * `aardappel`, `stroopwafel`-style compounds and every -boek in the list
+     * sat there unmatched. Ranking still puts prefixes on top, because someone
+     * typing `ver` almost certainly wants words starting that way rather than
+     * the middle of `onoverwinnelijk`.
+     */
+    const seen = new Set<string>(out.map((o) => o.word.toLowerCase()));
+    const inside: typeof out = [];
     for (const word of Object.keys(data.words)) {
       if (out.length >= MAX_HITS) break;
-      if (word.toLowerCase() === q) continue;
-      if (word.toLowerCase().startsWith(q)) {
-        const chain = data.words[word];
-        if (hasContent(chain)) out.push({ word, chain });
-      }
+      const lower = word.toLowerCase();
+      if (seen.has(lower)) continue;
+      const at = lower.indexOf(q);
+      if (at < 0) continue;
+      const chain = data.words[word];
+      if (!hasContent(chain)) continue;
+      if (at === 0) { out.push({ word, chain }); seen.add(lower); }
+      else if (inside.length < MAX_HITS) inside.push({ word, chain });
     }
-    return out;
+    return [...out, ...inside].slice(0, MAX_HITS);
   }, [data, query]);
 
   if (state === 'unavailable') {

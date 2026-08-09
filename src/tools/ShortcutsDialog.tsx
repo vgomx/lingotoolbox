@@ -19,6 +19,12 @@ const SHORTCUTS: Shortcut[] = [
   { keys: ['2'], does: 'Grade Hard', where: 'Review, after the answer' },
   { keys: ['3'], does: 'Grade Good', where: 'Review, after the answer' },
   { keys: ['4'], does: 'Grade Easy', where: 'Review, after the answer' },
+  // Added after the grades and missed by this list until someone read it: the
+  // file's own note says it is written from the handlers, and it had stopped
+  // being true three shortcuts ago.
+  { keys: ['Z'], does: 'Take back the last answer', where: 'Review' },
+  { keys: ['G'], does: 'The grammar note for this card', where: 'Review, when there is one' },
+  { keys: ['E'], does: 'Where this word comes from', where: 'Review, when there is one' },
   { keys: ['N'], does: 'Add a card', where: 'Inside a deck' },
   { keys: ['⌘', 'B'], does: 'Show or hide the deck list', where: 'Flashcards' },
   { keys: ['Esc'], does: 'Close a menu or dialog', where: 'Anywhere' },
