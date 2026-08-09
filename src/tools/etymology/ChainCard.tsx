@@ -34,7 +34,23 @@ export function ChainCard({ word, chain, data, compact = false, interactive = fa
   const steps = chain.a ?? [];
 
   return (
-    <Card title={compact ? undefined : word} interactive={interactive} style={{ height: '100%' }}>
+    <Card
+      /*
+       * The headword carries the card, so it is set above Card's own 18px
+       * title. Everything under it is apparatus — a relation, a language, a
+       * form — and at the default size the word it all describes was the same
+       * weight as the labels describing it.
+       *
+       * Passed as a node rather than through a new prop on Card: `title` takes
+       * a ReactNode for exactly this, and one caller wanting a larger heading
+       * is not yet the component missing a size.
+       */
+      title={compact ? undefined : (
+        <span style={{ fontSize: 'var(--fs-24)', lineHeight: 1.15 }}>{word}</span>
+      )}
+      interactive={interactive}
+      style={{ height: '100%' }}
+    >
       {compact && (
         <span style={{ ...mono, fontSize: 'var(--fs-18)', fontWeight: 'var(--fw-black)' as React.CSSProperties['fontWeight'] }}>
           {word}
