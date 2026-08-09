@@ -40,6 +40,15 @@ export interface Chrome {
    * in its own hero, and one screen does not need to say it twice.
    */
   streakInTopBar: boolean;
+  /**
+   * The horizontal lockup, centred in the top bar on a phone.
+   *
+   * Home only. A desktop has the rail, which carries the mark permanently; a
+   * phone has the dock, which does not, so without this the app never says its
+   * own name anywhere on a phone. Every other screen needs that space for its
+   * own title.
+   */
+  logo?: boolean;
 }
 
 export const DEFAULT_CHROME: Chrome = { sidebar: false, streakInTopBar: true };
@@ -59,7 +68,8 @@ export const ChromeProvider = ChromeContext.Provider;
 const same = (a: Chrome, b: Chrome) =>
   a.title === b.title && a.titleIcon === b.titleIcon
   && a.sidebar === b.sidebar && a.streakInTopBar === b.streakInTopBar
-  && a.parent?.label === b.parent?.label && a.parent?.to === b.parent?.to;
+  && a.parent?.label === b.parent?.label && a.parent?.to === b.parent?.to
+  && a.logo === b.logo;
 
 /** Used by AppShell to hold the current screen's chrome without looping. */
 export function useChromeState() {
@@ -88,6 +98,7 @@ export function useChrome(chrome: Partial<Chrome>) {
   // Depended on as two primitives rather than as the object, which is new each render.
   const parentLabel = chrome.parent?.label;
   const parentTo = chrome.parent?.to;
+  const logo = chrome.logo;
 
   React.useLayoutEffect(() => {
     ctx?.set({
@@ -96,8 +107,9 @@ export function useChrome(chrome: Partial<Chrome>) {
       sidebar,
       streakInTopBar,
       parent: parentLabel && parentTo ? { label: parentLabel, to: parentTo } : undefined,
+      logo,
     });
-  }, [ctx, title, titleIcon, sidebar, streakInTopBar, parentLabel, parentTo]);
+  }, [ctx, title, titleIcon, sidebar, streakInTopBar, parentLabel, parentTo, logo]);
 }
 
 /**

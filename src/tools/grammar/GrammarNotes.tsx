@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Button, Dialog, Icon, IconButton, Input, Select, Textarea, Tooltip, playSound, useIsMobile } from 'lingo-ds';
+import { Button, Dialog, Icon, IconButton, Input, Select, TagInput, Textarea, Tooltip, playSound, useIsMobile } from 'lingo-ds';
 import { TopRight, useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import { ConfirmDialog } from '../../shell/ConfirmDialog';
@@ -23,7 +23,7 @@ const page: React.CSSProperties = {
  * half that earns the tool is the button this puts on the review screen.
  */
 export function GrammarNotes() {
-  const { notes, saveNote, removeNote, workspace, language } = useStore();
+  const { notes, cards, saveNote, removeNote, workspace, language } = useStore();
   const isMobile = useIsMobile();
 
   const [search, setSearch] = React.useState('');
@@ -33,10 +33,24 @@ export function GrammarNotes() {
 
   const [title, setTitle] = React.useState('');
   const [body, setBody] = React.useState('');
-  const [tags, setTags] = React.useState('');
+  const [tags, setTags] = React.useState<string[]>([]);
   const [level, setLevel] = React.useState<CEFRLevel | ''>('');
 
   useChrome({ title: 'Grammar Notes', titleIcon: 'scroll-text' });
+
+  /**
+   * Every tag already in use, commonest first.
+   *
+   * Cards before notes, and by frequency rather than alphabetically: the tag
+   * on forty cards is the one worth reaching for, and the one on a single note
+   * is how the vocabulary splinters.
+   */
+  const tagsInUse = React.useMemo(() => {
+    const count = new Map<string, number>();
+    for (const c of cards) for (const t of c.tags) count.set(t, (count.get(t) ?? 0) + 1);
+    for (const n of notes) for (const t of n.tags) count.set(t, (count.get(t) ?? 0) + 1);
+    return [...count.entries()].sort((a, b) => b[1] - a[1]).map(([t]) => t);
+  }, [cards, notes]);
 
   const shown = React.useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -48,18 +62,20 @@ export function GrammarNotes() {
   }, [notes, search]);
 
   const openNew = () => {
-    setEditing(null); setTitle(''); setBody(''); setTags(''); setLevel(''); setOpen(true);
+    setEditing(null); setTitle(''); setBody(''); setTags([]); setLevel(''); setOpen(true);
   };
   const openEdit = (note: Note) => {
     setEditing(note);
     setTitle(note.title); setBody(note.body);
-    setTags(note.tags.join(', ')); setLevel(note.level ?? '');
+    setTags(note.tags); setLevel(note.level ?? '');
     setOpen(true);
   };
 
   const submit = async () => {
     if (!title.trim() || !body.trim()) return;
-    const parsed = tags.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean);
+    // Lowercased here rather than in the field, so what you typed is what
+    // you see while typing it, and the stored form stays canonical.
+    const parsed = [...new Set(tags.map((t) => t.trim().toLowerCase()).filter(Boolean))];
     const now = Date.now();
     await saveNote({
       id: editing?.id ?? `note-${now.toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
@@ -108,15 +124,31 @@ export function GrammarNotes() {
             nouns turns up while you are reviewing one.
           </p>
 
+          {/* Was `sm` in a 360px box, which is the size of a filter tucked into
+              a toolbar rather than of the main way into a screen — and on a
+              phone it left a 28px target. */}
           {notes.length > 0 && (
-            <div style={{ marginTop: 'var(--space-6)', maxWidth: 360 }}>
+            <div style={{ marginTop: 'var(--space-6)', maxWidth: 460, display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
               <Input
-                placeholder="Search notes…"
-                size="sm"
+                placeholder="Search notes, or a word inside one…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                iconLeft={<Icon name="search" size={14} />}
+                iconLeft={<Icon name="search" size={16} />}
+                iconRight={search ? (
+                  <IconButton label="Clear search" size="sm" onClick={() => setSearch('')}>
+                    <Icon name="x" size={14} />
+                  </IconButton>
+                ) : undefined}
               />
+              {/* Says the filter did something, which an empty-handed grid
+                  otherwise leaves you guessing about. */}
+              {search.trim() && (
+                <span style={{ fontSize: 'var(--fs-12)', color: 'var(--text-muted)' }}>
+                  {shown.length === 0
+                    ? 'No matches'
+                    : `${shown.length} of ${notes.length} ${notes.length === 1 ? 'note' : 'notes'}`}
+                </span>
+              )}
             </div>
           )}
         </header>
@@ -143,6 +175,7 @@ export function GrammarNotes() {
               <NoteCard
                 key={note.id}
                 note={note}
+                highlight={search}
                 onEdit={() => openEdit(note)}
                 onDelete={() => setDeleting(note)}
               />
@@ -197,12 +230,18 @@ export function GrammarNotes() {
             value={body}
             onChange={(e) => setBody(e.target.value)}
           />
-          <Input
+          {/* Suggestions are the point, not decoration. A note reaches a card
+              by sharing a tag with it, so a tag nobody else uses is a note
+              nobody will be shown — and a free-text field is exactly how
+              `verb` and `verbs` both came to exist in the seed. */}
+          <TagInput
             label="Tags"
-            hint="Comma separated, in the same words your cards use — noun, verb, particle. This is what decides which cards offer it."
+            hint="What decides which cards offer this note. Reuse a word your cards already use."
             placeholder="noun"
+            color="var(--tool-grammar)"
             value={tags}
-            onChange={(e) => setTags(e.target.value)}
+            onChange={setTags}
+            suggestions={tagsInUse}
           />
           <Select
             label="Level"

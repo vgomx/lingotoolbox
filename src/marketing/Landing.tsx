@@ -12,7 +12,20 @@ import wordmarkWhite from 'lingo-ds/assets/logo/logo-wordmark-white.svg';
 
 const SHELL = 'var(--content-max, 1120px)';
 
-const section: React.CSSProperties = { maxWidth: SHELL, margin: '0 auto', padding: '64px 24px' };
+/*
+ * Every band on this page is centred inside SHELL, so one definition covers
+ * them all. The horizontal padding carries the safe-area insets because the
+ * document is laid out edge to edge under viewport-fit=cover: in landscape the
+ * notch takes a bite out of the leading edge, and 24px of padding is not
+ * enough to clear it.
+ */
+const section: React.CSSProperties = {
+  maxWidth: SHELL,
+  margin: '0 auto',
+  padding: '64px 24px',
+  paddingLeft: 'calc(24px + env(safe-area-inset-left, 0px))',
+  paddingRight: 'calc(24px + env(safe-area-inset-right, 0px))',
+};
 const pageGutter = (mobile: boolean): React.CSSProperties => (mobile ? { padding: '40px 20px' } : {});
 /** Two-up on a real screen, stacked on a phone. */
 const twoUp = (mobile: boolean): React.CSSProperties => ({
@@ -53,9 +66,28 @@ function Nav() {
         background: 'color-mix(in oklab, var(--paper-0) 82%, transparent)',
         backdropFilter: 'var(--blur-overlay)',
         boxShadow: 'inset 0 -1px 0 var(--divider)',
+        /*
+         * The page asks for viewport-fit=cover, so it is laid out edge to edge
+         * and everything here has to say where the edges are. The app shell and
+         * the dock already did; this page never had, and the wordmark sat under
+         * the notch — in landscape, where the inset is on the leading side, and
+         * in the installed app, which can reach this page from About.
+         *
+         * The padding is on the header rather than the row inside it, so the
+         * blurred background fills the unsafe strip instead of leaving a bare
+         * band above a bar that starts lower down.
+         */
+        paddingTop: 'env(safe-area-inset-top, 0px)',
       }}
     >
-      <div style={{ maxWidth: SHELL, margin: '0 auto', padding: isMobile ? '0 20px' : '0 24px', height: 64, display: 'flex', alignItems: 'center', gap: 'var(--space-6)' }}>
+      <div
+        style={{
+          maxWidth: SHELL, margin: '0 auto', height: 64,
+          paddingLeft: `calc(${isMobile ? '20px' : '24px'} + env(safe-area-inset-left, 0px))`,
+          paddingRight: `calc(${isMobile ? '20px' : '24px'} + env(safe-area-inset-right, 0px))`,
+          display: 'flex', alignItems: 'center', gap: 'var(--space-6)',
+        }}
+      >
         <img src={wordmarkViolet} alt="Lingo Toolbox" style={{ height: 30 }} />
         <span style={{ flex: 1 }} />
         {/* Two in-page anchors, 35px wide on a phone and sitting between the
@@ -313,7 +345,15 @@ function Footer() {
   const isMobile = useIsMobile();
   return (
     <footer data-theme="dark" style={{ background: 'var(--ink-900)' }}>
-      <div style={{ maxWidth: SHELL, margin: '0 auto', padding: isMobile ? '40px 20px 24px' : '56px 24px 24px', display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0,1fr)' : '1.4fr 1fr 1fr', gap: 'var(--space-9)' }}>
+      <div style={{
+        maxWidth: SHELL, margin: '0 auto',
+        // The home indicator sits over the last row otherwise.
+        padding: isMobile
+          ? '40px 20px calc(24px + env(safe-area-inset-bottom, 0px))'
+          : '56px 24px calc(24px + env(safe-area-inset-bottom, 0px))',
+        paddingLeft: `calc(${isMobile ? '20px' : '24px'} + env(safe-area-inset-left, 0px))`,
+        paddingRight: `calc(${isMobile ? '20px' : '24px'} + env(safe-area-inset-right, 0px))`,
+        display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0,1fr)' : '1.4fr 1fr 1fr', gap: 'var(--space-9)' }}>
         <div>
           <img src={wordmarkWhite} alt="Lingo Toolbox" style={{ height: 36 }} />
           <p style={{ margin: '16px 0 0', fontSize: 'var(--fs-14)', lineHeight: 'var(--lh-relaxed)', color: 'var(--text-muted)', maxWidth: 300 }}>
@@ -347,7 +387,13 @@ function Footer() {
         </div>
       </div>
 
-      <div style={{ maxWidth: SHELL, margin: '0 auto', padding: '20px 24px 40px', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.06)' }}>
+      <div style={{
+        maxWidth: SHELL, margin: '0 auto',
+        padding: '20px 24px calc(40px + env(safe-area-inset-bottom, 0px))',
+        paddingLeft: 'calc(24px + env(safe-area-inset-left, 0px))',
+        paddingRight: 'calc(24px + env(safe-area-inset-right, 0px))',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,.06)',
+      }}>
         <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>
           MIT licence · Icons by Lucide (ISC) · Illustration by OpenMoji (CC BY-SA 4.0)
         </span>

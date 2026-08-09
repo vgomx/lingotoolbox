@@ -129,7 +129,7 @@ export function Home() {
   };
 
   // No title: the rail already says Home, and the header names the workspace.
-  useChrome({ streakInTopBar: false });
+  useChrome({ streakInTopBar: false, logo: true });
 
   const soon = NAV_TOOLS.filter((t) => !t.released);
 
