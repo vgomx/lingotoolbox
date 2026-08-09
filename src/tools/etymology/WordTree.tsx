@@ -15,6 +15,25 @@ const MAX_DEPTH = 4;
 
 const mono: React.CSSProperties = { fontFamily: 'var(--font-mono)', color: 'var(--text-strong)' };
 
+/**
+ * The word a level is about, sized by how far down it sits.
+ *
+ * The root is the subject of the whole card and is set well above the labels
+ * describing it; the parts below it are subordinate, and at anything near the
+ * root's size they competed with it for the same reading.
+ *
+ * break-word because Dutch will hand you `hottentottententententoonstellings-
+ * terrein` — 41 characters that at this size are wider than a phone. The
+ * ancestor forms already break the same way.
+ */
+const headword = (depth: number): React.CSSProperties => ({
+  ...mono,
+  fontSize: depth === 0 ? 'var(--fs-24)' : 'var(--fs-14)',
+  fontWeight: 'var(--fw-bold)' as React.CSSProperties['fontWeight'],
+  wordBreak: 'break-word',
+  minWidth: 0,
+});
+
 /** The ancestry spine for one word, drawn small enough to nest. */
 function Steps({ data, steps }: { data: Etymologies; steps: [string, string, string][] }) {
   if (!steps.length) return null;
@@ -99,7 +118,11 @@ export function WordTree({ word, data, depth = 0, trail = [], defaultOpen = fals
             onClick={() => setOpen((o) => !o)}
             aria-expanded={open}
             style={{
-              display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: '2px 4px 2px 0',
+              // flex-start, not center: a word long enough to wrap put the
+              // chevron beside its middle line, pointing at nothing. The icon
+              // takes the offset instead, so it lands on the first line either
+              // way — and on a word that fits, that is where center put it.
+              display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)', padding: '2px 4px 2px 0',
               border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-strong)',
               font: 'inherit', textAlign: 'left', minWidth: 0,
             }}
@@ -109,18 +132,17 @@ export function WordTree({ word, data, depth = 0, trail = [], defaultOpen = fals
               size={14}
               style={{
                 color: 'var(--text-muted)', flex: 'none',
+                // Half the difference between the line box (36px at the root,
+                // 21px nested) and the 14px icon.
+                marginTop: depth === 0 ? 11 : 3.5,
                 transform: open ? 'rotate(90deg)' : 'none',
                 transition: 'transform var(--dur-fast) var(--ease-out)',
               }}
             />
-            <span style={{ ...mono, fontSize: depth === 0 ? 'var(--fs-16)' : 'var(--fs-14)', fontWeight: 'var(--fw-bold)' as React.CSSProperties['fontWeight'] }}>
-              {word}
-            </span>
+            <span style={headword(depth)}>{word}</span>
           </button>
         ) : (
-          <span style={{ ...mono, fontSize: depth === 0 ? 'var(--fs-16)' : 'var(--fs-14)', fontWeight: 'var(--fw-bold)' as React.CSSProperties['fontWeight'], paddingLeft: depth ? 18 : 0 }}>
-            {word}
-          </span>
+          <span style={{ ...headword(depth), paddingLeft: depth ? 18 : 0 }}>{word}</span>
         )}
       </div>
 
