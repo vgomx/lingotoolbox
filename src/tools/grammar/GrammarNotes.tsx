@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Button, Dialog, Icon, IconButton, Input, Select, Tooltip, playSound, useIsMobile } from 'lingo-ds';
+import { Button, Dialog, Icon, IconButton, Input, Select, Textarea, Tooltip, playSound, useIsMobile } from 'lingo-ds';
 import { TopRight, useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import { ConfirmDialog } from '../../shell/ConfirmDialog';
@@ -186,10 +186,14 @@ export function GrammarNotes() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
-          <Input
+          {/* A Textarea because the hint asks for a blank line between
+              paragraphs, and a single-line Input cannot take that advice — the
+              seeded notes had paragraphs that nobody could have typed. */}
+          <Textarea
             label="Explanation"
             hint="A few sentences. Leave a blank line between paragraphs."
             placeholder="Roughly two thirds of nouns take de…"
+            rows={5}
             value={body}
             onChange={(e) => setBody(e.target.value)}
           />
