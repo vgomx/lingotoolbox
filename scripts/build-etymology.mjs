@@ -20,12 +20,16 @@
 // The dumps are large — Dutch 236 MB, Portuguese 535 MB, Spanish 979 MB — so
 // they are streamed and discarded a line at a time rather than downloaded.
 
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = join(root, 'public/etymology');
+
+/** Verified Wikipedia titles per language code — see resolve-language-links.mjs. */
+const wikiCache = join(root, 'scripts/language-links.json');
+const WIKI = existsSync(wikiCache) ? JSON.parse(readFileSync(wikiCache, 'utf8')) : {};
 
 /** Workspace code → the name kaikki files that language under. */
 const LANGUAGES = [
@@ -193,9 +197,16 @@ for (const lang of targets) {
   const langs = {};
   for (const c of [...usedCodes].sort()) if (CODE_NAME.has(c)) langs[c] = CODE_NAME.get(c);
 
+  // Wikipedia titles for the languages this shard names, resolved offline by
+  // resolve-language-links.mjs. Missing cache is not an error: the shard is
+  // still correct, the ancestors just render as plain text.
+  const wiki = {};
+  for (const c of Object.keys(langs)) if (WIKI[c]) wiki[c] = WIKI[c];
+
   const file = join(outDir, `${lang.code}.json`);
-  writeFileSync(file, JSON.stringify({ language: lang.kaikki, langs, words }));
-  const kb = Buffer.byteLength(JSON.stringify({ language: lang.kaikki, langs, words })) / 1024;
+  const payload = { language: lang.kaikki, langs, wiki, words };
+  writeFileSync(file, JSON.stringify(payload));
+  const kb = Buffer.byteLength(JSON.stringify(payload)) / 1024;
   const deep = Object.values(words).filter((w) => (w.a?.length ?? 0) >= 2).length;
   console.log(`\n  ${lang.code}: ${Object.keys(words).length.toLocaleString()} words `
     + `(${deep.toLocaleString()} with 2+ steps) · ${Object.keys(langs).length} languages · ${(kb / 1024).toFixed(1)} MB`);

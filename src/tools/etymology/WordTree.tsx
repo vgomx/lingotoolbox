@@ -1,8 +1,10 @@
 import * as React from 'react';
-import { Icon } from 'lingo-ds';
+import { EtymologyNode, Icon } from 'lingo-ds';
 import type { Etymologies } from '../../data/etymology';
-import { langName } from '../../data/etymology';
+import { langName, langLink, langArticle } from '../../data/etymology';
 import { RELATION, isNamed } from './relations';
+import { Specimen } from './Specimen';
+import { useOpenLanguage } from './languageContext';
 
 /**
  * How far the tree will unfold before it stops offering to go further.
@@ -15,25 +17,56 @@ const MAX_DEPTH = 4;
 
 const mono: React.CSSProperties = { fontFamily: 'var(--font-mono)', color: 'var(--text-strong)' };
 
-/** The ancestry spine for one word, drawn small enough to nest. */
+/**
+ * The word a level is about, sized by how far down it sits.
+ *
+ * The root is the subject of the whole card and is set well above the labels
+ * describing it; the parts below it are subordinate, and at anything near the
+ * root's size they competed with it for the same reading.
+ *
+ * break-word because Dutch will hand you `hottentottententententoonstellings-
+ * terrein` — 41 characters that at this size are wider than a phone. The
+ * ancestor forms already break the same way.
+ */
+const headword = (depth: number): React.CSSProperties => ({
+  ...mono,
+  fontSize: depth === 0 ? 'var(--fs-24)' : 'var(--fs-14)',
+  fontWeight: 'var(--fw-bold)' as React.CSSProperties['fontWeight'],
+  wordBreak: 'break-word',
+  minWidth: 0,
+});
+
+/**
+ * The ancestry spine for one word.
+ *
+ * This used to be a hand-rolled row — a flat 5px dot on a flat 1.5px line,
+ * with the relation and language as one muted string and the form in a well
+ * below. The design system already ships the tracker this was an imitation of,
+ * and shipped it better: a hollow ring so the word you looked up is the only
+ * solid mark, and a connector that fades as the chain runs out of evidence.
+ * It was only ever used on the marketing page.
+ *
+ * The forms are passed as Specimen nodes rather than through a prop on the
+ * component, because the well is a fact about *this* data — see Specimen.
+ */
 function Steps({ data, steps }: { data: Etymologies; steps: [string, string, string][] }) {
+  const openLanguage = useOpenLanguage();
   if (!steps.length) return null;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', marginTop: 'var(--space-3)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', marginTop: 'var(--space-4)' }}>
       {steps.map(([rel, code, term], i) => (
-        <div key={`${code}-${term}-${i}`} style={{ display: 'flex', gap: 'var(--space-4)' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 'none', width: 8 }}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--tool-etymology)', marginTop: 7, flex: 'none' }} />
-            {i < steps.length - 1 && <span style={{ flex: 1, width: 1.5, background: 'var(--border)' }} />}
-          </div>
-          <div style={{ paddingBottom: i < steps.length - 1 ? 'var(--space-4)' : 0, minWidth: 0 }}>
-            <span style={{ fontSize: 'var(--fs-11)', color: 'var(--text-muted)' }}>
-              {RELATION[rel] ?? rel}{' '}
-              <span style={{ fontWeight: 'var(--fw-bold)' as React.CSSProperties['fontWeight'] }}>{langName(data, code)}</span>
-            </span>
-            {isNamed(term) && <div style={{ ...mono, fontSize: 'var(--fs-13)', wordBreak: 'break-word' }}>{term}</div>}
-          </div>
-        </div>
+        <EtymologyNode
+          key={`${code}-${term}-${i}`}
+          size="sm"
+          connector={i < steps.length - 1}
+          word={isNamed(term) ? <Specimen>{term}</Specimen> : undefined}
+          relation={RELATION[rel] ?? rel}
+          language={langName(data, code)}
+          languageHref={langLink(data, code)}
+          onLanguageActivate={openLanguage
+            ? () => openLanguage({ code, name: langName(data, code), href: langLink(data, code), article: langArticle(data, code) })
+            : undefined}
+        />
       ))}
     </div>
   );
@@ -81,7 +114,11 @@ export function WordTree({ word, data, depth = 0, trail = [], defaultOpen = fals
             onClick={() => setOpen((o) => !o)}
             aria-expanded={open}
             style={{
-              display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: '2px 4px 2px 0',
+              // flex-start, not center: a word long enough to wrap put the
+              // chevron beside its middle line, pointing at nothing. The icon
+              // takes the offset instead, so it lands on the first line either
+              // way — and on a word that fits, that is where center put it.
+              display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)', padding: '2px 4px 2px 0',
               border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-strong)',
               font: 'inherit', textAlign: 'left', minWidth: 0,
             }}
@@ -91,18 +128,17 @@ export function WordTree({ word, data, depth = 0, trail = [], defaultOpen = fals
               size={14}
               style={{
                 color: 'var(--text-muted)', flex: 'none',
+                // Half the difference between the line box (36px at the root,
+                // 21px nested) and the 14px icon.
+                marginTop: depth === 0 ? 11 : 3.5,
                 transform: open ? 'rotate(90deg)' : 'none',
                 transition: 'transform var(--dur-fast) var(--ease-out)',
               }}
             />
-            <span style={{ ...mono, fontSize: depth === 0 ? 'var(--fs-16)' : 'var(--fs-14)', fontWeight: 'var(--fw-bold)' as React.CSSProperties['fontWeight'] }}>
-              {word}
-            </span>
+            <span style={headword(depth)}>{word}</span>
           </button>
         ) : (
-          <span style={{ ...mono, fontSize: depth === 0 ? 'var(--fs-16)' : 'var(--fs-14)', fontWeight: 'var(--fw-bold)' as React.CSSProperties['fontWeight'], paddingLeft: depth ? 18 : 0 }}>
-            {word}
-          </span>
+          <span style={{ ...headword(depth), paddingLeft: depth ? 18 : 0 }}>{word}</span>
         )}
       </div>
 

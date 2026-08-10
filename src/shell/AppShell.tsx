@@ -1,11 +1,12 @@
 import * as React from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Badge, Button, Dialog, Icon, IconButton, Input, SidebarItem, RailTile, StreakPill, Tooltip, useBreakpoint, usePrefersReducedMotion } from 'lingo-ds';
+import { Badge, Button, Dialog, Icon, IconButton, Input, SidebarItem, RailTile, StreakPill, Tooltip, useBreakpoint } from 'lingo-ds';
 import { useStore } from '../state/store';
 import horizontalLogo from 'lingo-ds/assets/logo/horizontal-violet.svg';
 import { NAV_TOOLS, TOOLS } from '../data/seed';
 import { LanguageMenu } from './LanguageMenu';
 import { ChromeProvider, useChromeState } from './chrome';
+import { usePageTransition } from './usePageTransition';
 import { markAppVisited } from '../data/visit';
 import { flagUrl } from '../data/illustrations';
 import { HelpMenu } from './HelpMenu';
@@ -121,7 +122,6 @@ export function AppShell() {
   }, []);
 
   const bp = useBreakpoint();
-  const reducedMotion = usePrefersReducedMotion();
   const isMobile = bp === 'mobile';
   // The rail is 72px — a fifth of a 375px phone, spent on chrome. On mobile a
   // bottom dock replaces it: navigation on a phone belongs where the thumb is,
@@ -141,16 +141,10 @@ export function AppShell() {
   const activeTool = TOOLS.find((t) => t.path !== 'home' && path.startsWith(`/app/${t.path}`)) ?? TOOLS[0];
   const settingsActive = location.pathname.startsWith('/app/settings');
 
-  /**
-   * Which hub the route belongs to, and the key the content pane animates on.
-   *
-   * Deliberately coarser than the route. Every screen rising on every navigation
-   * would put the animation between a deck and one of its cards, and between a
-   * deck and its review — moves *within* a place, where a page that re-enters
-   * says you left and came back when you did not. `path` already folds
-   * /app/review into /app/cards, so a session counts as inside Flashcards.
-   */
-  const hub = settingsActive ? 'settings' : activeTool.id;
+  // How the content pane enters on each navigation. The reasoning about which
+  // moves deserve which motion — and why a deck and its own card must not get
+  // the same one as Flashcards and Roots — lives with the hook.
+  const pageRef = usePageTransition();
 
   const visibleDecks = React.useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -512,22 +506,16 @@ export function AppShell() {
         {/* The dock is fixed, so the scroller has to stop short of it — otherwise
             the last card on every screen sits under the bar. */}
         <div style={{ ...styles.body, paddingBottom: isMobile ? `calc(${DOCK_HEIGHT}px + var(--dock-inset))` : undefined }}>
-          {/* Keyed on the hub, so changing hub remounts this and the animation
-              runs again. Nothing is thrown away that was not already going: the
-              routed component under it changes with the hub anyway.
+          {/* Arriving at a hub still rises; moving deeper into one slides in
+              from the side and back out again — see usePageTransition, which
+              decides which and runs it.
 
               The transform lives only for the length of the animation, which
               matters because a transformed ancestor becomes the containing block
               for any fixed-position descendant. Everything of that kind here is
               portalled to the body — dialogs, tooltips, the switch overlay — and
               the dock is a sibling rather than a child. */}
-          <div
-            key={hub}
-            style={reducedMotion ? undefined : { animation: 'lt-hub-rise var(--dur-slow) var(--ease-out) both' }}
-          >
-            <style>
-              {'@keyframes lt-hub-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}'}
-            </style>
+          <div ref={pageRef}>
             <Outlet />
           </div>
         </div>
