@@ -6,7 +6,7 @@ import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
 import { WordTree } from './WordTree';
 import { CognateTag } from './CognateTag';
-import { langName, loadEtymology, lookup, hasContent, type Chain, type Etymologies } from '../../data/etymology';
+import { descendants, langName, loadEtymology, lookup, hasContent, type Chain, type Etymologies } from '../../data/etymology';
 
 const page: React.CSSProperties = {
   maxWidth: 780,
@@ -47,6 +47,14 @@ export function WordDetails() {
 
   const chain: Chain | null = data ? lookup(data, target) : null;
 
+  /**
+   * How many descendants to print. `huis` has 170 and `water` 145 — past a
+   * few dozen this stops being a list you read and becomes a wall you scroll,
+   * and the shortest are the ones worth having: they are the everyday
+   * compounds rather than the six-part administrative nouns.
+   */
+  const SHOWN = 24;
+
   // The entry's own headword, which may differ from what was clicked — a card
   // reading "het brood" resolves to the entry for "brood", and the tree has to
   // be rooted at the key the data actually holds or nothing expands.
@@ -55,6 +63,11 @@ export function WordDetails() {
     const hit = Object.keys(data.words).find((k) => data.words[k] === chain);
     return hit ?? target;
   }, [data, chain, target]);
+
+  const built = React.useMemo(
+    () => (data ? descendants(data, headword) : []),
+    [data, headword],
+  );
 
   if (loading) {
     return <div style={page}><p style={{ fontSize: 'var(--fs-14)', color: 'var(--text-muted)' }}>Loading…</p></div>;
@@ -83,6 +96,30 @@ export function WordDetails() {
       <Card title="Where it comes from">
         <WordTree word={headword} data={data} defaultOpen />
       </Card>
+
+      {built.length > 0 && (
+        <div style={{ marginTop: 'var(--space-6)' }}>
+          <Card
+            title="Words built from this"
+            subtitle={built.length > SHOWN
+              ? `${built.length} in this workspace — the ${SHOWN} shortest first`
+              : undefined}
+          >
+            {/* Links, unlike cognates: these are words in the language you are
+                studying, so every one of them opens. This is the tree run
+                backwards, and it is the part that pays off for a learner —
+                boek is a word, boekwinkel and boekhandel and boekenkast are
+                vocabulary you can now half-guess. */}
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {built.slice(0, SHOWN).map((d) => (
+                <Link key={d} to={`/app/etymology/${encodeURIComponent(d)}`} style={{ textDecoration: 'none' }}>
+                  <Tag color="var(--tool-etymology)">{d}</Tag>
+                </Link>
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
 
       {chain.d && chain.d.length > 0 && (
         <div style={{ marginTop: 'var(--space-6)' }}>

@@ -1,8 +1,9 @@
-import { Card, Icon } from 'lingo-ds';
+import { Card, EtymologyNode, Icon } from 'lingo-ds';
 import type { Chain, Etymologies } from '../../data/etymology';
-import { langName } from '../../data/etymology';
+import { langName, langLink } from '../../data/etymology';
 import { RELATION, isNamed } from './relations';
 import { CognateTag } from './CognateTag';
+import { Specimen } from './Specimen';
 
 const mono: React.CSSProperties = {
   fontFamily: 'var(--font-mono)',
@@ -59,51 +60,25 @@ export function ChainCard({ word, chain, data, compact = false, interactive = fa
 
       {steps.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {/* The same tracker as the details view, so the card you click and
+              the page it opens are drawn by one component rather than two
+              hand-rolled spines that drifted apart. */}
           {steps.map(([rel, code, term], i) => (
-            <div key={`${code}-${term}-${i}`} style={{ display: 'flex', gap: 'var(--space-4)' }}>
-              {/* The spine: a line down the left with a node per step, drawn
-                  with a border rather than an SVG so it stretches with the row
-                  however the text wraps. */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 'none', width: 10 }}>
-                <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--tool-etymology)', marginTop: 7, flex: 'none' }} />
-                {i < steps.length - 1 && <span style={{ flex: 1, width: 2, background: 'var(--border)' }} />}
-              </div>
-              <div style={{ paddingBottom: i < steps.length - 1 ? 'var(--space-5)' : 0, minWidth: 0 }}>
-                <span style={{ fontSize: 'var(--fs-12)', color: 'var(--text-muted)' }}>
-                  {RELATION[rel] ?? rel}{' '}
-                  <span style={{ fontWeight: 'var(--fw-bold)' as React.CSSProperties['fontWeight'] }}>
-                    {langName(data, code)}
-                  </span>
-                </span>
-                {/* Wiktionary will say a word is "ultimately Semitic" without
-                    naming a Semitic word for it, and writes that as a bare
-                    hyphen. The claim is real and worth keeping — abacus really
-                    does go back past Greek — but printing the placeholder gave
-                    a mono line containing "-", which reads as a broken record
-                    rather than as an honest "we know the family, not the word".
-                    So the language stands alone and the term line is dropped. */}
-                {/* The word sits in a well of its own, the way a grammar
-                    note's examples do. It is a specimen rather than prose —
-                    reconstructed forms carry asterisks and macrons that matter
-                    — and set bare it ran together with the label above it into
-                    one column of text with no edges. */}
-                {isNamed(term) && (
-                  <div
-                    style={{
-                      ...mono, wordBreak: 'break-word', marginTop: 3,
-                      // fit-content rather than inline-block: it has to hug the word but
-                      // stay on its own line, or it rides up beside the label and
-                      // wraps "Proto-West Germanic" across two.
-                      width: 'fit-content', padding: '3px 10px',
-                      background: 'var(--surface-sunken)',
-                      borderRadius: 'var(--radius-sm)',
-                    }}
-                  >
-                    {term}
-                  </div>
-                )}
-              </div>
-            </div>
+            <EtymologyNode
+              key={`${code}-${term}-${i}`}
+              size="sm"
+              connector={i < steps.length - 1}
+              // Wiktionary will say a word is "ultimately Semitic" without
+              // naming a Semitic word for it, and writes that as a bare hyphen.
+              // The claim is real and worth keeping — abacus really does go back
+              // past Greek — but printing the placeholder gave a well containing
+              // "-", which reads as a broken record rather than as an honest
+              // "we know the family, not the word".
+              word={isNamed(term) ? <Specimen>{term}</Specimen> : undefined}
+              relation={RELATION[rel] ?? rel}
+              language={langName(data, code)}
+              languageHref={langLink(data, code)}
+            />
           ))}
         </div>
       )}

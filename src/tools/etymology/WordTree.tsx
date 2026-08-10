@@ -1,8 +1,9 @@
 import * as React from 'react';
-import { Icon } from 'lingo-ds';
+import { EtymologyNode, Icon } from 'lingo-ds';
 import type { Etymologies } from '../../data/etymology';
-import { langName } from '../../data/etymology';
+import { langName, langLink } from '../../data/etymology';
 import { RELATION, isNamed } from './relations';
+import { Specimen } from './Specimen';
 
 /**
  * How far the tree will unfold before it stops offering to go further.
@@ -34,43 +35,33 @@ const headword = (depth: number): React.CSSProperties => ({
   minWidth: 0,
 });
 
-/** The ancestry spine for one word, drawn small enough to nest. */
+/**
+ * The ancestry spine for one word.
+ *
+ * This used to be a hand-rolled row — a flat 5px dot on a flat 1.5px line,
+ * with the relation and language as one muted string and the form in a well
+ * below. The design system already ships the tracker this was an imitation of,
+ * and shipped it better: a hollow ring so the word you looked up is the only
+ * solid mark, and a connector that fades as the chain runs out of evidence.
+ * It was only ever used on the marketing page.
+ *
+ * The forms are passed as Specimen nodes rather than through a prop on the
+ * component, because the well is a fact about *this* data — see Specimen.
+ */
 function Steps({ data, steps }: { data: Etymologies; steps: [string, string, string][] }) {
   if (!steps.length) return null;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', marginTop: 'var(--space-3)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', marginTop: 'var(--space-4)' }}>
       {steps.map(([rel, code, term], i) => (
-        <div key={`${code}-${term}-${i}`} style={{ display: 'flex', gap: 'var(--space-4)' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 'none', width: 8 }}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--tool-etymology)', marginTop: 7, flex: 'none' }} />
-            {i < steps.length - 1 && <span style={{ flex: 1, width: 1.5, background: 'var(--border)' }} />}
-          </div>
-          <div style={{ paddingBottom: i < steps.length - 1 ? 'var(--space-4)' : 0, minWidth: 0 }}>
-            <span style={{ fontSize: 'var(--fs-11)', color: 'var(--text-muted)' }}>
-              {RELATION[rel] ?? rel}{' '}
-              <span style={{ fontWeight: 'var(--fw-bold)' as React.CSSProperties['fontWeight'] }}>{langName(data, code)}</span>
-            </span>
-            {/* Matching the Explorer's cards: the word is a specimen, so it
-                gets an edge. The same --surface-sunken at every depth — a
-                branch is already indented and ruled, so it does not need the
-                well to get lighter as it nests to say where it is. */}
-            {isNamed(term) && (
-              <div
-                style={{
-                  ...mono, fontSize: 'var(--fs-13)', wordBreak: 'break-word', marginTop: 3,
-                  // fit-content rather than inline-block: it has to hug the word but
-                      // stay on its own line, or it rides up beside the label and
-                      // wraps "Proto-West Germanic" across two.
-                      width: 'fit-content', padding: '2px 8px',
-                  background: 'var(--surface-sunken)',
-                  borderRadius: 'var(--radius-sm)',
-                }}
-              >
-                {term}
-              </div>
-            )}
-          </div>
-        </div>
+        <EtymologyNode
+          key={`${code}-${term}-${i}`}
+          size="sm"
+          connector={i < steps.length - 1}
+          word={isNamed(term) ? <Specimen>{term}</Specimen> : undefined}
+          relation={RELATION[rel] ?? rel}
+          language={langName(data, code)}
+          languageHref={langLink(data, code)}
+        />
       ))}
     </div>
   );

@@ -19,6 +19,16 @@ export interface Etymologies {
   language: string;
   /** Only the language codes this shard mentions — `dum` → `Middle Dutch`. */
   langs: Record<string, string>;
+  /**
+   * Wikipedia article titles for those codes, where one was verified to exist.
+   *
+   * Sparse on purpose. Building the URL from the language name at render time
+   * is the obvious approach and it is wrong: a fifth of all ancestor rows would
+   * point at a disambiguation page, because "French", "English" and sixty other
+   * language names are pages about everything with that name. The titles here
+   * were each checked offline; a code with no entry gets no link.
+   */
+  wiki?: Record<string, string>;
   words: Record<string, Chain>;
 }
 
@@ -80,6 +90,47 @@ export function lookup(data: Etymologies, raw: string): Chain | null {
 
 /** Human name for a language code, falling back to the code itself. */
 export const langName = (data: Etymologies, code: string) => data.langs[code] ?? code;
+
+/** Wikipedia article for a language code, or null where none was verified. */
+export const langLink = (data: Etymologies, code: string) => {
+  const title = data.wiki?.[code];
+  return title ? `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}` : null;
+};
+
+/**
+ * Words that list this one as a component — the tree run backwards.
+ *
+ * Built once per shard on first use rather than baked into the JSON, because
+ * it is derivable from data already in memory and storing it would grow the
+ * download for something a session may never open. One pass over 45,000
+ * entries, then it is free.
+ *
+ * Affixes are skipped on both sides. `-er` is a component of 571 Dutch words
+ * and `-ing` of 284, which is a fact about Dutch morphology rather than
+ * anything to read: standing on a suffix, "words built from this" is the
+ * dictionary. Standing on `boek` it is woordenboek, dagboek, boekwinkel —
+ * which is the vocabulary the compound opens up.
+ */
+const isAffix = (word: string) => word.startsWith('-') || word.endsWith('-');
+
+const descendantIndex = new WeakMap<Etymologies, Record<string, string[]>>();
+
+export function descendants(data: Etymologies, word: string): string[] {
+  let index = descendantIndex.get(data);
+  if (!index) {
+    index = {};
+    for (const [child, chain] of Object.entries(data.words)) {
+      if (isAffix(child)) continue;
+      for (const part of chain.p ?? []) {
+        if (isAffix(part) || part === child) continue;
+        (index[part] ??= []).push(child);
+      }
+    }
+    for (const list of Object.values(index)) list.sort((a, b) => a.length - b.length || a.localeCompare(b));
+    descendantIndex.set(data, index);
+  }
+  return isAffix(word) ? [] : (index[word] ?? []);
+}
 
 /** Does this chain have anything worth showing? */
 export const hasContent = (c: Chain | null): c is Chain =>
