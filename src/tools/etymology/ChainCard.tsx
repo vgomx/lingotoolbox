@@ -1,9 +1,10 @@
 import { Card, EtymologyNode, Icon } from 'lingo-ds';
 import type { Chain, Etymologies } from '../../data/etymology';
-import { langName, langLink } from '../../data/etymology';
+import { langName, langLink, langArticle } from '../../data/etymology';
 import { RELATION, isNamed } from './relations';
 import { CognateTag } from './CognateTag';
 import { Specimen } from './Specimen';
+import { useOpenLanguage } from './languageContext';
 
 const mono: React.CSSProperties = {
   fontFamily: 'var(--font-mono)',
@@ -33,6 +34,7 @@ export function ChainCard({ word, chain, data, compact = false, interactive = fa
   interactive?: boolean;
 }) {
   const steps = chain.a ?? [];
+  const openLanguage = useOpenLanguage();
 
   return (
     <Card
@@ -78,6 +80,9 @@ export function ChainCard({ word, chain, data, compact = false, interactive = fa
               relation={RELATION[rel] ?? rel}
               language={langName(data, code)}
               languageHref={langLink(data, code)}
+              onLanguageActivate={openLanguage
+                ? () => openLanguage({ code, name: langName(data, code), href: langLink(data, code), article: langArticle(data, code) })
+                : undefined}
             />
           ))}
         </div>

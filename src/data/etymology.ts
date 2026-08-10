@@ -91,10 +91,57 @@ export function lookup(data: Etymologies, raw: string): Chain | null {
 /** Human name for a language code, falling back to the code itself. */
 export const langName = (data: Etymologies, code: string) => data.langs[code] ?? code;
 
+/** A language's Wikipedia opening: `d` the one-line gloss, `e` the lead paragraph. */
+export interface LanguageInfo { d?: string; e: string }
+
+/**
+ * The language descriptions, fetched once and kept for the session.
+ *
+ * Its own file rather than part of a shard, and loaded only when someone first
+ * opens a language — the same reasoning as the shards themselves. It is shared
+ * across workspaces because Latin is Latin whichever one you are studying.
+ *
+ * Baked rather than fetched from Wikipedia live: the app is installable, and a
+ * panel that needs the network is empty exactly when someone is studying on a
+ * plane. It also keeps a record of which languages a reader is curious about
+ * from leaving the device.
+ */
+let languageInfo: Promise<Record<string, LanguageInfo>> | null = null;
+
+export function loadLanguageInfo(): Promise<Record<string, LanguageInfo>> {
+  languageInfo ??= fetch(`${import.meta.env.BASE_URL}etymology/languages.json`)
+    .then((r) => (r.ok ? (r.json() as Promise<Record<string, LanguageInfo>>) : {}))
+    .catch(() => { languageInfo = null; return {}; });
+  return languageInfo;
+}
+
 /** Wikipedia article for a language code, or null where none was verified. */
 export const langLink = (data: Etymologies, code: string) => {
   const title = data.wiki?.[code];
   return title ? `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}` : null;
+};
+
+/** The article title itself, which is not always the language's name. */
+export const langArticle = (data: Etymologies, code: string) => data.wiki?.[code] ?? null;
+
+/**
+ * Is the article filed under a name the reader would not recognise as this one?
+ *
+ * 143 of the 551 linked codes are, covering 8.7% of ancestor rows. Most are
+ * harmless — Wikipedia files New Latin under "Neo-Latin" and Papiamentu under
+ * "Papiamento" — but some genuinely change the subject: Proto-West Germanic
+ * redirects to "West Germanic languages", which is the modern family and not
+ * the reconstructed ancestor the chain means.
+ *
+ * Rather than adjudicate 143 cases of linguistics, the panel says where the
+ * text came from whenever the names differ and lets the reader judge. Trailing
+ * "language"/"languages" is ignored, since that suffix is how the disambiguated
+ * titles were found in the first place and carries no new information.
+ */
+export const articleDiffers = (name: string, article: string | null) => {
+  if (!article) return false;
+  const norm = (s: string) => s.toLowerCase().replace(/\s+languages?$/, '').trim();
+  return norm(article) !== norm(name);
 };
 
 /**

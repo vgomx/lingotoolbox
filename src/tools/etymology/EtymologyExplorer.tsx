@@ -5,6 +5,7 @@ import { useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
 import { ChainCard } from './ChainCard';
+import { LanguageProvider } from './languageContext';
 import { HAS_ETYMOLOGY, hasContent, loadEtymology, lookup, type Etymologies } from '../../data/etymology';
 
 const page: React.CSSProperties = {
@@ -126,6 +127,7 @@ export function EtymologyExplorer() {
   const shown = query.trim() ? hits : fromYourCards;
 
   return (
+    <LanguageProvider>
     <div style={page}>
       <header style={{ marginBottom: 'var(--space-7)' }}>
         <span
@@ -241,5 +243,6 @@ export function EtymologyExplorer() {
         </p>
       )}
     </div>
+    </LanguageProvider>
   );
 }

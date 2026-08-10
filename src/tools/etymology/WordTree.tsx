@@ -1,9 +1,10 @@
 import * as React from 'react';
 import { EtymologyNode, Icon } from 'lingo-ds';
 import type { Etymologies } from '../../data/etymology';
-import { langName, langLink } from '../../data/etymology';
+import { langName, langLink, langArticle } from '../../data/etymology';
 import { RELATION, isNamed } from './relations';
 import { Specimen } from './Specimen';
+import { useOpenLanguage } from './languageContext';
 
 /**
  * How far the tree will unfold before it stops offering to go further.
@@ -49,6 +50,7 @@ const headword = (depth: number): React.CSSProperties => ({
  * component, because the well is a fact about *this* data — see Specimen.
  */
 function Steps({ data, steps }: { data: Etymologies; steps: [string, string, string][] }) {
+  const openLanguage = useOpenLanguage();
   if (!steps.length) return null;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', marginTop: 'var(--space-4)' }}>
@@ -61,6 +63,9 @@ function Steps({ data, steps }: { data: Etymologies; steps: [string, string, str
           relation={RELATION[rel] ?? rel}
           language={langName(data, code)}
           languageHref={langLink(data, code)}
+          onLanguageActivate={openLanguage
+            ? () => openLanguage({ code, name: langName(data, code), href: langLink(data, code), article: langArticle(data, code) })
+            : undefined}
         />
       ))}
     </div>

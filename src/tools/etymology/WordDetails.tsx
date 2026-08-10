@@ -6,6 +6,7 @@ import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
 import { WordTree } from './WordTree';
 import { CognateTag } from './CognateTag';
+import { LanguageProvider } from './languageContext';
 import { descendants, langName, loadEtymology, lookup, hasContent, type Chain, type Etymologies } from '../../data/etymology';
 
 const page: React.CSSProperties = {
@@ -92,6 +93,7 @@ export function WordDetails() {
   }
 
   return (
+    <LanguageProvider>
     <div style={page}>
       <Card title="Where it comes from">
         <WordTree word={headword} data={data} defaultOpen />
@@ -163,5 +165,6 @@ export function WordDetails() {
         ancestry is a lead worth checking rather than a fact.
       </p>
     </div>
+    </LanguageProvider>
   );
 }

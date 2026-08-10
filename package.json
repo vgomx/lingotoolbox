@@ -13,6 +13,7 @@
     "check:illustrations": "node scripts/check-illustrations.mjs",
     "check:etymology": "node scripts/check-etymology.mjs",
     "build:illustrations": "node scripts/build-openmoji.mjs",
+    "build:language-info": "node scripts/build-language-info.mjs",
     "build:language-links": "node scripts/resolve-language-links.mjs",
     "build:etymology": "node scripts/build-etymology.mjs",
     "preview": "vite preview",
