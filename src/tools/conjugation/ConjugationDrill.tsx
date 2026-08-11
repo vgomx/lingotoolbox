@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link } from 'react-router-dom';
-import { Button, Card, Icon, Input, Tag, playSound } from 'lingo-ds';
+import { Button, Card, Icon, Input, Tabs, Tag, playSound } from 'lingo-ds';
 import { useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
@@ -105,7 +105,16 @@ export function ConjugationDrill() {
   const [data, setData] = React.useState<Conjugations | null>(null);
   const [state, setState] = React.useState<'loading' | 'ready' | 'unavailable'>('loading');
 
-  const [mode, setMode] = React.useState<Mode>(() => load<Mode>(MODE_KEY, 'type'));
+  /*
+   * Choosing by default.
+   *
+   * It is the gentler way in — you can start without knowing whether you know
+   * the form, and on a phone it does not ask anyone to find á and ú on a
+   * keyboard before answering a single question. Typing is the harder exercise
+   * and stays one tap away, and whichever is picked is remembered, so this only
+   * decides where somebody starts.
+   */
+  const [mode, setMode] = React.useState<Mode>(() => load<Mode>(MODE_KEY, 'choose'));
   const [groups, setGroups] = React.useState<Set<string>>(new Set());
   const [question, setQuestion] = React.useState<Question | null>(null);
   const [typed, setTyped] = React.useState('');
@@ -345,18 +354,27 @@ export function ConjugationDrill() {
         </Card>
       )}
 
-      <div style={{ display: 'flex', gap: 'var(--gap-inline)', marginTop: 'var(--space-6)', alignItems: 'center' }}>
+      {/*
+        * A segmented control rather than two buttons.
+        *
+        * Two buttons where one is filled and one is not reads as an action and
+        * its lesser sibling — "Choosing" looked like something that would
+        * happen next, rather than the state the screen is not in. A pill track
+        * shows both as one choice with one of them taken.
+        *
+        * Tabs, not Switch: a switch has an on state and an off state, and
+        * neither of these is the absence of the other. And it is a tablist
+        * honestly — the panel above really does swap between a text field and
+        * four buttons.
+        */}
+      <div style={{ display: 'flex', gap: 'var(--space-4)', marginTop: 'var(--space-6)', alignItems: 'center' }}>
         <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>Answer by</span>
-        {(['type', 'choose'] as Mode[]).map((m) => (
-          <Button
-            key={m}
-            size="sm"
-            variant={mode === m ? 'primary' : 'ghost'}
-            onClick={() => { setMode(m); save(MODE_KEY, m); setTyped(''); setVerdict(null); }}
-          >
-            {m === 'type' ? 'Typing it' : 'Choosing'}
-          </Button>
-        ))}
+        <Tabs
+          variant="pill"
+          value={mode}
+          items={[{ value: 'choose', label: 'Choosing' }, { value: 'type', label: 'Typing it' }]}
+          onChange={(v) => { setMode(v as Mode); save(MODE_KEY, v); setTyped(''); setVerdict(null); }}
+        />
       </div>
     </div>
   );
