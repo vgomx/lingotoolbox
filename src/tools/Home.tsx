@@ -155,6 +155,7 @@ export function Home() {
         * being dropped there: it holds a readable size and shows the corner of
         * the scene that fits.
         */}
+      <Card>
       <header style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-5)' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
@@ -181,6 +182,7 @@ export function Home() {
           <GreetingLoop />
         </div>
       </header>
+      </Card>
 
       {/* ---- Flashcards, everything it owns in one place ------------------- */}
       <section>

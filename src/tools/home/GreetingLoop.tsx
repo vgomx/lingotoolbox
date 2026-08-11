@@ -84,6 +84,16 @@ const LINES: Line[] = [
 
 /* ── the face rig ────────────────────────────────────────────────────────── */
 
+/*
+ * A note on the bubble surface, since it is not the obvious token.
+ *
+ * The design puts a #2C2C3B bubble on a #14141C stage: the bubble is a step
+ * *up* from whatever it sits on. --surface-raised is that step in both themes
+ * — lighter than the card in dark, darker than it in light — where
+ * --surface-card would be the same colour as the card this now sits inside,
+ * and the bubble would be a border around nothing.
+ */
+
 /* OpenMoji's own palette, not the theme's: this is that emoji, and a yellow
    disc with black line art is what it is on any background. */
 const YELLOW = '#FCEA2B';
@@ -325,7 +335,7 @@ function Frame({ t }: { t: number }) {
     >
       <Bubble
         side="left"
-        bg="var(--surface-card)"
+        bg="var(--surface-raised)"
         fg="var(--text-strong)"
         border="var(--border)"
         scale={clamp(lPop, 0, 1) * (1 - 0.08 * lDim)}
@@ -342,7 +352,7 @@ function Frame({ t }: { t: number }) {
             position: 'absolute', left: 322, top: 304,
             transform: `scale(${clamp(dotsIn, 0, 1)})`, transformOrigin: '14% 120%',
             opacity: clamp(dotsIn * 1.5, 0, 1),
-            background: 'var(--surface-card)', border: '1px solid var(--border)',
+            background: 'var(--surface-raised)', border: '1px solid var(--border)',
             borderRadius: 999, padding: '13px 18px', display: 'flex', gap: 8,
           }}
         >
