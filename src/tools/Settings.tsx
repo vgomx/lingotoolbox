@@ -4,6 +4,8 @@ import { Button, Card, Icon, Select, Switch, playSound, setSoundEnabled } from '
 import { useChrome } from '../shell/chrome';
 import { ConfirmDialog } from '../shell/ConfirmDialog';
 import { useStore } from '../state/store';
+import { InstallAction } from '../shell/InstallSheet';
+import { useInstallState } from '../shell/install';
 import { buildBackup, downloadBackup, parseBackup, restoreBackup, BackupError } from '../data/backup';
 import { WORKSPACES } from '../data/seed';
 import { APP_VERSION } from '../legalNotices';
@@ -34,6 +36,8 @@ export function Settings() {
   const [legalOpen, setLegalOpen] = React.useState(false);
   const [resetting, setResetting] = React.useState(false);
   const [faqOpen, setFaqOpen] = React.useState(false);
+  // 'none' covers both "already installed" and "this browser cannot".
+  const installable = useInstallState().route !== 'none';
   const fileInput = React.useRef<HTMLInputElement>(null);
   const [status, setStatus] = React.useState<{ tone: 'ok' | 'bad'; text: string } | null>(null);
 
@@ -178,6 +182,24 @@ export function Settings() {
             </Button>
           </div>
         </Card>
+
+        {/*
+          * Only rendered where there is somewhere to go: InstallAction returns
+          * nothing once the app is running from a home screen or a dock, and
+          * on browsers with no way to install at all. A card that said "already
+          * installed" would be a row of settings explaining itself.
+          */}
+        {installable && (
+          <Card title="Install" subtitle="Run it from your home screen or dock, without a browser around it">
+            <p style={{ margin: 0, fontSize: 'var(--fs-13)', color: 'var(--text-muted)', lineHeight: 'var(--lh-relaxed)' }}>
+              Nothing is downloaded from a store and nothing moves: it is the same app reading the
+              same local data, in its own window.
+            </p>
+            <div style={{ display: 'flex' }}>
+              <InstallAction />
+            </div>
+          </Card>
+        )}
 
         <Card title="About">
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-5)' }}>
