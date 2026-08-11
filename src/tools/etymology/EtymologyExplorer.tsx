@@ -52,6 +52,28 @@ export function EtymologyExplorer() {
    * your cards are the ones you are actually trying to learn, so they are the
    * ones worth offering.
    */
+  /**
+   * What the reader's own cards say each word means.
+   *
+   * Built from every card rather than only the ones offered below, so a word
+   * reached by searching still shows its meaning if it happens to be on a
+   * card. Keyed lower-case because a card may read "De Kat" where the entry is
+   * "de kat", and stripped of the article for the same reason `lookup` strips
+   * it — "het brood" on the card, "brood" in the data.
+   */
+  const meanings = React.useMemo(() => {
+    const map = new Map<string, string>();
+    for (const c of cards) {
+      const back = c.back.trim();
+      if (!back) continue;
+      const front = c.front.trim().toLowerCase();
+      if (front) map.set(front, back);
+      const bare = front.replace(/^(de|het|el|la|los|las|o|a|os|as)\s+/, '');
+      if (bare && !map.has(bare)) map.set(bare, back);
+    }
+    return map;
+  }, [cards]);
+
   const fromYourCards = React.useMemo(() => {
     if (!data) return [];
     const seen = new Set<string>();
@@ -220,7 +242,13 @@ export function EtymologyExplorer() {
                 to={`/app/etymology/${encodeURIComponent(word)}`}
                 style={{ textDecoration: 'none', display: 'block', height: '100%' }}
               >
-                <ChainCard word={word} chain={chain} data={data!} interactive />
+                <ChainCard
+                  word={word}
+                  chain={chain}
+                  data={data!}
+                  gloss={meanings.get(word.trim().toLowerCase())}
+                  interactive
+                />
               </Link>
             ))}
           </div>
