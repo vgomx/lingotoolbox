@@ -590,6 +590,13 @@ export const FLAGS: Illustration[] = [
     "keywords": []
   },
   {
+    "hex": "1F1EB-1F1F7",
+    "file": "flag-france-1F1EB-1F1F7.svg",
+    "name": "flag: France",
+    "group": "flags",
+    "keywords": []
+  },
+  {
     "hex": "1F1EC-1F1E7",
     "file": "flag-united-kingdom-1F1EC-1F1E7.svg",
     "name": "flag: United Kingdom",
@@ -597,9 +604,37 @@ export const FLAGS: Illustration[] = [
     "keywords": []
   },
   {
+    "hex": "1F1EC-1F1F7",
+    "file": "flag-greece-1F1EC-1F1F7.svg",
+    "name": "flag: Greece",
+    "group": "flags",
+    "keywords": []
+  },
+  {
+    "hex": "1F1EF-1F1F5",
+    "file": "flag-japan-1F1EF-1F1F5.svg",
+    "name": "flag: Japan",
+    "group": "flags",
+    "keywords": []
+  },
+  {
+    "hex": "1F1F0-1F1F7",
+    "file": "flag-south-korea-1F1F0-1F1F7.svg",
+    "name": "flag: South Korea",
+    "group": "flags",
+    "keywords": []
+  },
+  {
     "hex": "1F1F3-1F1F1",
     "file": "flag-netherlands-1F1F3-1F1F1.svg",
     "name": "flag: Netherlands",
+    "group": "flags",
+    "keywords": []
+  },
+  {
+    "hex": "1F1F5-1F1F9",
+    "file": "flag-portugal-1F1F5-1F1F9.svg",
+    "name": "flag: Portugal",
     "group": "flags",
     "keywords": []
   }

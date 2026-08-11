@@ -94,4 +94,17 @@ export const EXTRA = [
  * disagree the choice is whose Portuguese, or whose Spanish, the decks are
  * written in — so it follows the content rather than the name.
  */
-export const FLAGS = ['🇬🇧', '🇧🇷', '🇳🇱', '🇪🇸'];
+export const FLAGS = [
+  // The four workspaces.
+  '🇬🇧', '🇧🇷', '🇳🇱', '🇪🇸',
+  /*
+   * And five the app does not teach, for the greeting loop on the home
+   * screen — it cycles one "hello" through several languages, and the point
+   * of the non-Latin ones is that the writing system changes with it.
+   *
+   * A stretch of the rule above, which put flags here for the language
+   * picker. They stay out of it: the picker is built from the workspace list,
+   * not from this array.
+   */
+  '🇵🇹', '🇯🇵', '🇰🇷', '🇬🇷', '🇫🇷',
+];

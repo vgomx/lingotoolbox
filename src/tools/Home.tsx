@@ -5,6 +5,7 @@ import { useChrome } from '../shell/chrome';
 import { useStore } from '../state/store';
 import { HAS_ETYMOLOGY } from '../data/etymology';
 import { NAV_TOOLS } from '../data/seed';
+import { GreetingLoop } from './home/GreetingLoop';
 
 /**
  * The dashboard, following ui_kits/app/HomeScreen.jsx.
@@ -145,7 +146,16 @@ export function Home() {
         * review" also had nothing to be a review *of* up there; it now lives
         * under the heading that says what it reviews.
         */}
-      <header>
+      {/*
+        * A row, so the greeting loop can use the width the heading leaves.
+        *
+        * The text keeps its own measure and does not stretch to meet it — the
+        * stats line is capped at 520 either way. On a phone there is no space
+        * beside the heading to fill, and the loop is decoration, so it is not
+        * rendered rather than stacked above the first thing anyone came for.
+        */}
+      <header style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
           <span style={eyebrow}>Workspace</span>
           {/* Status, not an action. Hidden at zero: "0 days" is a fact nobody
@@ -162,6 +172,13 @@ export function Home() {
             notes.length ? `${notes.length} ${notes.length === 1 ? 'note' : 'notes'}` : null,
           ].filter(Boolean).join(' · ')}
         </p>
+        </div>
+
+        {!isMobile && (
+          <div style={{ flex: 'none', width: 'clamp(300px, 34vw, 440px)' }}>
+            <GreetingLoop />
+          </div>
+        )}
       </header>
 
       {/* ---- Flashcards, everything it owns in one place ------------------- */}
