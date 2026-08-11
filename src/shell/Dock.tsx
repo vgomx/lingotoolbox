@@ -4,6 +4,8 @@ import { Badge, Icon, MenuItem, playSound } from 'lingo-ds';
 import { NAV_TOOLS } from '../data/seed';
 import { useStore } from '../state/store';
 import { LanguageMenu } from './LanguageMenu';
+import { InstallSheet } from './InstallSheet';
+import { useInstallState } from './install';
 
 /** Height of the bar itself, before the home-indicator inset is added under it. */
 export const DOCK_HEIGHT = 58;
@@ -39,6 +41,8 @@ export function Dock() {
   const location = useLocation();
   const { language } = useStore();
   const [moreOpen, setMoreOpen] = React.useState(false);
+  const [installSheet, setInstallSheet] = React.useState(false);
+  const { route: installRoute, promptInstall } = useInstallState();
 
   const path = location.pathname;
   // /app/review belongs to Flashcards; it has no destination of its own.
@@ -111,6 +115,22 @@ export function Dock() {
             <Icon name="settings" size={18} style={{ color: 'var(--text-muted)', flex: 'none' }} />
             <span style={{ flex: 1, minWidth: 0 }}>Settings</span>
           </MenuItem>
+          {/* Only while it is still a tab. A phone is where installing matters
+              most and where Settings is furthest away, so it is offered here
+              rather than only three taps in — and it disappears the moment the
+              app is running from the home screen. */}
+          {installRoute !== 'none' && (
+            <MenuItem
+              onClick={() => {
+                setMoreOpen(false);
+                if (installRoute === 'prompt') void promptInstall?.();
+                else setInstallSheet(true);
+              }}
+            >
+              <Icon name="download" size={18} style={{ color: 'var(--text-muted)', flex: 'none' }} />
+              <span style={{ flex: 1, minWidth: 0 }}>Install app</span>
+            </MenuItem>
+          )}
         </div>
       )}
 
@@ -172,6 +192,10 @@ export function Dock() {
           More
         </button>
       </nav>
+
+      {/* Outside the menu: the menu closes as the sheet opens, and a sheet
+          rendered inside it would be unmounted by its own trigger. */}
+      <InstallSheet open={installSheet} onClose={() => setInstallSheet(false)} />
     </>
   );
 }

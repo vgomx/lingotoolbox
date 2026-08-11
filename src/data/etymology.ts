@@ -91,6 +91,46 @@ export function lookup(data: Etymologies, raw: string): Chain | null {
 /** Human name for a language code, falling back to the code itself. */
 export const langName = (data: Etymologies, code: string) => data.langs[code] ?? code;
 
+/**
+ * What each word means, fetched once per language and kept for the session.
+ *
+ * Its own file rather than a field on the shard, because it roughly doubles
+ * what a reader downloads — 640 KB gzipped against a Dutch shard of 688. Split
+ * out, the ancestry arrives at its old speed and the meanings follow behind it,
+ * so the chain is drawn without waiting on them.
+ *
+ * A failure is not an error worth showing. The tool is about where words come
+ * from; a missing meaning costs a subtitle, and the screen is still correct.
+ */
+const glossCache = new Map<LanguageCode, Promise<Record<string, string>>>();
+
+export function loadGlosses(language: LanguageCode): Promise<Record<string, string>> {
+  const cached = glossCache.get(language);
+  if (cached) return cached;
+
+  const p: Promise<Record<string, string>> = HAS_ETYMOLOGY[language]
+    ? fetch(`${import.meta.env.BASE_URL}etymology/${language}-glosses.json`)
+      .then((r) => (r.ok ? (r.json() as Promise<Record<string, string>>) : {}))
+      .catch(() => { glossCache.delete(language); return {}; })
+    : Promise.resolve({});
+
+  glossCache.set(language, p);
+  return p;
+}
+
+/**
+ * The meaning of a word, looked up the way the word itself is.
+ *
+ * Same normalisations as `lookup`, for the same reason: a card reading "het
+ * brood" has to find the entry filed under "brood".
+ */
+export function glossFor(glosses: Record<string, string>, raw: string): string | undefined {
+  const word = raw.trim();
+  if (!word) return undefined;
+  const bare = word.replace(/^(de|het|el|la|los|las|o|a|os|as)\s+/i, '');
+  return glosses[word] ?? glosses[word.toLowerCase()] ?? glosses[bare] ?? glosses[bare.toLowerCase()];
+}
+
 /** A language's Wikipedia opening: `d` the one-line gloss, `e` the lead paragraph. */
 export interface LanguageInfo { d?: string; e: string }
 

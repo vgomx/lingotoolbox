@@ -25,10 +25,22 @@ const mono: React.CSSProperties = {
  * The rail on the left is the point. It makes the descent legible at a glance —
  * you can see that pond goes back four steps without reading any of them.
  */
-export function ChainCard({ word, chain, data, compact = false, interactive = false }: {
+export function ChainCard({ word, chain, data, gloss, compact = false, interactive = false }: {
   word: string;
   chain: Chain;
   data: Etymologies;
+  /**
+   * What the word means, when the app already knows.
+   *
+   * Comes from the reader's own cards rather than from the shard — the back of
+   * a card they wrote. Free, in the sense that it is already in memory, which
+   * is why it is here at all: shipping a meaning for all 45,000 words would
+   * roughly double the download.
+   *
+   * So it is present on the words someone is actually learning and absent on
+   * the rest, which is the honest state rather than a gap to apologise for.
+   */
+  gloss?: string;
   compact?: boolean;
   interactive?: boolean;
 }) {
@@ -49,6 +61,11 @@ export function ChainCard({ word, chain, data, compact = false, interactive = fa
       title={compact ? undefined : (
         <span style={{ fontSize: 'var(--fs-24)', lineHeight: 1.15 }}>{word}</span>
       )}
+      // Card's own subtitle slot rather than a line of the body: this answers
+      // "what is it", which belongs with the word, above the apparatus saying
+      // where it came from. Not in compact — that card appears mid-review,
+      // where the meaning is the thing being tested.
+      subtitle={!compact && gloss ? gloss : undefined}
       interactive={interactive}
       style={{ height: '100%' }}
     >
@@ -130,7 +147,17 @@ export function ChainCard({ word, chain, data, compact = false, interactive = fa
           style={{
             display: 'flex', flexDirection: 'column', gap: 'var(--space-4)',
             padding: 'var(--space-5)', borderRadius: 'var(--radius-md)',
-            background: 'var(--surface-sunken)',
+            /*
+             * Outlined rather than filled.
+             *
+             * The block was --surface-sunken and the chips inside it carry
+             * their own soft fill, so the card stacked three tones a hair
+             * apart — surface, block, chip — and the chips stopped reading as
+             * separate objects. A hairline draws the same boundary and lets
+             * the chips be the only filled thing in the group, which is what
+             * makes them countable at a glance.
+             */
+            boxShadow: 'inset 0 0 0 1px var(--border)',
           }}
         >
           <span

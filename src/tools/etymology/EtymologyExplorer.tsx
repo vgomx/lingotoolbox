@@ -5,7 +5,7 @@ import { useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
 import { ChainCard } from './ChainCard';
-import { HAS_ETYMOLOGY, hasContent, loadEtymology, lookup, type Etymologies } from '../../data/etymology';
+import { HAS_ETYMOLOGY, glossFor, hasContent, loadEtymology, loadGlosses, lookup, type Etymologies } from '../../data/etymology';
 
 const page: React.CSSProperties = {
   maxWidth: 'var(--content-max, 1120px)',
@@ -43,6 +43,42 @@ export function EtymologyExplorer() {
     });
     return () => { live = false; };
   }, [language]);
+
+  /**
+   * The dictionary's meaning for every word, behind the shard rather than in it.
+   *
+   * Its own request, so the chain is on screen before this arrives and the
+   * subtitles appear when it does. Nothing waits for it and nothing breaks
+   * without it — see loadGlosses for why it is not part of the shard.
+   */
+  const [glosses, setGlosses] = React.useState<Record<string, string>>({});
+  React.useEffect(() => {
+    let live = true;
+    void loadGlosses(language).then((g) => { if (live) setGlosses(g); });
+    return () => { live = false; };
+  }, [language]);
+
+  /**
+   * What the reader's own cards say each word means, which beats the dictionary.
+   *
+   * Built from every card rather than only the ones offered before you type, so
+   * a word reached by searching still shows its own wording if it happens to be
+   * on a card. Keyed lower-case because a card may read "De Kat" where the entry
+   * is "de kat", and stripped of the article for the same reason `lookup` strips
+   * it — "het brood" on the card, "brood" in the data.
+   */
+  const meanings = React.useMemo(() => {
+    const map = new Map<string, string>();
+    for (const c of cards) {
+      const back = c.back.trim();
+      if (!back) continue;
+      const front = c.front.trim().toLowerCase();
+      if (front) map.set(front, back);
+      const bare = front.replace(/^(de|het|el|la|los|las|o|a|os|as)\s+/, '');
+      if (bare && !map.has(bare)) map.set(bare, back);
+    }
+    return map;
+  }, [cards]);
 
   /**
    * Your own cards first, before you have typed anything.
@@ -135,7 +171,18 @@ export function EtymologyExplorer() {
           }}
         >
           {workspace.name}
-          {data && ` · ${Object.keys(data.words).length.toLocaleString()} words`}
+          {/*
+            * "words with a known origin", not "words".
+            *
+            * The shorter version reads as the size of the language, and it is
+            * not: this is every Wiktionary entry that arrived carrying an
+            * ancestor, a compound part or a doublet, which is a third of the
+            * Dutch entries and a small fraction of the Spanish ones — most of
+            * the rest being inflected forms with no etymology to have. A
+            * number presented as a vocabulary count invites the reader to
+            * conclude the tool is missing two thirds of their language.
+            */}
+          {data && ` · ${Object.keys(data.words).length.toLocaleString()} words with a known origin`}
         </span>
         <h1
           style={{
@@ -189,7 +236,9 @@ export function EtymologyExplorer() {
           title={query.trim() ? 'Nothing for that word' : 'Nothing from your cards yet'}
           description={
             query.trim()
-              ? `No ${workspace.name} entry for “${query.trim()}”. Wiktionary does not have an etymology for every word — compounds and recent borrowings are often missing.`
+              // See the note on the same copy in WordDetails: the old wording
+              // named compounds, which are in fact the best-covered case.
+              ? `No ${workspace.name} entry for “${query.trim()}”. Most gaps are inflected forms, which carry no origin of their own — try the word they are built on.`
               : 'None of the words on your cards has an entry yet. Search for one instead.'
           }
         />
@@ -220,7 +269,16 @@ export function EtymologyExplorer() {
                 to={`/app/etymology/${encodeURIComponent(word)}`}
                 style={{ textDecoration: 'none', display: 'block', height: '100%' }}
               >
-                <ChainCard word={word} chain={chain} data={data!} interactive />
+                <ChainCard
+                  word={word}
+                  chain={chain}
+                  data={data!}
+                  // The reader's own card wins over the dictionary: they wrote
+                  // what the word means to them, and that is the wording they
+                  // are learning it by.
+                  gloss={meanings.get(word.trim().toLowerCase()) ?? glossFor(glosses, word)}
+                  interactive
+                />
               </Link>
             ))}
           </div>

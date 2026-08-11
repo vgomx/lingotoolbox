@@ -5,6 +5,8 @@ import { useChrome } from '../shell/chrome';
 import { useStore } from '../state/store';
 import { HAS_ETYMOLOGY } from '../data/etymology';
 import { NAV_TOOLS } from '../data/seed';
+import { flagUrl } from '../data/illustrations';
+import { GreetingLoop } from './home/GreetingLoop';
 
 /**
  * The dashboard, following ui_kits/app/HomeScreen.jsx.
@@ -145,16 +147,47 @@ export function Home() {
         * review" also had nothing to be a review *of* up there; it now lives
         * under the heading that says what it reviews.
         */}
-      <header>
+      {/*
+        * A row, so the greeting loop can use the width the heading leaves.
+        *
+        * The text keeps its own measure and does not stretch to meet it — the
+        * stats line is capped at 520 either way. The loop takes whatever is
+        * left and clips itself to fit, so it survives a phone rather than
+        * being dropped there: it holds a readable size and shows the corner of
+        * the scene that fits.
+        */}
+      <Card>
+      <header style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-5)' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
           <span style={eyebrow}>Workspace</span>
           {/* Status, not an action. Hidden at zero: "0 days" is a fact nobody
               needs, and the guide is explicit about not nagging about streaks. */}
           {streak > 0 && <StreakPill days={streak} size="sm" />}
         </div>
-        <h1 style={{ margin: '6px 0 0', fontFamily: 'var(--font-display)', fontSize: 'var(--fs-40)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.05, letterSpacing: 'var(--ls-tight)' }}>
-          {workspace.name}
-        </h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', marginTop: 6 }}>
+          {/* Decorative, so alt is empty: the name it sits beside is the
+              identifier, and types.ts is explicit that a flag never carries a
+              workspace on its own. Announcing "flag: Netherlands" here would
+              only make a screen reader say Dutch twice. */}
+          <img
+            src={flagUrl(workspace.flagHex)}
+            alt=""
+            width={isMobile ? 28 : 40}
+            height={isMobile ? 28 : 40}
+            style={{ display: 'block', flex: 'none' }}
+          />
+          {/*
+            * Smaller on a phone, and sized for the longest workspace name
+            * rather than the shortest. "Portuguese" is one word, so it cannot
+            * wrap out of trouble — at 40px it has nowhere to go beside a flag
+            * and the greeting loop, and would push the card wider than the
+            * screen. The flag steps down with it so the two stay proportionate.
+            */}
+          <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: isMobile ? 'var(--fs-24)' : 'var(--fs-40)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.05, letterSpacing: 'var(--ls-tight)', minWidth: 0, overflowWrap: 'anywhere' }}>
+            {workspace.name}
+          </h1>
+        </div>
         <p style={{ margin: '8px 0 0', fontSize: 'var(--fs-16)', color: 'var(--text-muted)', maxWidth: 520, lineHeight: 'var(--lh-relaxed)' }}>
           {[
             `${decks.length} ${decks.length === 1 ? 'deck' : 'decks'}`,
@@ -162,7 +195,18 @@ export function Home() {
             notes.length ? `${notes.length} ${notes.length === 1 ? 'note' : 'notes'}` : null,
           ].filter(Boolean).join(' · ')}
         </p>
+        </div>
+
+        {/* Shrinks with the viewport all the way down. On a phone this is a
+            small moving thing in the corner rather than anything to read, and
+            it gives width back to the heading: the longest workspace name is
+            "Portuguese", one unbreakable word, and the title is what the page
+            is actually about. */}
+        <div style={{ flex: 'none', width: 'clamp(72px, 22vw, 440px)' }}>
+          <GreetingLoop />
+        </div>
       </header>
+      </Card>
 
       {/* ---- Flashcards, everything it owns in one place ------------------- */}
       <section>

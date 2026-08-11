@@ -7,7 +7,7 @@ import { EmptyTool } from '../EmptyTool';
 import { WordTree } from './WordTree';
 import { CognateTag } from './CognateTag';
 import { LanguageProvider } from './languageContext';
-import { descendants, langName, loadEtymology, lookup, hasContent, type Chain, type Etymologies } from '../../data/etymology';
+import { descendants, glossFor, langName, loadEtymology, loadGlosses, lookup, hasContent, type Chain, type Etymologies } from '../../data/etymology';
 
 const page: React.CSSProperties = {
   maxWidth: 780,
@@ -65,6 +65,20 @@ export function WordDetails() {
     return hit ?? target;
   }, [data, chain, target]);
 
+  /*
+   * The word's meaning, loaded behind the chain rather than with it. The
+   * ancestry is the point of the screen and does not wait on this; the caption
+   * appears when it arrives.
+   */
+  const [glosses, setGlosses] = React.useState<Record<string, string>>({});
+  React.useEffect(() => {
+    let live = true;
+    void loadGlosses(language).then((g) => { if (live) setGlosses(g); });
+    return () => { live = false; };
+  }, [language]);
+
+  const meaning = glossFor(glosses, headword) ?? glossFor(glosses, target);
+
   const built = React.useMemo(
     () => (data ? descendants(data, headword) : []),
     [data, headword],
@@ -81,7 +95,15 @@ export function WordDetails() {
           icon="search"
           accent="var(--tool-etymology)"
           title={`Nothing for “${target}”`}
-          description={`There is no ${workspace.name} entry for that word. Wiktionary does not have an etymology for everything — compounds and recent borrowings are often missing.`}
+          /*
+           * This used to blame compounds and recent borrowings. Measured
+           * against the dump, compounds are the best-covered thing here — 45%
+           * of Dutch entries are kept *because* they name their parts. What is
+           * actually absent is inflected forms, which have no etymology of
+           * their own to record, and the advice that follows from that is
+           * worth giving: try the base word.
+           */
+          description={`There is no ${workspace.name} entry for that word. Most gaps are inflected forms, which carry no origin of their own — the word they are built on usually does.`}
           action={(
             <Link to="/app/etymology" style={{ textDecoration: 'none' }}>
               <Button variant="secondary" iconLeft={<Icon name="arrow-left" size={16} />}>Back to Etymology</Button>
@@ -96,7 +118,11 @@ export function WordDetails() {
     <LanguageProvider>
     <div style={page}>
       <Card title="Where it comes from">
-        <WordTree word={headword} data={data} defaultOpen />
+        {/* The meaning goes to the tree rather than this card's subtitle: the
+            card is titled "Where it comes from", and a meaning hung under that
+            reads as a subtitle of the question instead of an answer about the
+            word. It belongs against the headword, which the tree draws. */}
+        <WordTree word={headword} data={data} gloss={meaning} defaultOpen />
       </Card>
 
       {built.length > 0 && (

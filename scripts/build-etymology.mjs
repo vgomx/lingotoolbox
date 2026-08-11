@@ -117,14 +117,72 @@ const positional = (args = {}) => Object.keys(args)
   .map((k) => args[k])
   .filter((v) => v && typeof v === 'string');
 
+/**
+ * An ancestor term with the template's markup taken off.
+ *
+ * Two kinds of debris. Qualifiers are deliberate — `ad-<id:to>` disambiguates
+ * which sense of a Latin prefix is meant, and is not part of the word. Stray
+ * angle brackets are not: `groene>>>` is simply how the argument arrives, and
+ * a first pass that only removed matched `<…>` pairs left the arrows on screen.
+ */
+const cleanTerm = (s) => String(s ?? '')
+  .replace(/<[^>]*>/g, '')
+  .replace(/[<>]+/g, '')
+  // A leading ^ is a Wiktionary display directive, not part of the word: the
+  // Persian ancestor of Iran arrived as "^ایران".
+  .replace(/^\^+/, '')
+  .trim();
+
+/**
+ * A step out of an `ety` template, or null if it carries none.
+ *
+ * `ety` is the etymology-tree template, and it is how the Spanish and
+ * Portuguese entries overwhelmingly write their origins — 45% and 57% more
+ * words than the older templates alone reach. Dutch barely uses it: 37 entries
+ * in the whole dump, of which 8 yield anything.
+ *
+ * Its shape is unlike the others. The relation is the second positional
+ * argument with a colon on the front (`:inh`, `:ubor`), and the source is the
+ * third as `langcode:term` rather than two arguments. `nl=1` marks an inflected
+ * form whose entry says only "see the etymology of the corresponding lemma" —
+ * true, and nothing this tool can draw, so those are left out.
+ */
+function etyStep(t) {
+  const a = t.args ?? {};
+  if (a.nl === '1' || a.nl === 1) return null;
+  const rel = ANCESTRY[String(a['2'] ?? '').replace(/^:/, '')];
+  const src = String(a['3'] ?? '');
+  const at = src.indexOf(':');
+  if (!rel || at < 1) return null;
+  const code = src.slice(0, at).trim();
+  const term = cleanTerm(src.slice(at + 1));
+  return code && term ? [rel, code, term] : null;
+}
+
 function chainFor(entry) {
   const out = {};
+  /**
+   * Steps from `ety`, used only if the older templates yielded none.
+   *
+   * A fallback rather than an addition, because an entry carrying both names
+   * the same ancestor twice in slightly different words and the dedup below
+   * cannot see that they are the same: Iran arrived with `fa ایران` from one
+   * and `fa-ira ایران` from the other, Canada with `en Canada` beside
+   * `en,fr Canada`, epi- with two spellings of the same Greek prefix differing
+   * by a diacritic. Preferring the older templates leaves every entry that
+   * already worked exactly as it was, and this is only ever consulted for the
+   * words that were being dropped entirely — which is what it was measured on.
+   */
+  const fallback = [];
   for (const t of entry.etymology_templates ?? []) {
     const name = t.name;
     const a = positional(t.args);
-    if (ANCESTRY[name]) {
+    if (name === 'ety') {
+      const step = etyStep(t);
+      if (step) fallback.push(step);
+    } else if (ANCESTRY[name]) {
       // [relation, ancestor language code, ancestor term]
-      if (a.length >= 3 && a[2]) (out.a ??= []).push([ANCESTRY[name], a[1], a[2]]);
+      if (a.length >= 3 && a[2]) (out.a ??= []).push([ANCESTRY[name], a[1], cleanTerm(a[2])]);
     } else if (COGNATE.has(name)) {
       // A cognate template may name several languages at once — {{cog|gl,es|…}}
       // — which arrived as the single code "gl,es" and matched nothing.
@@ -138,6 +196,8 @@ function chainFor(entry) {
       if (parts.length >= 2) out.p = parts;
     }
   }
+  if (!out.a && fallback.length) out.a = fallback;
+
   if (out.a) {
     /*
      * Two fixes the raw template order needs.
