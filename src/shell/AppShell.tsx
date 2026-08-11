@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Badge, Button, Dialog, Icon, IconButton, Input, SidebarItem, RailTile, StreakPill, Tooltip, useBreakpoint } from 'lingo-ds';
 import { useStore } from '../state/store';
-import horizontalLogo from 'lingo-ds/assets/logo/horizontal-violet.svg';
+import horizontalLogo from 'lingo-ds/assets/logo/horizontal-duo.svg?raw';
 import { NAV_TOOLS, TOOLS } from '../data/seed';
 import { LanguageMenu } from './LanguageMenu';
 import { ChromeProvider, useChromeState } from './chrome';
@@ -457,13 +457,26 @@ export function AppShell() {
             * something behind it.
             */}
           {logo && isMobile && (
-            <img
-              src={horizontalLogo}
-              alt="Lingo Toolbox"
+            /*
+             * Inlined rather than an <img>, because the lockup is two-tone: the
+             * logotype takes `color` and TOOLBOX holds --brand. Through an
+             * <img> the SVG is its own document with no page to inherit from,
+             * so both halves would fall back to their literals.
+             *
+             * The markup is a build-time asset from the design system, not
+             * anything a reader can reach, which is what makes setting it as
+             * HTML here safe.
+             */
+            <span
+              className="lt-inline-logo"
+              role="img"
+              aria-label="Lingo Toolbox"
+              dangerouslySetInnerHTML={{ __html: horizontalLogo }}
               style={{
                 position: 'absolute', left: '50%', top: '50%',
                 transform: 'translate(-50%, -50%)',
-                height: 22, width: 'auto', pointerEvents: 'none',
+                display: 'block', height: 22, pointerEvents: 'none',
+                color: 'var(--text-strong)',
               }}
             />
           )}

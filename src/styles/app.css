@@ -56,3 +56,13 @@ a {
 :root[data-standalone='true'] {
   --dock-inset: env(safe-area-inset-bottom, 0px);
 }
+
+/* The mobile top bar's lockup, inlined so its two halves can take different
+   colours — see AppShell. An inlined SVG keeps the file's intrinsic 272x50,
+   which an <img>'s height attribute would have overridden, so the box has to
+   say so instead. */
+.lt-inline-logo > svg {
+  display: block;
+  height: 100%;
+  width: auto;
+}
