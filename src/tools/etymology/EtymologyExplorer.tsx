@@ -5,7 +5,7 @@ import { useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
 import { ChainCard } from './ChainCard';
-import { HAS_ETYMOLOGY, hasContent, loadEtymology, lookup, type Etymologies } from '../../data/etymology';
+import { HAS_ETYMOLOGY, glossFor, hasContent, loadEtymology, loadGlosses, lookup, type Etymologies } from '../../data/etymology';
 
 const page: React.CSSProperties = {
   maxWidth: 'var(--content-max, 1120px)',
@@ -45,20 +45,26 @@ export function EtymologyExplorer() {
   }, [language]);
 
   /**
-   * Your own cards first, before you have typed anything.
+   * The dictionary's meaning for every word, behind the shard rather than in it.
    *
-   * An empty search box over 45,000 words is a worse starting point than it
-   * looks — you have to already know what you want to look up. The words on
-   * your cards are the ones you are actually trying to learn, so they are the
-   * ones worth offering.
+   * Its own request, so the chain is on screen before this arrives and the
+   * subtitles appear when it does. Nothing waits for it and nothing breaks
+   * without it — see loadGlosses for why it is not part of the shard.
    */
+  const [glosses, setGlosses] = React.useState<Record<string, string>>({});
+  React.useEffect(() => {
+    let live = true;
+    void loadGlosses(language).then((g) => { if (live) setGlosses(g); });
+    return () => { live = false; };
+  }, [language]);
+
   /**
-   * What the reader's own cards say each word means.
+   * What the reader's own cards say each word means, which beats the dictionary.
    *
-   * Built from every card rather than only the ones offered below, so a word
-   * reached by searching still shows its meaning if it happens to be on a
-   * card. Keyed lower-case because a card may read "De Kat" where the entry is
-   * "de kat", and stripped of the article for the same reason `lookup` strips
+   * Built from every card rather than only the ones offered before you type, so
+   * a word reached by searching still shows its own wording if it happens to be
+   * on a card. Keyed lower-case because a card may read "De Kat" where the entry
+   * is "de kat", and stripped of the article for the same reason `lookup` strips
    * it — "het brood" on the card, "brood" in the data.
    */
   const meanings = React.useMemo(() => {
@@ -74,6 +80,14 @@ export function EtymologyExplorer() {
     return map;
   }, [cards]);
 
+  /**
+   * Your own cards first, before you have typed anything.
+   *
+   * An empty search box over 45,000 words is a worse starting point than it
+   * looks — you have to already know what you want to look up. The words on
+   * your cards are the ones you are actually trying to learn, so they are the
+   * ones worth offering.
+   */
   const fromYourCards = React.useMemo(() => {
     if (!data) return [];
     const seen = new Set<string>();
@@ -246,7 +260,10 @@ export function EtymologyExplorer() {
                   word={word}
                   chain={chain}
                   data={data!}
-                  gloss={meanings.get(word.trim().toLowerCase())}
+                  // The reader's own card wins over the dictionary: they wrote
+                  // what the word means to them, and that is the wording they
+                  // are learning it by.
+                  gloss={meanings.get(word.trim().toLowerCase()) ?? glossFor(glosses, word)}
                   interactive
                 />
               </Link>

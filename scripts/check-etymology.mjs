@@ -41,6 +41,36 @@ for (const code of EXPECTED) {
   if (words.length < 5000) problems.push(`${code}.json has only ${words.length} words, which suggests a partial stream`);
 
   /*
+   * The meanings, which are a separate stream and can fail separately.
+   *
+   * Coverage rather than existence: a truncated download leaves a file that
+   * parses perfectly and covers a tenth of the words, and the only symptom is
+   * that most cards quietly lose their subtitle. A full build reaches 100.0%,
+   * so anything under 90 means the stream stopped early.
+   */
+  const glossFile = join(dir, `${code}-glosses.json`);
+  if (!existsSync(glossFile)) {
+    problems.push(`${code}-glosses.json is missing — run npm run build:glosses`);
+  } else {
+    const rawGloss = readFileSync(glossFile);
+    totalBytes += rawGloss.length;
+    let glosses;
+    try {
+      glosses = JSON.parse(rawGloss.toString());
+    } catch {
+      problems.push(`${code}-glosses.json is not valid JSON — the build may have been interrupted`);
+    }
+    if (glosses) {
+      const covered = words.filter((w) => glosses[w]).length;
+      const pct = covered / words.length;
+      if (pct < 0.9) {
+        problems.push(`${code}-glosses.json covers only ${(pct * 100).toFixed(1)}% of ${code}.json's words `
+          + `(${covered.toLocaleString()} of ${words.length.toLocaleString()}) — the stream probably stopped early`);
+      }
+    }
+  }
+
+  /*
    * Language codes with no name to print.
    *
    * A tail here is unavoidable rather than a defect: Wiktionary mints codes for

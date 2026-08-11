@@ -87,9 +87,11 @@ function Steps({ data, steps }: { data: Etymologies; steps: [string, string, str
  * is built from blond, so a naive walk oscillates between the two forever.
  * Anything already on the path is shown as a leaf.
  */
-export function WordTree({ word, data, depth = 0, trail = [], defaultOpen = false }: {
+export function WordTree({ word, data, gloss, depth = 0, trail = [], defaultOpen = false }: {
   word: string;
   data: Etymologies;
+  /** What the root word means. Only the root: a part's meaning is its own page. */
+  gloss?: string;
   depth?: number;
   trail?: string[];
   defaultOpen?: boolean;
@@ -141,6 +143,21 @@ export function WordTree({ word, data, depth = 0, trail = [], defaultOpen = fals
           <span style={{ ...headword(depth), paddingLeft: depth ? 18 : 0 }}>{word}</span>
         )}
       </div>
+
+      {/* Under the headword and above the descent, so the card answers "what
+          is it" before "where is it from". Indented to clear the disclosure
+          chevron, so it lines up with the word rather than with the arrow. */}
+      {gloss && depth === 0 && (
+        <p
+          style={{
+            margin: '2px 0 0', paddingLeft: canExpand ? 25 : 0,
+            fontSize: 'var(--fs-14)', color: 'var(--text-muted)',
+            lineHeight: 'var(--lh-relaxed)',
+          }}
+        >
+          {gloss}
+        </p>
+      )}
 
       <div style={{ paddingLeft: depth === 0 ? 0 : 18 }}>
         <Steps data={data} steps={steps} />

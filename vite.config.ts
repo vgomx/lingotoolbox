@@ -123,13 +123,16 @@ export default defineConfig({
             },
           },
           {
-            urlPattern: /\/etymology\/[A-Z]{2}\.json$/,
+            // The shards, the meanings, and the language descriptions — every
+            // etymology payload, all of them build assets that change only when
+            // the dump is rebuilt.
+            urlPattern: /\/etymology\/([A-Z]{2}(-glosses)?|languages)\.json$/,
             handler: 'CacheFirst',
             options: {
               cacheName: 'etymology-shards',
-              // One per workspace, and they only change when the dump is
-              // rebuilt — which is a new filename anyway.
-              expiration: { maxEntries: 6, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              // Three workspaces × (shard + glosses), plus the shared language
+              // file, plus room for a rebuild to land beside the old one.
+              expiration: { maxEntries: 14, maxAgeSeconds: 60 * 60 * 24 * 365 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },
