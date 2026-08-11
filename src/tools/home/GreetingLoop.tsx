@@ -31,15 +31,13 @@ const STAGE = 1080;
 const CROP = { left: 100, top: 195, width: 900, height: 685 };
 
 /*
- * How small the scene may get before it stops shrinking and starts clipping.
+ * There is no floor on how small this goes.
  *
- * Below this the greeting is no longer a word, it is texture — 48px of stage
- * type at 0.20 is under 10px. So a narrow container does not squeeze the
- * scene into it; the scene holds this size and the container shows what fits,
- * anchored to its top right. What fits is the reply bubble and the face
- * answering, which is the half that carries the language cycle.
+ * An earlier version stopped shrinking around 0.2 and clipped instead, to keep
+ * the greeting readable. But nobody is here to read a 6px "Olá!" — it is a
+ * mood, and two whole faces talking read as one at any size, where half a face
+ * does not. So it always fits, and gets as small as the box asks.
  */
-const MIN_SCALE = 0.2;
 
 /** Scene starts, in seconds. Named as the design names them. */
 const CUE = { greet: 0, reply: 1.3, scripts: 2.6, settle: 5.0 };
@@ -440,14 +438,8 @@ export function GreetingLoop() {
     return () => { stop(); io.disconnect(); document.removeEventListener('visibilitychange', onVisibility); };
   }, [reducedMotion]);
 
-  /*
-   * Fit the crop to the width, but never below the size at which the greeting
-   * stops being readable. Past that the scene keeps its size and the box shows
-   * the right-hand part of it.
-   */
-  const scale = width ? Math.max(width / CROP.width, MIN_SCALE) : 0;
-  /* Wider than the box: the left of the scene is being cut off. */
-  const clipped = scale > 0 && CROP.width * scale > width + 1;
+  /** The crop, fitted to whatever width the box has. */
+  const scale = width ? width / CROP.width : 0;
 
   return (
     <div
@@ -455,18 +447,8 @@ export function GreetingLoop() {
       aria-hidden
       style={{
         width: '100%',
-        /*
-         * Fade the cut edge rather than guillotine it. A hard clip lands
-         * wherever it lands — through the middle of a face, or across half a
-         * word — and reads as a rendering fault. Fading says the scene
-         * continues past the edge, which is what is actually happening.
-         */
-        maskImage: clipped ? `linear-gradient(to right, transparent 0, #000 ${Math.round(Math.max(28, width * 0.3))}px)` : undefined,
-        WebkitMaskImage: clipped ? `linear-gradient(to right, transparent 0, #000 ${Math.round(Math.max(28, width * 0.3))}px)` : undefined,
-        // The crop's own proportion at the scale actually in use, so the band
-        // is never cut short by a box sized for a different one.
-        height: scale ? Math.round(CROP.height * scale) : undefined,
-        aspectRatio: scale ? undefined : `${CROP.width} / ${CROP.height}`,
+        // The crop's own proportion, so the band is never cut short.
+        aspectRatio: `${CROP.width} / ${CROP.height}`,
         overflow: 'hidden', position: 'relative', contain: 'strict',
       }}
     >
@@ -474,14 +456,10 @@ export function GreetingLoop() {
         <div
           style={{
             position: 'absolute',
-            /*
-             * Anchored to the top right: the crop's right edge meets the box's
-             * right edge, and anything too wide to fit falls off the left. On
-             * a phone that leaves the reply and the face saying it — the half
-             * worth keeping — instead of two faces too small to read.
-             */
+            // The crop's own corner placed on the box's, so the empty margin
+            // the piece was composed with does not become the box's margin.
             top: -CROP.top * scale,
-            left: width - (CROP.left + CROP.width) * scale,
+            left: -CROP.left * scale,
             width: STAGE, height: STAGE,
             transform: `scale(${scale})`, transformOrigin: '0 0',
           }}

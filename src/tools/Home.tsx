@@ -175,9 +175,9 @@ export function Home() {
         </p>
         </div>
 
-        {/* Shrinks with the viewport and stops taking width before it starts
-            crowding the workspace name. Below that the loop clips instead. */}
-        <div style={{ flex: 'none', width: 'clamp(116px, 30vw, 440px)' }}>
+        {/* Shrinks with the viewport all the way down. On a phone this is a
+            small moving thing in the corner rather than anything to read. */}
+        <div style={{ flex: 'none', width: 'clamp(92px, 26vw, 440px)' }}>
           <GreetingLoop />
         </div>
       </header>
