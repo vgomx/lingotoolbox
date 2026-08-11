@@ -171,7 +171,18 @@ export function EtymologyExplorer() {
           }}
         >
           {workspace.name}
-          {data && ` · ${Object.keys(data.words).length.toLocaleString()} words`}
+          {/*
+            * "words with a known origin", not "words".
+            *
+            * The shorter version reads as the size of the language, and it is
+            * not: this is every Wiktionary entry that arrived carrying an
+            * ancestor, a compound part or a doublet, which is a third of the
+            * Dutch entries and a small fraction of the Spanish ones — most of
+            * the rest being inflected forms with no etymology to have. A
+            * number presented as a vocabulary count invites the reader to
+            * conclude the tool is missing two thirds of their language.
+            */}
+          {data && ` · ${Object.keys(data.words).length.toLocaleString()} words with a known origin`}
         </span>
         <h1
           style={{
@@ -225,7 +236,9 @@ export function EtymologyExplorer() {
           title={query.trim() ? 'Nothing for that word' : 'Nothing from your cards yet'}
           description={
             query.trim()
-              ? `No ${workspace.name} entry for “${query.trim()}”. Wiktionary does not have an etymology for every word — compounds and recent borrowings are often missing.`
+              // See the note on the same copy in WordDetails: the old wording
+              // named compounds, which are in fact the best-covered case.
+              ? `No ${workspace.name} entry for “${query.trim()}”. Most gaps are inflected forms, which carry no origin of their own — try the word they are built on.`
               : 'None of the words on your cards has an entry yet. Search for one instead.'
           }
         />

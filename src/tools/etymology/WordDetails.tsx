@@ -95,7 +95,15 @@ export function WordDetails() {
           icon="search"
           accent="var(--tool-etymology)"
           title={`Nothing for “${target}”`}
-          description={`There is no ${workspace.name} entry for that word. Wiktionary does not have an etymology for everything — compounds and recent borrowings are often missing.`}
+          /*
+           * This used to blame compounds and recent borrowings. Measured
+           * against the dump, compounds are the best-covered thing here — 45%
+           * of Dutch entries are kept *because* they name their parts. What is
+           * actually absent is inflected forms, which have no etymology of
+           * their own to record, and the advice that follows from that is
+           * worth giving: try the base word.
+           */
+          description={`There is no ${workspace.name} entry for that word. Most gaps are inflected forms, which carry no origin of their own — the word they are built on usually does.`}
           action={(
             <Link to="/app/etymology" style={{ textDecoration: 'none' }}>
               <Button variant="secondary" iconLeft={<Icon name="arrow-left" size={16} />}>Back to Etymology</Button>
