@@ -150,11 +150,12 @@ export function Home() {
         * A row, so the greeting loop can use the width the heading leaves.
         *
         * The text keeps its own measure and does not stretch to meet it — the
-        * stats line is capped at 520 either way. On a phone there is no space
-        * beside the heading to fill, and the loop is decoration, so it is not
-        * rendered rather than stacked above the first thing anyone came for.
+        * stats line is capped at 520 either way. The loop takes whatever is
+        * left and clips itself to fit, so it survives a phone rather than
+        * being dropped there: it holds a readable size and shows the corner of
+        * the scene that fits.
         */}
-      <header style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
+      <header style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-5)' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
           <span style={eyebrow}>Workspace</span>
@@ -174,11 +175,11 @@ export function Home() {
         </p>
         </div>
 
-        {!isMobile && (
-          <div style={{ flex: 'none', width: 'clamp(300px, 34vw, 440px)' }}>
-            <GreetingLoop />
-          </div>
-        )}
+        {/* Shrinks with the viewport and stops taking width before it starts
+            crowding the workspace name. Below that the loop clips instead. */}
+        <div style={{ flex: 'none', width: 'clamp(116px, 30vw, 440px)' }}>
+          <GreetingLoop />
+        </div>
       </header>
 
       {/* ---- Flashcards, everything it owns in one place ------------------- */}
