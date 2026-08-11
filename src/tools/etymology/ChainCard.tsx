@@ -147,7 +147,17 @@ export function ChainCard({ word, chain, data, gloss, compact = false, interacti
           style={{
             display: 'flex', flexDirection: 'column', gap: 'var(--space-4)',
             padding: 'var(--space-5)', borderRadius: 'var(--radius-md)',
-            background: 'var(--surface-sunken)',
+            /*
+             * Outlined rather than filled.
+             *
+             * The block was --surface-sunken and the chips inside it carry
+             * their own soft fill, so the card stacked three tones a hair
+             * apart — surface, block, chip — and the chips stopped reading as
+             * separate objects. A hairline draws the same boundary and lets
+             * the chips be the only filled thing in the group, which is what
+             * makes them countable at a glance.
+             */
+            boxShadow: 'inset 0 0 0 1px var(--border)',
           }}
         >
           <span
