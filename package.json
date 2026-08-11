@@ -15,6 +15,7 @@
     "build:illustrations": "node scripts/build-openmoji.mjs",
     "build:language-info": "node scripts/build-language-info.mjs",
     "build:language-links": "node scripts/resolve-language-links.mjs",
+    "build:conjugation": "node scripts/build-conjugation.mjs",
     "build:glosses": "node scripts/build-glosses.mjs",
     "build:etymology": "node scripts/build-etymology.mjs",
     "preview": "vite preview",

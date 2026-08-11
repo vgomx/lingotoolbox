@@ -1,72 +1,19 @@
 import * as React from 'react';
-import { usePrefersReducedMotion } from 'lingo-ds';
-import { flagUrl } from '../../data/illustrations';
+import { flagUrl } from '../../../data/illustrations';
+import {
+  LINE, MOUTH_IN, YELLOW, clamp, cycle, ease, pop, stroke, tween,
+  type Scene,
+} from '../sceneKit';
 
 /*
- * Two faces saying hello, ported from the "Emoji Dialog Loop" design piece.
- *
- * The original runs inside an authoring runtime — scenes, cues, a tweaks
- * panel, a 1080×1080 export stage. None of that belongs in the product, so
- * what came across is the choreography: the same geometry and the same easing
- * curves, driven by a plain clock.
- *
- * Everything is authored against a 1080-wide stage and scaled to fit, because
- * the numbers in here are the design's own. Rewriting them for a 420px box
- * would have meant re-deriving every position by hand, and the first thing to
- * drift would have been the relationship between the faces and their bubbles.
- */
-
-/** Authored stage width. Every coordinate below is in these units. */
-const STAGE = 1080;
-
-/*
- * Where the piece actually paints, measured rather than estimated: the two
- * faces and their bubbles span x 107–996 and y 203–870 of the 1080 square,
- * once the camera's 1.15 zoom and drift are accounted for.
- *
- * Cropped to that band rather than scaled down to fit, because the hero has
- * width to spare and very little height — a full 1080² at this width would
- * put the greeting at 8px.
- */
-const CROP = { left: 100, top: 195, width: 900, height: 685 };
-
-/*
- * There is no floor on how small this goes.
- *
- * An earlier version stopped shrinking around 0.2 and clipped instead, to keep
- * the greeting readable. But nobody is here to read a 6px "Olá!" — it is a
- * mood, and two whole faces talking read as one at any size, where half a face
- * does not. So it always fits, and gets as small as the box asks.
+ * Two faces greeting each other, the reply cycling one hello through several
+ * languages. Ported from the "Emoji Dialog Loop" design piece: the same
+ * coordinates, the same easing curves, the same cue times.
  */
 
 /** Scene starts, in seconds. Named as the design names them. */
 const CUE = { greet: 0, reply: 1.3, scripts: 2.6, settle: 5.0 };
 const TOTAL = 6.0;
-
-const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
-
-/** The four curves the piece uses, copied rather than approximated. */
-const ease = {
-  outQuad: (t: number) => t * (2 - t),
-  outCubic: (t: number) => --t * t * t + 1,
-  inOutCubic: (t: number) => (t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1),
-  outBack: (t: number) => {
-    const c1 = 1.70158;
-    return 1 + (c1 + 1) * (t - 1) ** 3 + c1 * (t - 1) ** 2;
-  },
-};
-
-/** `from` before `start`, `to` after `end`, eased between — as the runtime does. */
-const tween = (from: number, to: number, start: number, end: number, e = ease.outCubic) =>
-  (t: number) => {
-    if (t <= start) return from;
-    if (t >= end) return to;
-    return from + (to - from) * e((t - start) / (end - start));
-  };
-
-const pop = (start: number, dur = 0.42) => tween(0, 1, start, start + dur, ease.outBack);
-const cycle = (t: number, period: number, amp: number, phase = 0) =>
-  Math.sin((t / period + phase) * Math.PI * 2) * amp;
 
 /* ── the greetings ───────────────────────────────────────────────────────── */
 
@@ -93,12 +40,6 @@ const LINES: Line[] = [
  * --surface-card would be the same colour as the card this now sits inside,
  * and the bubble would be a border around nothing.
  */
-
-/* OpenMoji's own palette, not the theme's: this is that emoji, and a yellow
-   disc with black line art is what it is on any background. */
-const YELLOW = '#FCEA2B';
-const LINE = '#000000';
-const MOUTH_IN = '#EA5A47';
 
 interface Mouth { w: number; open: number; curve: number }
 const REST_MOUTH: Mouth = { w: 9.4, open: 0, curve: 3.4 };
@@ -141,7 +82,6 @@ function Face({ state, size, x, y }: { state: FaceState; size: number; x: number
   const { mouth, eyeOpen, lookX, lookY, brow, tilt, squashX, squashY } = state;
   const brows = (bx: number) =>
     `M${bx - 4.4},${25.4 - brow * 0.9} Q${bx},${22.2 - brow * 2.4} ${bx + 4.4},${25.4 - brow * 0.9}`;
-  const stroke = { fill: 'none', stroke: LINE, strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
 
   return (
     <div
@@ -153,12 +93,12 @@ function Face({ state, size, x, y }: { state: FaceState; size: number; x: number
     >
       <svg viewBox="0 0 72 72" width={size} height={size} style={{ display: 'block', overflow: 'visible' }} aria-hidden>
         <circle cx={36} cy={36} r={23} fill={YELLOW} />
-        <circle cx={36} cy={36} r={23} {...stroke} />
-        <path d={brows(27)} {...stroke} opacity={clamp(brow * 0.9, 0, 1)} />
-        <path d={brows(45)} {...stroke} opacity={clamp(brow * 0.9, 0, 1)} />
+        <circle cx={36} cy={36} r={23} {...stroke(2)} />
+        <path d={brows(27)} {...stroke(2)} opacity={clamp(brow * 0.9, 0, 1)} />
+        <path d={brows(45)} {...stroke(2)} opacity={clamp(brow * 0.9, 0, 1)} />
         <ellipse cx={27 + lookX} cy={31 + lookY} rx={3} ry={3 * eyeOpen} fill={LINE} />
         <ellipse cx={45 + lookX} cy={31 + lookY} rx={3} ry={3 * eyeOpen} fill={LINE} />
-        <path d={mouthPath(mouth)} {...stroke} fill={mouth.open > 0.6 ? MOUTH_IN : 'none'} />
+        <path d={mouthPath(mouth)} {...stroke(2)} fill={mouth.open > 0.6 ? MOUTH_IN : 'none'} />
       </svg>
     </div>
   );
@@ -392,92 +332,16 @@ function Frame({ t }: { t: number }) {
   );
 }
 
-/* ── the clock ───────────────────────────────────────────────────────────── */
-
-/**
- * The greeting loop, sized to whatever box it is given.
- *
- * Stops when it cannot be seen. A six-second loop repainting two SVG faces
- * forever is not free, and the home screen is the one people leave open — so
- * the frame only advances while the element is on screen and the tab is
- * focused. Reduced motion holds a single frame instead, chosen at the moment
- * both bubbles are up.
- */
-export function GreetingLoop() {
-  const reducedMotion = usePrefersReducedMotion();
-  const box = React.useRef<HTMLDivElement>(null);
-  const [width, setWidth] = React.useState(0);
-  const [t, setT] = React.useState(reducedMotion ? 1.95 : 0);
-
-  // Scale from the measured width, so the authored coordinates never change.
-  React.useLayoutEffect(() => {
-    const el = box.current;
-    if (!el) return undefined;
-    const ro = new ResizeObserver(([e]) => setWidth(e.contentRect.width));
-    ro.observe(el);
-    setWidth(el.getBoundingClientRect().width);
-    return () => ro.disconnect();
-  }, []);
-
-  React.useEffect(() => {
-    if (reducedMotion) { setT(1.95); return undefined; }
-    const el = box.current;
-    if (!el) return undefined;
-
-    let raf = 0;
-    let started = 0;
-    let visible = false;
-
-    const tick = (now: number) => {
-      if (!started) started = now;
-      setT(((now - started) / 1000) % TOTAL);
-      raf = requestAnimationFrame(tick);
-    };
-    const run = () => {
-      if (raf || !visible || document.hidden) return;
-      started = 0;
-      raf = requestAnimationFrame(tick);
-    };
-    const stop = () => { if (raf) cancelAnimationFrame(raf); raf = 0; };
-
-    const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) run(); else stop(); });
-    io.observe(el);
-    const onVisibility = () => (document.hidden ? stop() : run());
-    document.addEventListener('visibilitychange', onVisibility);
-
-    return () => { stop(); io.disconnect(); document.removeEventListener('visibilitychange', onVisibility); };
-  }, [reducedMotion]);
-
-  /** The crop, fitted to whatever width the box has. */
-  const scale = width ? width / CROP.width : 0;
-
-  return (
-    <div
-      ref={box}
-      aria-hidden
-      style={{
-        width: '100%',
-        // The crop's own proportion, so the band is never cut short.
-        aspectRatio: `${CROP.width} / ${CROP.height}`,
-        overflow: 'hidden', position: 'relative', contain: 'strict',
-      }}
-    >
-      {scale > 0 && (
-        <div
-          style={{
-            position: 'absolute',
-            // The crop's own corner placed on the box's, so the empty margin
-            // the piece was composed with does not become the box's margin.
-            top: -CROP.top * scale,
-            left: -CROP.left * scale,
-            width: STAGE, height: STAGE,
-            transform: `scale(${scale})`, transformOrigin: '0 0',
-          }}
-        >
-          <Frame t={t} />
-        </div>
-      )}
-    </div>
-  );
-}
-
+export const greetingScene: Scene = {
+  id: 'greeting',
+  duration: TOTAL,
+  /*
+   * Measured in the browser rather than estimated: the faces and their bubbles
+   * span x 107–996 and y 203–870 of the square, once the camera's 1.15 zoom and
+   * drift are accounted for.
+   */
+  crop: { left: 100, top: 195, width: 900, height: 685 },
+  // Both bubbles are up at 1.95 — a still of an empty stage says nothing.
+  still: 1.95,
+  Frame,
+};

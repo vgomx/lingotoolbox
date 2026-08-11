@@ -10,7 +10,8 @@ import { Settings } from './tools/Settings';
 import { DeckList } from './tools/flashcards/DeckList';
 import { DeckDetail } from './tools/flashcards/DeckDetail';
 import { ReviewSession } from './tools/flashcards/ReviewSession';
-import { ConjugationScreen, PhrasebookScreen } from './tools/Placeholders';
+import { PhrasebookScreen } from './tools/Placeholders';
+import { ConjugationDrill } from './tools/conjugation/ConjugationDrill';
 import { EtymologyExplorer } from './tools/etymology/EtymologyExplorer';
 import { WordDetails } from './tools/etymology/WordDetails';
 import { useStore } from './state/store';
@@ -104,7 +105,7 @@ export function App() {
           <Route path="review/:deckId" element={<ReviewSession />} />
           <Route path="etymology" element={<EtymologyExplorer />} />
           <Route path="etymology/:word" element={<WordDetails />} />
-          <Route path="conjugation" element={<ConjugationScreen />} />
+          <Route path="conjugation" element={<ConjugationDrill />} />
           <Route path="phrasebook" element={<PhrasebookScreen />} />
           <Route path="grammar" element={<GrammarNotes />} />
           <Route path="settings" element={<Settings />} />

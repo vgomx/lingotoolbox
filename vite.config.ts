@@ -91,6 +91,7 @@ export default defineConfig({
           // sessions never open — and you only ever need the workspace you are
           // in. Fetched on demand and cached below, like the illustrations.
           'etymology/**',
+          'conjugation/**',
           // The latin-ext cut of the two text faces. The four workspaces do not
           // need it: ã, ç, õ, ë and ñ all sit below U+0100, inside latin.
           // unicode-range means a browser only fetches these if a character in
@@ -126,7 +127,7 @@ export default defineConfig({
             // The shards, the meanings, and the language descriptions — every
             // etymology payload, all of them build assets that change only when
             // the dump is rebuilt.
-            urlPattern: /\/etymology\/([A-Z]{2}(-glosses)?|languages)\.json$/,
+            urlPattern: /\/(etymology\/([A-Z]{2}(-glosses)?|languages)|conjugation\/[A-Z]{2})\.json$/,
             handler: 'CacheFirst',
             options: {
               cacheName: 'etymology-shards',
