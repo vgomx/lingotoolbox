@@ -5,6 +5,7 @@ import { useChrome } from '../shell/chrome';
 import { useStore } from '../state/store';
 import { HAS_ETYMOLOGY } from '../data/etymology';
 import { NAV_TOOLS } from '../data/seed';
+import { flagUrl } from '../data/illustrations';
 import { GreetingLoop } from './home/GreetingLoop';
 
 /**
@@ -164,9 +165,22 @@ export function Home() {
               needs, and the guide is explicit about not nagging about streaks. */}
           {streak > 0 && <StreakPill days={streak} size="sm" />}
         </div>
-        <h1 style={{ margin: '6px 0 0', fontFamily: 'var(--font-display)', fontSize: 'var(--fs-40)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.05, letterSpacing: 'var(--ls-tight)' }}>
-          {workspace.name}
-        </h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', marginTop: 6 }}>
+          {/* Decorative, so alt is empty: the name it sits beside is the
+              identifier, and types.ts is explicit that a flag never carries a
+              workspace on its own. Announcing "flag: Netherlands" here would
+              only make a screen reader say Dutch twice. */}
+          <img
+            src={flagUrl(workspace.flagHex)}
+            alt=""
+            width={40}
+            height={40}
+            style={{ display: 'block', flex: 'none' }}
+          />
+          <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 'var(--fs-40)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.05, letterSpacing: 'var(--ls-tight)' }}>
+            {workspace.name}
+          </h1>
+        </div>
         <p style={{ margin: '8px 0 0', fontSize: 'var(--fs-16)', color: 'var(--text-muted)', maxWidth: 520, lineHeight: 'var(--lh-relaxed)' }}>
           {[
             `${decks.length} ${decks.length === 1 ? 'deck' : 'decks'}`,
