@@ -173,11 +173,18 @@ export function Home() {
           <img
             src={flagUrl(workspace.flagHex)}
             alt=""
-            width={40}
-            height={40}
+            width={isMobile ? 28 : 40}
+            height={isMobile ? 28 : 40}
             style={{ display: 'block', flex: 'none' }}
           />
-          <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 'var(--fs-40)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.05, letterSpacing: 'var(--ls-tight)' }}>
+          {/*
+            * Smaller on a phone, and sized for the longest workspace name
+            * rather than the shortest. "Portuguese" is one word, so it cannot
+            * wrap out of trouble — at 40px it has nowhere to go beside a flag
+            * and the greeting loop, and would push the card wider than the
+            * screen. The flag steps down with it so the two stay proportionate.
+            */}
+          <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: isMobile ? 'var(--fs-24)' : 'var(--fs-40)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.05, letterSpacing: 'var(--ls-tight)', minWidth: 0, overflowWrap: 'anywhere' }}>
             {workspace.name}
           </h1>
         </div>
@@ -191,8 +198,11 @@ export function Home() {
         </div>
 
         {/* Shrinks with the viewport all the way down. On a phone this is a
-            small moving thing in the corner rather than anything to read. */}
-        <div style={{ flex: 'none', width: 'clamp(92px, 26vw, 440px)' }}>
+            small moving thing in the corner rather than anything to read, and
+            it gives width back to the heading: the longest workspace name is
+            "Portuguese", one unbreakable word, and the title is what the page
+            is actually about. */}
+        <div style={{ flex: 'none', width: 'clamp(72px, 22vw, 440px)' }}>
           <GreetingLoop />
         </div>
       </header>
