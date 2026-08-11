@@ -6,7 +6,7 @@ import { useStore } from '../state/store';
 import { HAS_ETYMOLOGY } from '../data/etymology';
 import { NAV_TOOLS } from '../data/seed';
 import { flagUrl } from '../data/illustrations';
-import { GreetingLoop } from './home/GreetingLoop';
+import { HeroScenes } from './home/HeroScenes';
 
 /**
  * The dashboard, following ui_kits/app/HomeScreen.jsx.
@@ -203,7 +203,7 @@ export function Home() {
             "Portuguese", one unbreakable word, and the title is what the page
             is actually about. */}
         <div style={{ flex: 'none', width: 'clamp(72px, 22vw, 440px)' }}>
-          <GreetingLoop />
+          <HeroScenes />
         </div>
       </header>
       </Card>
