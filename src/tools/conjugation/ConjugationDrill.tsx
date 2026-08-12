@@ -453,9 +453,19 @@ export function ConjugationDrill() {
      * page's padding leaves beside it.
      */
     const animations = [
+      /*
+       * `both`, not `backwards` — the card that leaves has to hold where it
+       * finished.
+       *
+       * React takes it out of the tree a frame after the animation ends, and a
+       * finished animation that fills only backwards stops holding anything the
+       * moment it is done. So the old card sprang back to opacity 1 and no
+       * transform for exactly one frame, sitting on top of the new one: the
+       * blink at the end of the push.
+       */
       outEl.animate(
         [{ transform: 'none', opacity: 1 }, { transform: 'translateX(-108%)', opacity: 0 }],
-        { duration: ms, easing, fill: 'backwards' },
+        { duration: ms, easing, fill: 'both' },
       ),
       inEl.animate(
         [{ transform: 'translateX(108%)' }, { transform: 'none' }],
