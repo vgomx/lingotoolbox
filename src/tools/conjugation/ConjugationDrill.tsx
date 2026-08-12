@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link } from 'react-router-dom';
-import { Button, Card, Icon, Input, Tabs, Tag, playSound, usePrefersReducedMotion } from 'lingo-ds';
+import { Button, Card, Icon, Input, ProgressBar, Tabs, Tag, playSound, usePrefersReducedMotion } from 'lingo-ds';
 import { useChrome } from '../../shell/chrome';
 import { DOCK_HEIGHT } from '../../shell/Dock';
 import { useStore } from '../../state/store';
@@ -145,7 +145,7 @@ const SLOT = 44 + CHUNK;
  * chunk, and a 6px edge that stays put while the face moves reads as the whole
  * button sliding rather than being pushed in.
  */
-function ContinueButton({ verdict, onClick }: { verdict: Verdict; onClick: () => void }) {
+function ContinueButton({ verdict, last, onClick }: { verdict: Verdict; last: boolean; onClick: () => void }) {
   // Button is a function component and does not forward a ref, so the control
   // is reached through a wrapper that leaves no box of its own.
   const slot = React.useRef<HTMLSpanElement>(null);
@@ -177,7 +177,7 @@ function ContinueButton({ verdict, onClick }: { verdict: Verdict; onClick: () =>
   if (!won) {
     return wrap(
       <Button className="drill-rise" size="md" variant="secondary" onClick={onClick}>
-        Got it
+        {last ? 'See the score' : 'Got it'}
       </Button>,
     );
   }
@@ -192,7 +192,8 @@ function ContinueButton({ verdict, onClick }: { verdict: Verdict; onClick: () =>
       size="md"
       pill
       variant="success"
-      iconRight={<Icon name="arrow-right" size={16} />}
+      // No arrow on the last one: it does not lead onward, it stops.
+      iconRight={last ? undefined : <Icon name="arrow-right" size={16} />}
       onClick={onClick}
       onPointerDown={() => setPress(true)}
       onPointerUp={() => setPress(false)}
@@ -208,7 +209,7 @@ function ContinueButton({ verdict, onClick }: { verdict: Verdict; onClick: () =>
         transition: 'box-shadow var(--dur-instant) var(--ease-standard), transform var(--dur-instant) var(--ease-standard), background-color var(--dur-fast) var(--ease-standard)',
       }}
     >
-      Continue
+      {last ? 'See the score' : 'Continue'}
     </Button>,
   );
 }
@@ -220,7 +221,6 @@ interface CardProps {
   mode: Mode;
   verdict: Verdict | null;
   typed: string;
-  score: { right: number; asked: number };
   formRef?: React.RefObject<HTMLFormElement>;
   onTyped?: (v: string) => void;
   onCheck?: () => void;
@@ -228,7 +228,7 @@ interface CardProps {
 }
 
 function QuestionCard({
-  language, question, mode, verdict, typed, score, formRef, onTyped, onCheck, onPick,
+  language, question, mode, verdict, typed, formRef, onTyped, onCheck, onPick,
 }: CardProps) {
   const name = cellName(language, question.cell);
 
@@ -247,9 +247,6 @@ function QuestionCard({
             <span style={{ marginLeft: 6, fontSize: 'var(--fs-14)', color: 'var(--text-muted)' }}>{question.gloss}</span>
           )}
         </div>
-        <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>
-          {score.right}/{score.asked}
-        </span>
       </div>
 
       {/* The prompt: who is speaking, and in what. A pronoun rather than
@@ -328,7 +325,7 @@ function QuestionCard({
 }
 
 export function ConjugationDrill() {
-  const { language, workspace } = useStore();
+  const { language, workspace, prefs } = useStore();
   const [data, setData] = React.useState<Conjugations | null>(null);
   const [state, setState] = React.useState<'loading' | 'ready' | 'unavailable'>('loading');
 
@@ -347,7 +344,28 @@ export function ConjugationDrill() {
   const [typed, setTyped] = React.useState('');
   const [verdict, setVerdict] = React.useState<Verdict | null>(null);
   const [score, setScore] = React.useState({ right: 0, asked: 0 });
+  /*
+   * Whether the run is over.
+   *
+   * Its own flag rather than `asked >= limit`, because that becomes true the
+   * instant the last question is answered — which would swap the card out from
+   * under the verdict the reader has not read yet. The run ends when they press
+   * on from the last question, not when they answer it.
+   */
+  const [finished, setFinished] = React.useState(false);
   const [misses, setMisses] = React.useState<Record<string, number>>({});
+
+  /*
+   * How long a run is — the same preference Flashcards uses.
+   *
+   * The drill had no end at all, which made its score unreadable as much as
+   * unfinishable: "10/10" was ten right out of ten asked, and there is no
+   * telling that from ten of ten done, so a perfect run looked complete and
+   * then went to 10/11. Reusing the setting rather than inventing a second one
+   * means "a session" is one length across the app, and someone who has already
+   * decided twenty is their number does not have to decide it twice.
+   */
+  const limit = Math.max(1, prefs.sessionLimit);
   const formRef = React.useRef<HTMLFormElement>(null);
 
   /*
@@ -359,7 +377,7 @@ export function ConjugationDrill() {
    * untouchable, because it is a picture of a question that is already over.
    */
   const [outgoing, setOutgoing] = React.useState<
-    { question: Question; verdict: Verdict | null; typed: string; score: typeof score } | null
+    { question: Question; verdict: Verdict | null; typed: string } | null
   >(null);
   const stage = React.useRef<HTMLDivElement>(null);
   const arriving = React.useRef<HTMLDivElement>(null);
@@ -421,12 +439,31 @@ export function ConjugationDrill() {
     playSound(result === 'wrong' ? 'gradeAgain' : 'gradeGood');
   };
 
+  // The one celebration, on the edge into finished rather than on every render
+  // of it — the same rule the review session follows.
+  React.useEffect(() => {
+    if (finished) playSound('sessionComplete');
+  }, [finished]);
+
+  /** Back to question one, keeping what has been missed so it still comes back sooner. */
+  const restart = () => {
+    setFinished(false);
+    setScore({ right: 0, asked: 0 });
+    setOutgoing(null);
+    setTyped('');
+    setVerdict(null);
+    if (data) setQuestion(pick(data, groups, language, misses, null));
+  };
+
   /** Freeze what is on screen, then ask the next one — the two overlap. */
   const advance = () => {
     if (!question) return;
+    // The last question has been answered and read. Stop here rather than
+    // asking a twenty-first.
+    if (score.asked >= limit) { setFinished(true); return; }
     if (!reducedMotion && stage.current) {
       heightBefore.current = stage.current.getBoundingClientRect().height;
-      setOutgoing({ question, verdict, typed, score });
+      setOutgoing({ question, verdict, typed });
     }
     next(`${question.word}|${question.cell}`);
   };
@@ -520,6 +557,39 @@ export function ConjugationDrill() {
 
   const all = groupsOf(data, language);
 
+  if (finished) {
+    const perfect = score.right === score.asked;
+    const missed = score.asked - score.right;
+    return (
+      <div style={page}>
+        <EmptyTool
+          icon="circle-check"
+          accent="var(--success)"
+          title={perfect ? 'All of them' : 'Session complete'}
+          /* The number, then what to do about it. A run with misses in it says
+             so plainly and says they are coming back — the drill already
+             weights them, and hearing that is the difference between a score
+             and a reason to go again. */
+          description={perfect
+            ? `${score.asked} ${score.asked === 1 ? 'form' : 'forms'}, all right.`
+            : `${score.right} of ${score.asked} right. ${missed === 1
+              ? 'The one you missed comes'
+              : `The ${missed} you missed come`} round sooner.`}
+          action={(
+            <div style={{ display: 'flex', gap: 'var(--gap-inline)', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <Link to="/app" style={{ textDecoration: 'none' }}>
+                <Button variant="secondary">Done</Button>
+              </Link>
+              <Button onClick={restart} iconLeft={<Icon name="rotate-ccw" size={16} />}>
+                Go again
+              </Button>
+            </div>
+          )}
+        />
+      </div>
+    );
+  }
+
   return (
     <div style={page}>
       <header style={{ marginBottom: 'var(--space-7)' }}>
@@ -534,6 +604,20 @@ export function ConjugationDrill() {
           comes back sooner.
         </p>
       </header>
+
+      {/* Position in the run, which is what the corner of the card used to be
+          mistaken for. Same component and same place as the review session's,
+          so the two tools read alike. */}
+      <ProgressBar
+        label="Session"
+        /* The question being looked at, which is not the same as the number
+           answered: while the verdict for question 1 is still on screen you are
+           on question 1, and `asked + 1` called it 2. */
+        valueLabel={`${Math.min(verdict ? score.asked : score.asked + 1, limit)} / ${limit}`}
+        value={score.asked}
+        max={limit}
+        color={ACCENT}
+      />
 
       {/*
         * How the drill is set up, in one band above the card.
@@ -564,6 +648,9 @@ export function ConjugationDrill() {
                 save(GROUP_KEY, [...nextGroups]);
                 setQuestion(pick(data, nextGroups, language, misses, null));
                 setTyped(''); setVerdict(null); setOutgoing(null);
+                // From the top: a run half-answered in one set of tenses and
+                // half in another is not a score of anything.
+                setScore({ right: 0, asked: 0 });
               }}
               style={{
                 border: 'none', cursor: 'pointer', padding: 0, background: 'transparent',
@@ -617,7 +704,6 @@ export function ConjugationDrill() {
               mode={mode}
               verdict={verdict}
               typed={typed}
-              score={score}
               formRef={formRef}
               onTyped={setTyped}
               onCheck={() => answer(typed)}
@@ -637,7 +723,6 @@ export function ConjugationDrill() {
               mode={mode}
               verdict={outgoing.verdict}
               typed={outgoing.typed}
-              score={outgoing.score}
             />
           </div>
         )}
@@ -662,7 +747,9 @@ export function ConjugationDrill() {
         * answering does not shove everything underneath down the page.
         */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', minHeight: SLOT, marginTop: 'var(--space-5)' }}>
-        {verdict && !outgoing && <ContinueButton verdict={verdict} onClick={advance} />}
+        {verdict && !outgoing && (
+          <ContinueButton verdict={verdict} last={score.asked >= limit} onClick={advance} />
+        )}
       </div>
 
       <style>{MOTION}</style>
