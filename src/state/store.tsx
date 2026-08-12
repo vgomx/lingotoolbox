@@ -154,18 +154,38 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setSoundEnabled(prefs.sound);
   }, [prefs.sound]);
 
-  // Browsers keep an AudioContext suspended until a real gesture, so the first
-  // sound of a session would otherwise be swallowed. Unlocking on the first
-  // pointer or key event means the interaction that asks for a sound is also the
-  // one that gets it.
+  /*
+   * Browsers keep an AudioContext suspended until a real gesture, so the first
+   * sound of a session would otherwise be swallowed. Unlocking on a pointer or
+   * key event means the interaction that asks for a sound is also the one that
+   * gets it.
+   *
+   * On every gesture, not only the first.
+   *
+   * It used to be `{ once: true }`, on the reasoning that a context only needs
+   * unlocking once. That holds for a tab and not for an installed app: iOS
+   * parks the audio session whenever the app goes to the background, which is
+   * every time the reader leaves it, and an app launched from the home screen
+   * is never reloaded — so the one unlock this got was spent on the first
+   * session and every one after it was silent. A context can only be revived
+   * from inside a gesture, so every gesture has to be willing to do it.
+   *
+   * Cheap: unlockSound returns immediately when the context is already running.
+   * `touchend` alongside `pointerdown` because WebKit has historically been
+   * choosier about which events count as the gesture than the spec suggests.
+   */
   React.useEffect(() => {
     const unlock = () => unlockSound();
-    const opts = { once: true, passive: true } as const;
-    window.addEventListener('pointerdown', unlock, opts);
-    window.addEventListener('keydown', unlock, opts);
+    const opts = { passive: true } as const;
+    const events = ['pointerdown', 'touchend', 'keydown'] as const;
+    for (const type of events) window.addEventListener(type, unlock, opts);
+    // Coming back to the app is the moment the session was most likely lost.
+    // Not a gesture, so this cannot revive it on its own — it gets the context
+    // rebuilt and ready for the tap that follows.
+    document.addEventListener('visibilitychange', unlock);
     return () => {
-      window.removeEventListener('pointerdown', unlock);
-      window.removeEventListener('keydown', unlock);
+      for (const type of events) window.removeEventListener(type, unlock);
+      document.removeEventListener('visibilitychange', unlock);
     };
   }, []);
 
