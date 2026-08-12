@@ -2,7 +2,7 @@ import * as React from 'react';
 import { EtymologyNode, Icon } from 'lingo-ds';
 import type { Etymologies } from '../../data/etymology';
 import { langName, langLink, langArticle } from '../../data/etymology';
-import { RELATION, isNamed } from './relations';
+import { RELATION, SAME_LANGUAGE, isNamed } from './relations';
 import { Specimen } from './Specimen';
 import { useOpenLanguage } from './languageContext';
 
@@ -54,20 +54,25 @@ function Steps({ data, steps }: { data: Etymologies; steps: [string, string, str
   if (!steps.length) return null;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', marginTop: 'var(--space-4)' }}>
-      {steps.map(([rel, code, term], i) => (
-        <EtymologyNode
-          key={`${code}-${term}-${i}`}
-          size="sm"
-          connector={i < steps.length - 1}
-          word={isNamed(term) ? <Specimen>{term}</Specimen> : undefined}
-          relation={RELATION[rel] ?? rel}
-          language={langName(data, code)}
-          languageHref={langLink(data, code)}
-          onLanguageActivate={openLanguage
-            ? () => openLanguage({ code, name: langName(data, code), href: langLink(data, code), article: langArticle(data, code) })
-            : undefined}
-        />
-      ))}
+      {steps.map(([rel, code, term], i) => {
+        // A step that stays in the language has no stamp to show, so it has no
+        // panel to open either — see SAME_LANGUAGE.
+        const sameLang = SAME_LANGUAGE.has(rel);
+        return (
+          <EtymologyNode
+            key={`${code}-${term}-${i}`}
+            size="sm"
+            connector={i < steps.length - 1}
+            word={isNamed(term) ? <Specimen>{term}</Specimen> : undefined}
+            relation={RELATION[rel] ?? rel}
+            language={sameLang ? undefined : langName(data, code)}
+            languageHref={sameLang ? undefined : langLink(data, code)}
+            onLanguageActivate={openLanguage && !sameLang
+              ? () => openLanguage({ code, name: langName(data, code), href: langLink(data, code), article: langArticle(data, code) })
+              : undefined}
+          />
+        );
+      })}
     </div>
   );
 }

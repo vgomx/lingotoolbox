@@ -1,7 +1,7 @@
 import { Card, EtymologyNode, Icon } from 'lingo-ds';
 import type { Chain, Etymologies } from '../../data/etymology';
 import { langName } from '../../data/etymology';
-import { RELATION, isNamed } from './relations';
+import { RELATION, SAME_LANGUAGE, isNamed } from './relations';
 import { CognateTag } from './CognateTag';
 import { Specimen } from './Specimen';
 
@@ -104,7 +104,7 @@ export function ChainCard({ word, chain, data, gloss, compact = false, interacti
               // "we know the family, not the word".
               word={isNamed(term) ? <Specimen>{term}</Specimen> : undefined}
               relation={RELATION[rel] ?? rel}
-              language={langName(data, code)}
+              language={SAME_LANGUAGE.has(rel) ? undefined : langName(data, code)}
             />
           ))}
         </div>

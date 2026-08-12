@@ -51,15 +51,51 @@ const dumpUrl = (name) => `https://kaikki.org/dictionary/${name}/kaikki.org-dict
 const ANCESTRY = {
   inh: 'inherited', 'inh+': 'inherited', der: 'derived', bor: 'borrowed',
   'bor+': 'borrowed', ubor: 'borrowed', lbor: 'borrowed', slbor: 'borrowed',
-  obor: 'borrowed', root: 'root', cal: 'calque', calque: 'calque', sl: 'semantic loan',
+  obor: 'borrowed', root: 'root', cal: 'calque', calque: 'calque', clq: 'calque',
+  sl: 'semantic loan',
 };
 
 /** {1: the *cognate's* language, 2: term} — note that 1 is not the word's own. */
 const COGNATE = new Set(['cog', 'cognate']);
 /** {1: own lang, 2: the other term} — a sibling in the same language. */
 const DOUBLET = new Set(['doublet', 'dbt']);
-/** {1: own lang, 2..n: the pieces} — how the word is put together. */
-const PARTS = new Set(['compound', 'suffix', 'suf', 'prefix', 'pre', 'affix', 'af']);
+
+/**
+ * {1: own lang, 2..n: the pieces} — how the word is put together.
+ *
+ * The short names matter more than they look. Wiktionary treats `{{com}}`,
+ * `{{com+}}` and `{{compound+}}` as the same template as `{{compound}}` — the
+ * + only changes how the sentence around it reads — and Dutch editors reach for
+ * the short forms constantly. Recognising `suf` and `pre` but not `com` cost
+ * 3,059 Dutch words, `afspraak` among them: it writes {{com|nl|af|spraak}},
+ * while `doktersafspraak` and `belastingafspraak` spell {{compound}} out, so
+ * the compounds were kept and the word they are both built on was dropped.
+ *
+ * `univerbation` (two words written as one), `confix` and `blend` name their
+ * pieces the same way and belong here too.
+ *
+ * `surf` is deliberately absent. Surface analysis means the word was *not*
+ * formed this way but can be read as if it were — printing "Built from" would
+ * assert exactly what Wiktionary is being careful to avoid saying.
+ */
+const PARTS = new Set([
+  'compound', 'compound+', 'com', 'com+', 'suffix', 'suf', 'prefix', 'pre',
+  'affix', 'af', 'confix', 'univerbation', 'univ', 'blend',
+]);
+
+/**
+ * {1: own lang, 2: the word it came from} — a derivation that stays put.
+ *
+ * These are steps like every other, except that both ends are in the same
+ * language: `afspraak` is the noun of the verb `afspreken`, `dia` is what is
+ * left of `diapositief`. The tool had nowhere to put them, so words whose whole
+ * story was one of these were dropped.
+ *
+ * Being same-language is what makes them worth having: the ancestor is very
+ * often a word this workspace already carries, so unlike a step to Latin it
+ * leads somewhere.
+ */
+const DERIVATION = { deverbal: 'deverbal', clipping: 'clipping' };
 
 /** Reads a remote JSONL a line at a time, holding one line in memory. */
 async function* lines(url) {
@@ -174,12 +210,17 @@ function chainFor(entry) {
    * words that were being dropped entirely — which is what it was measured on.
    */
   const fallback = [];
+  /** Same-language steps, held apart so they do not suppress the `ety` fallback. */
+  const derivations = [];
   for (const t of entry.etymology_templates ?? []) {
     const name = t.name;
     const a = positional(t.args);
     if (name === 'ety') {
       const step = etyStep(t);
       if (step) fallback.push(step);
+    } else if (DERIVATION[name]) {
+      // [relation, the word's own language, the word it came from]
+      if (a.length >= 2 && a[1]) derivations.push([DERIVATION[name], a[0], cleanTerm(a[1])]);
     } else if (ANCESTRY[name]) {
       // [relation, ancestor language code, ancestor term]
       if (a.length >= 3 && a[2]) (out.a ??= []).push([ANCESTRY[name], a[1], cleanTerm(a[2])]);
@@ -222,6 +263,15 @@ function chainFor(entry) {
     const roots = deduped.filter(([rel]) => rel === 'root');
     out.a = [...deduped.filter(([rel]) => rel !== 'root'), ...roots];
   }
+
+  /*
+   * The same-language step goes on the front, after the ordering above.
+   *
+   * It is the nearest one — `afspraak` is the noun of `afspreken` first, and
+   * whatever `afspreken` goes back to is a step further out — and prepending
+   * after the root has been moved to the end leaves the root where it belongs.
+   */
+  if (derivations.length) out.a = [...derivations, ...(out.a ?? [])];
 
   // A word with only cognates is a curiosity, not an etymology. The chain view
   // needs at least one thing to say about where the word itself came from.
