@@ -64,7 +64,13 @@ export function Dock() {
     return () => window.removeEventListener('keydown', onKey);
   }, [moreOpen]);
 
+  /*
+   * The bar's four buttons are raw <button>s — they are the one bit of chrome
+   * shaped like nothing in the design system — so they say it themselves.
+   */
   const go = (to: string) => () => { playSound('tap'); navigate(to); };
+  /** The same, from a MenuItem, which now plays its own. Two on one press is one too many. */
+  const goFromMenu = (to: string) => () => navigate(to);
 
   return (
     <>
@@ -96,7 +102,7 @@ export function Dock() {
         >
           <style>{'@keyframes lt-dock-rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}'}</style>
           {secondary.map((t) => (
-            <MenuItem key={t.id} selected={path.startsWith(`/app/${t.path}`)} onClick={go(`/app/${t.path}`)}>
+            <MenuItem key={t.id} selected={path.startsWith(`/app/${t.path}`)} onClick={goFromMenu(`/app/${t.path}`)}>
               <Icon name={t.icon} size={18} style={{ color: 'var(--text-muted)', flex: 'none' }} />
               <span style={{ flex: 1, minWidth: 0 }}>{t.label}</span>
               {!t.released && (
@@ -111,7 +117,7 @@ export function Dock() {
               has no phone equivalent, and this sheet is what holds the controls
               that belong to the app rather than to a screen. */}
           <LanguageMenu variant="row" />
-          <MenuItem selected={path.startsWith('/app/settings')} onClick={go('/app/settings')}>
+          <MenuItem selected={path.startsWith('/app/settings')} onClick={goFromMenu('/app/settings')}>
             <Icon name="settings" size={18} style={{ color: 'var(--text-muted)', flex: 'none' }} />
             <span style={{ flex: 1, minWidth: 0 }}>Settings</span>
           </MenuItem>
