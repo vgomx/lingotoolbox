@@ -143,7 +143,7 @@ export function AppShell() {
 
   // How the content pane enters on each navigation. The reasoning about which
   // moves deserve which motion — and why a deck and its own card must not get
-  // the same one as Flashcards and Roots — lives with the hook.
+  // the same one as Flashcards and Etymology — lives with the hook.
   const pageRef = usePageTransition();
 
   const visibleDecks = React.useMemo(() => {

@@ -15,7 +15,7 @@ export const DOCK_HEIGHT = 58;
  *
  * A rail can afford seven destinations down the side of a desktop; a dock across
  * a 375px phone fits about four before the labels stop fitting. Four is what
- * this is: Home, Flashcards, Roots, More — each about 94px wide, against a
+ * this is: Home, Flashcards, Etymology, More — each about 94px wide, against a
  * longest label of 55.
  *
  * Grammar Notes stays in the sheet, which is the honest ranking rather than a
@@ -47,7 +47,7 @@ export function Dock() {
   const path = location.pathname;
   // /app/review belongs to Flashcards; it has no destination of its own.
   const onCards = path.startsWith('/app/cards') || path.startsWith('/app/review');
-  const onRoots = path.startsWith('/app/etymology');
+  const onEtymology = path.startsWith('/app/etymology');
   const onHome = path === '/app' || path === '/app/';
   const secondary = NAV_TOOLS.filter((t) => !PRIMARY.includes(t.id as typeof PRIMARY[number]));
   const onSecondary = secondary.some((t) => path.startsWith(`/app/${t.path}`)) || path.startsWith('/app/settings');
@@ -172,9 +172,9 @@ export function Dock() {
           <Icon name="layers" size={20} />
           Flashcards
         </button>
-        <button type="button" style={barItem(onRoots)} aria-current={onRoots || undefined} onClick={go('/app/etymology')}>
+        <button type="button" style={barItem(onEtymology)} aria-current={onEtymology || undefined} onClick={go('/app/etymology')}>
           <Icon name="git-branch" size={20} />
-          Roots
+          Etymology
         </button>
         <button
           type="button"
