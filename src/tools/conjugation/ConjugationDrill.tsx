@@ -628,7 +628,11 @@ export function ConjugationDrill() {
         * belong together, and they belong before the card — the card is the
         * question, and everything after it is what you do once it is over.
         */}
-      <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', marginBottom: 'var(--space-6)' }}>
+      {/* More space above than below, because the band belongs to the card
+          rather than to the bar: the bar is status about the run, these are the
+          controls for the question underneath them. The review session gives
+          its own progress bar the same 24px of air. */}
+      <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', marginTop: 'var(--space-7)', marginBottom: 'var(--space-6)' }}>
         {/* What to drill. Chips rather than a select: the set is small, several
             can be on at once, and which are on is worth seeing without opening
             anything. */}
