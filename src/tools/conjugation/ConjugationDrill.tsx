@@ -113,15 +113,23 @@ function pick(
  * the hook, so it holds even where the hook is not consulted.
  */
 const MOTION = `
-@keyframes drill-pop { from { opacity: 0; transform: translateY(14px) scale(.84) } to { opacity: 1; transform: none } }
+@keyframes drill-pop { from { opacity: 0; transform: translateY(10px) scale(.86) } to { opacity: 1; transform: none } }
 @keyframes drill-rise { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
 .drill-pop { animation: drill-pop 380ms var(--ease-spring) backwards }
 .drill-rise { animation: drill-rise var(--dur-slow) var(--ease-out) backwards }
 @media (prefers-reduced-motion: reduce) { .drill-pop, .drill-rise { animation: none } }
 `;
 
-/** How deep the green button's edge sits. Twice the DS chunk — this one is a toy. */
-const CHUNK = 6;
+/** How deep the green button's edge sits. A little past the DS chunk — this one is a toy. */
+const CHUNK = 4;
+
+/**
+ * The row's reserved height: the tallest the button gets, plus its edge.
+ *
+ * `md` is 36 at rest and grows to the 44 touch floor on a phone, so the row
+ * holds 44 either way rather than changing height with the input device.
+ */
+const SLOT = 44 + CHUNK;
 
 /**
  * The thing you hit to move on.
@@ -168,7 +176,7 @@ function ContinueButton({ verdict, onClick }: { verdict: Verdict; onClick: () =>
 
   if (!won) {
     return wrap(
-      <Button className="drill-rise" size="lg" variant="secondary" onClick={onClick}>
+      <Button className="drill-rise" size="md" variant="secondary" onClick={onClick}>
         Got it
       </Button>,
     );
@@ -181,21 +189,22 @@ function ContinueButton({ verdict, onClick }: { verdict: Verdict; onClick: () =>
   return wrap(
     <Button
       className="drill-pop"
-      size="xl"
+      size="md"
       pill
       variant="success"
-      iconRight={<Icon name="arrow-right" size={20} />}
+      iconRight={<Icon name="arrow-right" size={16} />}
       onClick={onClick}
       onPointerDown={() => setPress(true)}
       onPointerUp={() => setPress(false)}
       onPointerLeave={() => setPress(false)}
       onPointerCancel={() => setPress(false)}
       style={{
-        paddingLeft: 32,
-        paddingRight: 26,
-        fontSize: 'var(--fs-18)',
-        boxShadow: `0 ${press ? 2 : CHUNK}px 0 ${edge}`,
-        transform: press ? `translateY(${CHUNK - 2}px)` : 'none',
+        // A shade wider than the size's own 16, because a pill's rounded ends
+        // eat into the space the label reads in.
+        paddingLeft: 22,
+        paddingRight: 18,
+        boxShadow: `0 ${press ? 1 : CHUNK}px 0 ${edge}`,
+        transform: press ? `translateY(${CHUNK - 1}px)` : 'none',
         transition: 'box-shadow var(--dur-instant) var(--ease-standard), transform var(--dur-instant) var(--ease-standard), background-color var(--dur-fast) var(--ease-standard)',
       }}
     >
@@ -642,7 +651,7 @@ export function ConjugationDrill() {
         * The row holds its height whether or not the button is in it, so
         * answering does not shove everything underneath down the page.
         */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', minHeight: 52 + CHUNK, marginTop: 'var(--space-5)' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', minHeight: SLOT, marginTop: 'var(--space-5)' }}>
         {verdict && !outgoing && <ContinueButton verdict={verdict} onClick={advance} />}
       </div>
 
