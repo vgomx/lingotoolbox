@@ -203,6 +203,28 @@ export interface Note {
   createdAt: number;
 }
 
+/** Which tools count as practice. Reference screens are not among them — see PracticeDay. */
+export type PracticeTool = 'cards' | 'conjugation';
+
+/**
+ * One tool, used for its exercise, on one day.
+ *
+ * A row per tool per day rather than per answer: what the streak asks is "did
+ * you practise", and the tenth answer of the morning is not more of a yes than
+ * the first. Keyed on the pair, so recording is a put that either writes the
+ * day or writes it again, and nothing has to be read first.
+ *
+ * `cards` is here for completeness rather than because it is written — grading
+ * already leaves a row in the review log, and the streak reads both.
+ */
+export interface PracticeDay {
+  /** `${day}|${tool}`. */
+  id: string;
+  day: string;
+  tool: PracticeTool;
+  at: number;
+}
+
 export interface ReviewLogEntry {
   id: string;
   cardId: string;

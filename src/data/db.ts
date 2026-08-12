@@ -1,17 +1,17 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { Card, Deck, Direction, Grade, LanguageCode, Note, Prefs, ReviewLogEntry } from './types';
+import type { Card, Deck, Direction, Grade, LanguageCode, Note, PracticeDay, PracticeTool, Prefs, ReviewLogEntry } from './types';
 import { asLevel } from './types';
 import { buildSeed, buildSeedNotes, WORKSPACES } from './seed';
 import { schedule, scheduleOf, withSchedule } from './scheduler';
 
 const DB_NAME = 'lingo-toolbox';
 /**
- * 2 added the notes store. The upgrade below is written to run from whatever
- * version a reader is on rather than assuming an empty database, which is what
- * version 1's did — it created all three stores unconditionally, which is only
- * correct the first time anyone opens the app.
+ * 2 added the notes store, 3 the practice log. The upgrade below is written to
+ * run from whatever version a reader is on rather than assuming an empty
+ * database, which is what version 1's did — it created all three stores
+ * unconditionally, which is only correct the first time anyone opens the app.
  */
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const PREFS_KEY = 'lingo-toolbox:prefs';
 
 interface LingoDB extends DBSchema {
@@ -34,6 +34,11 @@ interface LingoDB extends DBSchema {
     key: string;
     value: Note;
     indexes: { 'by-language': LanguageCode };
+  };
+  practice: {
+    key: string;
+    value: PracticeDay;
+    indexes: { 'by-day': string };
   };
 }
 
@@ -61,6 +66,10 @@ function getDB() {
         if (oldVersion < 2) {
           const notes = db.createObjectStore('notes', { keyPath: 'id' });
           notes.createIndex('by-language', 'language');
+        }
+        if (oldVersion < 3) {
+          const practice = db.createObjectStore('practice', { keyPath: 'id' });
+          practice.createIndex('by-day', 'day');
         }
       },
     });
@@ -308,16 +317,41 @@ const dayKey = (ms: number) => {
 };
 
 /**
- * Consecutive days ending today (or yesterday, if today has no reviews yet) on
- * which at least one card was graded. A gap of a full day ends the streak.
+ * Notes that a tool was used for its exercise today.
+ *
+ * Idempotent by construction — the key is the day and the tool — so a caller
+ * can hand this every answer without thinking about it.
+ */
+export async function recordPractice(tool: PracticeTool, now: number = Date.now()): Promise<void> {
+  const db = await getDB();
+  const day = dayKey(now);
+  await db.put('practice', { id: `${day}|${tool}`, day, tool, at: now });
+}
+
+/**
+ * Consecutive days ending today (or yesterday, if today is not yet counted) on
+ * which the reader practised. A gap of a full day ends the streak.
+ *
+ * Practice is answering something: a card graded, or a form answered in the
+ * drill. Not opening a screen. The Explorer and the notes are worth reading and
+ * are deliberately not counted — a streak that ticks for reading a page is a
+ * streak that counts opening the app, and it would stop meaning anything the
+ * day someone noticed.
+ *
+ * Two sources rather than one because grading already writes a review row, and
+ * a second write beside it would be a fact stored twice with a way to disagree.
  */
 export async function computeStreak(now: number = Date.now()): Promise<number> {
   const db = await getDB();
-  const days = new Set((await db.getAll('reviews')).map((r) => dayKey(r.reviewedAt)));
+  const [reviews, practice] = await Promise.all([db.getAll('reviews'), db.getAll('practice')]);
+  const days = new Set([
+    ...reviews.map((r) => dayKey(r.reviewedAt)),
+    ...practice.map((p) => p.day),
+  ]);
   if (!days.size) return 0;
 
   const DAY_MS = 24 * 60 * 60 * 1000;
-  // Reviewing today isn't required to hold a streak until the day is over, so
+  // Practising today isn't required to hold a streak until the day is over, so
   // start counting from today if it's there, otherwise from yesterday.
   let cursor = days.has(dayKey(now)) ? now : now - DAY_MS;
   if (!days.has(dayKey(cursor))) return 0;
@@ -365,15 +399,18 @@ export async function reviewsPerDay(days = 7, now: number = Date.now()): Promise
  * only the workspace you happen to be looking at would produce a file that looks
  * complete and quietly isn't.
  */
-export async function exportAll(): Promise<{ decks: Deck[]; cards: Card[]; reviews: ReviewLogEntry[]; notes: Note[] }> {
+export async function exportAll(): Promise<{
+  decks: Deck[]; cards: Card[]; reviews: ReviewLogEntry[]; notes: Note[]; practice: PracticeDay[];
+}> {
   const db = await getDB();
-  const [decks, cards, reviews, notes] = await Promise.all([
+  const [decks, cards, reviews, notes, practice] = await Promise.all([
     db.getAll('decks'),
     db.getAll('cards'),
     db.getAll('reviews'),
     db.getAll('notes'),
+    db.getAll('practice'),
   ]);
-  return { decks, cards, reviews, notes };
+  return { decks, cards, reviews, notes, practice };
 }
 
 export interface ImportCounts {
@@ -396,16 +433,23 @@ export interface ImportCounts {
 export async function importAll(
   // notes optional: a backup written before they existed simply has none, and
   // is still a perfectly good backup of everything it did have.
-  data: { decks: Deck[]; cards: Card[]; reviews: ReviewLogEntry[]; notes?: Note[] },
+  // practice optional for the same reason as notes: a backup written before the
+  // drill existed simply has none, and is still a good backup of what it held.
+  data: {
+    decks: Deck[]; cards: Card[]; reviews: ReviewLogEntry[];
+    notes?: Note[]; practice?: PracticeDay[];
+  },
 ): Promise<ImportCounts> {
   const db = await getDB();
   const existing = await exportAll();
   const incomingNotes = data.notes ?? [];
+  const incomingPractice = data.practice ?? [];
   const has = {
     decks: new Set(existing.decks.map((d) => d.id)),
     cards: new Set(existing.cards.map((c) => c.id)),
     reviews: new Set(existing.reviews.map((r) => r.id)),
     notes: new Set(existing.notes.map((n) => n.id)),
+    practice: new Set(existing.practice.map((p) => p.id)),
   };
 
   const fresh = {
@@ -413,14 +457,16 @@ export async function importAll(
     cards: data.cards.filter((c) => !has.cards.has(c.id)),
     reviews: data.reviews.filter((r) => !has.reviews.has(r.id)),
     notes: incomingNotes.filter((n) => !has.notes.has(n.id)),
+    practice: incomingPractice.filter((p) => !has.practice.has(p.id)),
   };
 
-  const tx = db.transaction(['decks', 'cards', 'reviews', 'notes'], 'readwrite');
+  const tx = db.transaction(['decks', 'cards', 'reviews', 'notes', 'practice'], 'readwrite');
   await Promise.all([
     ...fresh.decks.map((d) => tx.objectStore('decks').put(d)),
     ...fresh.cards.map((c) => tx.objectStore('cards').put(c)),
     ...fresh.reviews.map((r) => tx.objectStore('reviews').put(r)),
     ...fresh.notes.map((n) => tx.objectStore('notes').put(n)),
+    ...fresh.practice.map((p) => tx.objectStore('practice').put(p)),
     tx.done,
   ]);
 
@@ -476,12 +522,13 @@ export function savePrefs(prefs: Prefs): void {
 /** Clears every store — used by the "Reset local data" action in Settings. */
 export async function resetAll(): Promise<void> {
   const db = await getDB();
-  const tx = db.transaction(['decks', 'cards', 'reviews', 'notes'], 'readwrite');
+  const tx = db.transaction(['decks', 'cards', 'reviews', 'notes', 'practice'], 'readwrite');
   await Promise.all([
     tx.objectStore('decks').clear(),
     tx.objectStore('cards').clear(),
     tx.objectStore('reviews').clear(),
     tx.objectStore('notes').clear(),
+    tx.objectStore('practice').clear(),
     tx.done,
   ]);
   localStorage.removeItem(PREFS_KEY);

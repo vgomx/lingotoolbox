@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { setSoundEnabled, unlockSound, usePrefersReducedMotion } from 'lingo-ds';
-import type { Card, Deck, Direction, Grade, LanguageCode, Note, Prefs, ReviewItem } from '../data/types';
+import type { Card, Deck, Direction, Grade, LanguageCode, Note, PracticeTool, Prefs, ReviewItem } from '../data/types';
 import * as db from '../data/db';
 import { dueDirections } from '../data/scheduler';
 import { WORKSPACES } from '../data/seed';
@@ -42,12 +42,14 @@ interface StoreValue {
   /** The questions a deck owes now — two per card where it is asked both ways. */
   dueInDeck: (deckId: string) => ReviewItem[];
   dueCount: number;
-  /** Consecutive days with at least one card graded. */
+  /** Consecutive days on which the reader practised — graded a card, or answered in a drill. */
   streak: number;
   /** Reviews graded per day over the last week, oldest first, ending today. */
   weeklyReviews: number[];
 
   grade: (card: Card, direction: Direction, grade: Grade) => Promise<Card>;
+  /** Notes that a tool was used for its exercise today. Cheap to call on every answer. */
+  practise: (tool: PracticeTool) => Promise<void>;
   /** Takes back the last grade, returning the card it restored, or null. */
   undo: () => Promise<Card | null>;
   /** How many grades can still be taken back. */
@@ -240,6 +242,32 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return updated;
   }, []);
 
+  /*
+   * The last day+tool already written, so a drill session is one write rather
+   * than one per answer.
+   *
+   * A ref, not state: nothing renders from it, and re-rendering the whole app
+   * on the first answer of a session to record that it happened would be the
+   * tail wagging the dog. Losing it on reload is harmless — the write it guards
+   * is a put on a key that already exists.
+   */
+  const practised = React.useRef<string | null>(null);
+
+  /**
+   * Records that a tool was used for its exercise today.
+   *
+   * Called on every answer; almost all of them do nothing. The streak is
+   * recomputed only on the answer that actually wrote something, which is the
+   * only one that can have changed it.
+   */
+  const practise = React.useCallback(async (tool: PracticeTool) => {
+    const key = `${new Date().toDateString()}|${tool}`;
+    if (practised.current === key) return;
+    practised.current = key;
+    await db.recordPractice(tool);
+    setStreak(await db.computeStreak());
+  }, []);
+
   const saveCard = React.useCallback(async (card: Card) => {
     await db.putCard(card);
     setCards((cs) => (cs.some((c) => c.id === card.id)
@@ -351,6 +379,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     dueCount,
     streak,
     weeklyReviews,
+    practise,
     grade,
     undo,
     undoDepth: undoStack.length,
