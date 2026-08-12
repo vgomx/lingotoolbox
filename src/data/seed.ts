@@ -24,8 +24,12 @@ export const TOOLS = [
   // dropped the head noun itself, for a word this app already uses to mean the
   // individual item the sidebar counts. It fits the rail at 55 of 60px.
   { id: 'cards', label: 'Flashcards', short: 'Flashcards', icon: 'layers', path: 'cards', accent: 'var(--tool-flashcards)', released: true, blurb: 'Spaced repetition that schedules itself.' },
-  { id: 'etymology', label: 'Etymology Explorer', short: 'Roots', icon: 'git-branch', path: 'etymology', accent: 'var(--tool-etymology)', released: true, blurb: 'Trace a word back to its root.' },
-  { id: 'conjugation', label: 'Conjugation Drill', short: 'Verbs', icon: 'spell-check', path: 'conjugation', accent: 'var(--tool-conjugation)', released: true, blurb: 'Drill the verb forms you keep missing.' },
+  // Roots and Verbs were not shortenings of anything — they were other names,
+  // so the rail said one thing and the screen you landed on said another. Both
+  // now drop the trailing word like the rest. Conjugation is the longest label
+  // the rail carries, at 61 of the 64px the tile allows.
+  { id: 'etymology', label: 'Etymology Explorer', short: 'Etymology', icon: 'git-branch', path: 'etymology', accent: 'var(--tool-etymology)', released: true, blurb: 'Trace a word back to its root.' },
+  { id: 'conjugation', label: 'Conjugation Drill', short: 'Conjugation', icon: 'spell-check', path: 'conjugation', accent: 'var(--tool-conjugation)', released: true, blurb: 'Drill the verb forms you keep missing.' },
   { id: 'phrasebook', label: 'Phrasebook', short: 'Phrases', icon: 'message-square-quote', path: 'phrasebook', accent: 'var(--tool-phrasebook)', released: false, blurb: 'Keep whole phrases, not just single words.' },
   { id: 'grammar', label: 'Grammar Notes', short: 'Grammar', icon: 'scroll-text', path: 'grammar', accent: 'var(--tool-grammar)', released: true, blurb: 'Pull up a short explanation mid-review.' },
 ] as const;

@@ -5,7 +5,7 @@ import { usePrefersReducedMotion } from 'lingo-ds';
 /**
  * Which way a navigation went, which is what decides how the next screen enters.
  *
- * `hub` is arriving somewhere new — Flashcards to Roots. `forward` and `back`
+ * `hub` is arriving somewhere new — Flashcards to Etymology. `forward` and `back`
  * are moves inside a place you are already in, a deck to one of its cards and
  * out again. They get different motions because they mean different things: a
  * screen that rises says you arrived, and a screen that rises on the way into a
