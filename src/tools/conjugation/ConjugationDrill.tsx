@@ -516,10 +516,20 @@ export function ConjugationDrill() {
         </p>
       </header>
 
-      {/* What to drill. Chips rather than a select: the set is small, several
-          can be on at once, and which are on is worth seeing without opening
-          anything. */}
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 'var(--space-6)' }}>
+      {/*
+        * How the drill is set up, in one band above the card.
+        *
+        * What to ask and how to answer it are the same kind of control: both
+        * are settings for the question rather than part of answering it, both
+        * are remembered, and neither changes once a session is under way. They
+        * belong together, and they belong before the card — the card is the
+        * question, and everything after it is what you do once it is over.
+        */}
+      <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', marginBottom: 'var(--space-6)' }}>
+        {/* What to drill. Chips rather than a select: the set is small, several
+            can be on at once, and which are on is worth seeing without opening
+            anything. */}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         {all.map((g) => {
           const on = groups.has(g.id);
           return (
@@ -545,6 +555,30 @@ export function ConjugationDrill() {
             </button>
           );
         })}
+        </div>
+
+        {/*
+          * A segmented control rather than two buttons.
+          *
+          * Two buttons where one is filled and one is not reads as an action
+          * and its lesser sibling — "Choosing" looked like something that would
+          * happen next, rather than the state the screen is not in. A pill
+          * track shows both as one choice with one of them taken.
+          *
+          * Tabs, not Switch: a switch has an on state and an off state, and
+          * neither of these is the absence of the other. And it is a tablist
+          * honestly — the card below really does swap between a text field and
+          * four buttons.
+          */}
+        <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center', flex: 'none' }}>
+          <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>Answer by</span>
+          <Tabs
+            variant="pill"
+            value={mode}
+            items={[{ value: 'choose', label: 'Choosing' }, { value: 'type', label: 'Typing it' }]}
+            onChange={(v) => { setMode(v as Mode); save(MODE_KEY, v); setTyped(''); setVerdict(null); setOutgoing(null); }}
+          />
+        </div>
       </div>
 
       {/*
@@ -612,28 +646,6 @@ export function ConjugationDrill() {
         {verdict && !outgoing && <ContinueButton verdict={verdict} onClick={advance} />}
       </div>
 
-      {/*
-        * A segmented control rather than two buttons.
-        *
-        * Two buttons where one is filled and one is not reads as an action and
-        * its lesser sibling — "Choosing" looked like something that would
-        * happen next, rather than the state the screen is not in. A pill track
-        * shows both as one choice with one of them taken.
-        *
-        * Tabs, not Switch: a switch has an on state and an off state, and
-        * neither of these is the absence of the other. And it is a tablist
-        * honestly — the panel above really does swap between a text field and
-        * four buttons.
-        */}
-      <div style={{ display: 'flex', gap: 'var(--space-4)', marginTop: 'var(--space-6)', alignItems: 'center' }}>
-        <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>Answer by</span>
-        <Tabs
-          variant="pill"
-          value={mode}
-          items={[{ value: 'choose', label: 'Choosing' }, { value: 'type', label: 'Typing it' }]}
-          onChange={(v) => { setMode(v as Mode); save(MODE_KEY, v); setTyped(''); setVerdict(null); setOutgoing(null); }}
-        />
-      </div>
       <style>{MOTION}</style>
     </div>
   );
