@@ -325,7 +325,7 @@ function QuestionCard({
 }
 
 export function ConjugationDrill() {
-  const { language, workspace, prefs } = useStore();
+  const { language, workspace, prefs, practise } = useStore();
   const [data, setData] = React.useState<Conjugations | null>(null);
   const [state, setState] = React.useState<'loading' | 'ready' | 'unavailable'>('loading');
 
@@ -428,6 +428,10 @@ export function ConjugationDrill() {
     if (!question || verdict) return;
     const result = mark(given, question.answer);
     setVerdict(result);
+    // Answering is what the streak counts, right or wrong — the day was spent
+    // practising either way, and a streak that only moves on correct answers
+    // punishes the reader for the exact thing the drill is for.
+    void practise('conjugation');
     setScore((s) => ({ right: s.right + (result === 'wrong' ? 0 : 1), asked: s.asked + 1 }));
     const id = `${question.word}|${question.cell}`;
     setMisses((m) => ({

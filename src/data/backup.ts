@@ -1,6 +1,6 @@
 import { exportAll, importAll, type ImportCounts } from './db';
 import { APP_VERSION } from '../legalNotices';
-import type { Card, Deck, Note, ReviewLogEntry } from './types';
+import type { Card, Deck, Note, PracticeDay, ReviewLogEntry } from './types';
 
 /** Identifies the file as ours before anything reads its contents. */
 export const BACKUP_FORMAT = 'lingo-toolbox/backup';
@@ -11,11 +11,12 @@ export const BACKUP_FORMAT = 'lingo-toolbox/backup';
  * forever; that is the point of writing the version down.
  */
 /**
- * 2 added notes. A v1 file has no `notes` key at all, which is why the reader
- * treats it as optional rather than as a missing field — an old backup is still
- * a complete backup of everything the app had when it was written.
+ * 2 added notes, 3 the practice log. An older file has no key at all for what it
+ * predates, which is why the reader treats those as optional rather than as
+ * missing fields — an old backup is still a complete backup of everything the
+ * app had when it was written.
  */
-export const BACKUP_VERSION = 2;
+export const BACKUP_VERSION = 3;
 
 export interface Backup {
   format: typeof BACKUP_FORMAT;
@@ -26,6 +27,8 @@ export interface Backup {
   cards: Card[];
   reviews: ReviewLogEntry[];
   notes: Note[];
+  /** Which days the reader practised in a tool that keeps no other record. */
+  practice: PracticeDay[];
 }
 
 /**
@@ -36,7 +39,7 @@ export interface Backup {
  * backup on a laptop should not drag a phone's theme along with it.
  */
 export async function buildBackup(now: number = Date.now()): Promise<Backup> {
-  const { decks, cards, reviews, notes } = await exportAll();
+  const { decks, cards, reviews, notes, practice } = await exportAll();
   return {
     format: BACKUP_FORMAT,
     version: BACKUP_VERSION,
@@ -46,6 +49,7 @@ export async function buildBackup(now: number = Date.now()): Promise<Backup> {
     cards,
     reviews,
     notes,
+    practice,
   };
 }
 
@@ -81,6 +85,9 @@ const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'obj
 const looksLikeNote = (v: unknown): boolean => isObject(v)
   && typeof v.id === 'string' && typeof v.language === 'string'
   && typeof v.title === 'string' && typeof v.body === 'string';
+
+const looksLikePractice = (v: unknown): boolean => isObject(v)
+  && typeof v.id === 'string' && typeof v.day === 'string' && typeof v.tool === 'string';
 
 const looksLikeDeck = (v: unknown) => isObject(v)
   && typeof v.id === 'string' && typeof v.name === 'string' && typeof v.language === 'string';
@@ -126,6 +133,9 @@ export function parseBackup(text: string): Backup {
   if (raw.notes !== undefined && (!Array.isArray(raw.notes) || !raw.notes.every(looksLikeNote))) {
     throw new BackupError('That backup has a note with missing fields.');
   }
+  if (raw.practice !== undefined && (!Array.isArray(raw.practice) || !raw.practice.every(looksLikePractice))) {
+    throw new BackupError('That backup has a practice day with missing fields.');
+  }
 
   return {
     format: BACKUP_FORMAT,
@@ -136,11 +146,27 @@ export function parseBackup(text: string): Backup {
     cards: raw.cards as Card[],
     reviews: raw.reviews as ReviewLogEntry[],
     notes: (raw.notes ?? []) as Note[],
+    practice: (raw.practice ?? []) as PracticeDay[],
   };
 }
 
+/*
+ * Every store the backup holds, which until now it was not.
+ *
+ * `notes` were written into the file and then dropped on the way back in — the
+ * export had carried them since they existed, and the restore never passed them
+ * to importAll, so anyone restoring after clearing their browser data got their
+ * cards back and silently lost their grammar notes. Found while adding
+ * `practice` beside it.
+ */
 export async function restoreBackup(backup: Backup): Promise<ImportCounts> {
-  return importAll({ decks: backup.decks, cards: backup.cards, reviews: backup.reviews });
+  return importAll({
+    decks: backup.decks,
+    cards: backup.cards,
+    reviews: backup.reviews,
+    notes: backup.notes,
+    practice: backup.practice,
+  });
 }
 
 export type { ImportCounts };

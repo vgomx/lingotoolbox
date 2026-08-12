@@ -507,8 +507,13 @@ export function AppShell() {
           {/* Both are secondary to the screen's own actions, and on a phone the
               top bar has room for the title and about two controls. The streak is
               on Home's hero anyway, and the marketing link lives in the rail's
-              logo, which the menu opens. */}
-          {streakInTopBar && !isMobile && <StreakPill days={streak} active={streak > 0} size="sm" />}
+              logo, which the menu opens.
+
+              Hidden at nothing, the same as Home's — "0 DAYS" is a fact nobody
+              needs, and the top bar was showing it on every screen while Home
+              was suppressing it, so the app disagreed with itself in the more
+              prominent of the two places. */}
+          {streakInTopBar && !isMobile && streak > 0 && <StreakPill days={streak} size="sm" />}
           {/* Three things that are not part of doing the work — what this is, how
               it behaves, what the keys do — behind one question mark rather than
               three competing glyphs. Still off on a phone, where the bar has room
