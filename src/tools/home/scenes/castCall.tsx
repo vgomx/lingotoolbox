@@ -364,5 +364,7 @@ export const castCallScene: Scene = {
   /* Mid-turn on the first character, where the line is up and the body is at
      the top of its bow. */
   still: 0.9,
+  /* People, not a picture of people — the card's edge takes their legs. */
+  bleed: 'bottom',
   Frame,
 };

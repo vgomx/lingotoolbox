@@ -93,9 +93,16 @@ export function HeroScenes() {
   /*
    * Fit the crop inside the box, never cropping it further: whichever of the
    * two axes runs out first decides the scale, and the rest is empty space.
+   *
+   * Unless the scene asks to bleed, in which case the width decides alone and
+   * whatever that makes too tall runs off the bottom — see Scene.bleed.
    */
   const unit = width ? width / BOX.width : 0;
-  const fit = unit ? Math.min(BOX.width / crop.width, BOX.height / crop.height) * unit : 0;
+  const bleed = scene.bleed === 'bottom';
+  const fit = unit
+    ? (bleed ? BOX.width / crop.width : Math.min(BOX.width / crop.width, BOX.height / crop.height)) * unit
+    : 0;
+  const boxHeight = width * (BOX.height / BOX.width);
 
   /* Dip to transparent between scenes, so one does not cut into the next. */
   const time = reducedMotion ? scene.still : t;
@@ -110,16 +117,28 @@ export function HeroScenes() {
       aria-hidden
       style={{
         width: '100%', aspectRatio: `${BOX.width} / ${BOX.height}`,
-        overflow: 'hidden', position: 'relative', contain: 'strict',
+        position: 'relative',
+        /*
+         * A bleeding scene is cut by the card, not by this box — that is the
+         * whole point of it, and the box clipping first would leave the figures
+         * ending in mid-air a card's padding above the edge. Paint containment
+         * clips too, so it comes off with the overflow; layout and style
+         * containment stay, which is most of what it was there for.
+         */
+        overflow: bleed ? 'visible' : 'hidden',
+        contain: bleed ? 'layout style' : 'strict',
       }}
     >
       {fit > 0 && (
         <div
           style={{
             position: 'absolute',
-            // The crop's centre on the box's centre, at the scale that fits.
+            // The crop's centre on the box's centre, at the scale that fits —
+            // or its top edge on the box's top, when the bottom is going over.
             left: (width - crop.width * fit) / 2 - crop.left * fit,
-            top: (width * (BOX.height / BOX.width) - crop.height * fit) / 2 - crop.top * fit,
+            top: bleed
+              ? -crop.top * fit
+              : (boxHeight - crop.height * fit) / 2 - crop.top * fit,
             width: STAGE, height: STAGE,
             transform: `scale(${fit})`, transformOrigin: '0 0',
             opacity: Math.max(0, fade),

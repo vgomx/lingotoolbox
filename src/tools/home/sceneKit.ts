@@ -82,5 +82,19 @@ export interface Scene {
   crop: Crop;
   /** The moment held when the reader prefers reduced motion. */
   still: number;
+  /**
+   * Let the scene run off the bottom of the box and be cut by the card.
+   *
+   * The default is to fit the whole crop inside the box, which is right for a
+   * scene that is a picture of something. The cast call is not: it is people
+   * standing in front of you, and a person whose feet are on screen reads as a
+   * doll on a shelf. Fitted to the width instead and anchored at the top, the
+   * figures come up about a fifth larger and the card's own edge takes their
+   * legs — so they read as standing behind it rather than inside it.
+   *
+   * The crop still describes the whole band the scene paints. This is a
+   * decision about how to show it, not a claim about what is there.
+   */
+  bleed?: 'bottom';
   Frame: (props: { t: number }) => React.ReactElement;
 }
