@@ -40,14 +40,22 @@ interface Member {
  * --tool-* token here would be saying something the colour does not mean.
  */
 const CAST: Member[] = [
-  { id: 'scientist', move: 'nod', lang: 'German', text: 'Faszinierend. Notieren wir das.', gloss: 'Fascinating. Let’s write that down.', size: 44, accent: '#33C4F0', parts: ['swirl'] },
-  { id: 'princess', move: 'sway', lang: 'French', text: 'Enchantée, vraiment.', gloss: 'Delighted, truly.', size: 56, accent: '#F4AA41', parts: ['swing'] },
-  { id: 'turban', move: 'nod', lang: 'Punjabi', text: 'ਸਤ ਸ੍ਰੀ ਅਕਾਲ', gloss: 'Sat sri akal — a greeting.', size: 54, accent: '#2ED3A0', parts: ['swing'] },
-  { id: 'tuxedo', move: 'sway', lang: 'Italian', text: 'Il piacere è mio.', gloss: 'The pleasure is mine.', size: 56, accent: '#B7B9CB', parts: ['wiggle'] },
+  { id: 'scientist', move: 'nod', lang: 'German', text: 'Faszinierend. Notieren wir das.', gloss: 'Fascinating. Let\u2019s write that down.', size: 44, accent: '#33C4F0', parts: ['swirl'] },
+  { id: 'princess', move: 'sway', lang: 'French', text: 'Enchant\u00e9e, vraiment.', gloss: 'Delighted, truly.', size: 56, accent: '#F4AA41', parts: ['swing'] },
+  { id: 'turban', move: 'nod', lang: 'Punjabi', text: '\u0a38\u0a24 \u0a38\u0a4d\u0a30\u0a40 \u0a05\u0a15\u0a3e\u0a32', gloss: 'Sat sri akal \u2014 a greeting.', size: 54, accent: '#2ED3A0', parts: ['swing'] },
+  { id: 'tuxedo', move: 'sway', lang: 'Italian', text: 'Il piacere \u00e8 mio.', gloss: 'The pleasure is mine.', size: 56, accent: '#B7B9CB', parts: ['wiggle'] },
   { id: 'veil', move: 'sway', lang: 'Portuguese', text: 'Hoje eu digo sim.', gloss: 'Today I say yes.', size: 56, accent: '#F4F4F8', parts: ['swing'] },
-  { id: 'supervillain', move: 'creep', lang: 'Russian', text: 'Мир будет моим.', gloss: 'The world will be mine.', size: 54, accent: '#7A5AE0', parts: ['swing'] },
-  { id: 'elf', move: 'nod', lang: 'Finnish', text: 'Metsä muistaa kaiken.', gloss: 'The forest remembers everything.', size: 50, accent: '#B1CC33', parts: ['earL', 'earR'] },
-  { id: 'fairy', move: 'float', lang: 'Irish', text: 'Míle fáilte romhat.', gloss: 'A thousand welcomes.', size: 52, accent: '#2ED3A0', parts: ['flapL', 'flapR'] },
+  { id: 'supervillain', move: 'creep', lang: 'Russian', text: '\u041c\u0438\u0440 \u0431\u0443\u0434\u0435\u0442 \u043c\u043e\u0438\u043c.', gloss: 'The world will be mine.', size: 54, accent: '#7A5AE0', parts: ['swing'] },
+  { id: 'superhero', move: 'bounce', lang: 'Spanish', text: '\u00a1Yo me encargo!', gloss: 'I\u2019ve got this!', size: 60, accent: '#FF6B5B', parts: ['wiggle', 'bob'] },
+  { id: 'mage', move: 'nod', lang: 'Latin', text: 'Verba habent potestatem.', gloss: 'Words have power.', size: 48, accent: '#6A4CF0', parts: ['swing', 'beard'] },
+  { id: 'fairy', move: 'float', lang: 'Irish', text: 'M\u00edle f\u00e1ilte romhat.', gloss: 'A thousand welcomes.', size: 52, accent: '#2ED3A0', parts: ['flapL', 'flapR'] },
+  { id: 'vampire', move: 'creep', lang: 'Romanian', text: 'Bine ai venit\u2026 intr\u0103.', gloss: 'Welcome\u2026 do come in.', size: 52, accent: '#D22F27', parts: ['cape'] },
+  { id: 'elf', move: 'nod', lang: 'Finnish', text: 'Mets\u00e4 muistaa kaiken.', gloss: 'The forest remembers everything.', size: 50, accent: '#B1CC33', parts: ['earL', 'earR'] },
+  { id: 'genie', move: 'float', lang: 'Arabic', text: '\u0623\u0645\u0631\u0643 \u0645\u064f\u0637\u0627\u0639.', gloss: 'Your wish is granted.', size: 58, accent: '#33C4F0', parts: ['flutter', 'boing'] },
+  { id: 'zombie', move: 'lurch', lang: 'Dutch', text: 'Ik\u2026 eh\u2026 hersenen?', gloss: 'I\u2026 uh\u2026 brains?', size: 54, accent: '#B1CC33', parts: ['wobble'] },
+  { id: 'detective', move: 'creep', lang: 'Swedish', text: 'N\u00e5got st\u00e4mmer inte.', gloss: 'Something doesn\u2019t add up.', size: 52, accent: '#F4AA41', parts: ['swing', 'bob'] },
+  { id: 'astronaut', move: 'float', lang: 'Japanese', text: '\u5b87\u5b99\u306f\u9759\u304b\u3067\u3059\u3002', gloss: 'Space is quiet.', size: 54, accent: '#33C4F0', parts: ['wobble'] },
+  { id: 'farmer', move: 'bounce', lang: 'Turkish', text: 'Toprak yalan s\u00f6ylemez.', gloss: 'The soil never lies.', size: 50, accent: '#B1CC33', parts: ['swing'] },
 ];
 
 /**
