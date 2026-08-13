@@ -124,8 +124,17 @@ export function HeroScenes() {
          * ending in mid-air a card's padding above the edge. Paint containment
          * clips too, so it comes off with the overflow; layout and style
          * containment stay, which is most of what it was there for.
+         *
+         * Downward only, though. Taking the clip off entirely let the cast out
+         * on every side: measured across a pass, characters painted 42px past
+         * the left edge, 38px past the right and 83px above the top, at full
+         * opacity — the sideways travel of a creep and the slide each of them
+         * arrives and leaves on, which the box had been quietly absorbing all
+         * along. The inset clip puts those three sides back and opens the
+         * bottom by more than any figure can reach.
          */
         overflow: bleed ? 'visible' : 'hidden',
+        clipPath: bleed ? 'inset(0 0 -100% 0)' : undefined,
         contain: bleed ? 'layout style' : 'strict',
       }}
     >

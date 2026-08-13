@@ -72,11 +72,22 @@ const TOTAL = PER_PASS * SLOT;
 
 /* ── the stage ───────────────────────────────────────────────────────────── */
 
-/** Where the character stands, and how big they are drawn. */
-const FLOOR = 660;
-const FIGURE = 380;
+/*
+ * Where the character stands, and how big they are drawn.
+ *
+ * The piece's own numbers. The port had shrunk the figure to 380 at a floor of
+ * 660, which was sized for fitting the whole crop into the box — and once the
+ * scene bleeds instead, a figure sized to fit is a figure that does not need
+ * to. At 500 they are a third larger and their feet land at 930 rather than
+ * 850, which is what puts a real part of the body behind the card's edge
+ * rather than a sliver of it.
+ *
+ * The bubble stays clear: it ends at 408 and the head starts at 430.
+ */
+const FLOOR = 680;
+const FIGURE = 500;
 /** The bubble's baseline — its tail sits here and it grows upward. */
-const BUBBLE_BASE = 400;
+const BUBBLE_BASE = 408;
 
 /* ── the glyphs ──────────────────────────────────────────────────────────── */
 
@@ -375,9 +386,16 @@ function Frame({ t }: { t: number }) {
 export const castCallScene: Scene = {
   id: 'cast-call',
   duration: TOTAL,
-  /* The band the piece actually paints in: the bubble's top edge down to the
-     character's feet, wide enough for the full sideways swing of a creep. */
-  crop: { left: 210, top: 250, width: 660, height: 600 },
+  /*
+   * The band the piece actually paints in: the bubble's top edge down to the
+   * character's feet.
+   *
+   * The width is set by the bubble rather than by the figure — measured across
+   * a pass, the longest line comes out 643 units wide against these 660, so
+   * there is nothing to reclaim at the sides and the way to make the cast
+   * bigger is to draw it bigger, not to crop in.
+   */
+  crop: { left: 210, top: 250, width: 660, height: 680 },
   /* Mid-turn on the first character, where the line is up and the body is at
      the top of its bow. */
   still: 0.9,
