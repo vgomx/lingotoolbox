@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Dialog, Icon } from 'lingo-ds';
+import { Dialog, Icon, playSound } from 'lingo-ds';
 
 interface Entry { q: string; a: React.ReactNode }
 
@@ -74,7 +74,7 @@ export function FaqDialog({ open, onClose }: { open: boolean; onClose: () => voi
               <button
                 type="button"
                 aria-expanded={isOpen}
-                onClick={() => setOpenIndex(isOpen ? null : i)}
+                onClick={() => { playSound('toggle'); setOpenIndex(isOpen ? null : i); }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 'var(--space-4)', width: '100%',
                   padding: '11px 12px', border: 'none', background: 'transparent', cursor: 'pointer',

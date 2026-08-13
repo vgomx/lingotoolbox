@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Icon, MenuItem } from 'lingo-ds';
+import { Badge, Icon, MenuItem, playSound } from 'lingo-ds';
 import { useStore } from '../state/store';
 import { WORKSPACES } from '../data/seed';
 import { flagUrl } from '../data/illustrations';
@@ -152,7 +152,10 @@ export function LanguageMenu({ variant }: LanguageMenuProps) {
       {variant === 'rail' ? (
         <button
           type="button"
-          onClick={() => setOpen((o) => !o)}
+          // Bespoke rather than a RailTile: a flag image over a caption, with no
+          // active pip and its own open state. So it says it itself — `toggle`,
+          // because what it does is put a panel up and take it down.
+          onClick={() => { playSound('toggle'); setOpen((o) => !o); }}
           aria-label="Switch language"
           aria-haspopup
           aria-expanded={open}
@@ -195,7 +198,16 @@ export function LanguageMenu({ variant }: LanguageMenuProps) {
           </span>
         </button>
       ) : (
-        <MenuItem opensMenu expanded={open} label="Switch language" onClick={() => setOpen((o) => !o)}>
+        <MenuItem
+          opensMenu
+          expanded={open}
+          // The same act on a phone, so the same sound: this row opens the panel
+          // the rail trigger above opens, and a MenuItem's default `tap` is for
+          // rows that take you somewhere.
+          sound="toggle"
+          label="Switch language"
+          onClick={() => setOpen((o) => !o)}
+        >
           <img src={flagUrl(workspace.flagHex)} alt="" width={18} height={18} style={{ display: 'block', flex: 'none' }} />
           <span style={{ flex: 1, minWidth: 0 }}>{workspace.name}</span>
           <Icon name="chevron-down" size={16} style={{ color: 'var(--text-muted)', flex: 'none' }} />

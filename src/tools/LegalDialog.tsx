@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Dialog, Icon } from 'lingo-ds';
+import { Dialog, Icon, playSound } from 'lingo-ds';
 import { LEGAL_NOTICES } from '../legalNotices';
 
 export interface LegalDialogProps {
@@ -62,7 +62,7 @@ export function LegalDialog({ open, onClose }: LegalDialogProps) {
                 type="button"
                 aria-expanded={isOpen}
                 aria-controls={`legal-${notice.name}`}
-                onClick={() => toggle(notice.name)}
+                onClick={() => { playSound('toggle'); toggle(notice.name); }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 'var(--space-4)', width: '100%',
                   padding: '10px 12px', border: 'none', background: 'transparent', cursor: 'pointer',

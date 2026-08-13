@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Badge, Button, Dialog, Icon, IconButton, Input, SidebarItem, RailTile, StreakPill, Tooltip, useBreakpoint } from 'lingo-ds';
+import { Badge, Button, Dialog, Icon, IconButton, Input, SidebarItem, RailTile, StreakPill, Tooltip, playSound, useBreakpoint } from 'lingo-ds';
 import { useStore } from '../state/store';
 import horizontalLogo from 'lingo-ds/assets/logo/horizontal-duo.svg?raw';
 import { NAV_TOOLS, TOOLS } from '../data/seed';
@@ -320,9 +320,16 @@ export function AppShell() {
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '6px 8px 12px' }}>
           <div style={{ ...styles.sectionLabel, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>Decks</span>
+            {/* Stays a bare button rather than becoming an IconButton: this sits
+                in an 11px caps label row, and the smallest IconButton is a 28px
+                box — 44 under a finger — which would make the plus heavier than
+                the word it sits beside and push the deck list down. It borrows
+                the sound instead: `tap`, the default an IconButton here would
+                have had, because this is a press that goes and does something
+                rather than one that flips a state. */}
             <button
               type="button"
-              onClick={() => { setDeckName(''); setNaming(true); }}
+              onClick={() => { playSound('tap'); setDeckName(''); setNaming(true); }}
               aria-label="New deck"
               style={{ border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', padding: 0, display: 'grid' }}
             >

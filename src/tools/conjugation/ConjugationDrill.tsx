@@ -649,6 +649,10 @@ export function ConjugationDrill() {
               type="button"
               aria-pressed={on}
               onClick={() => {
+                // `toggle`, and on every press including the one that changes
+                // nothing — the last lit chip cannot be put out, and a chip that
+                // answers only sometimes reads as one that missed.
+                playSound('toggle');
                 const nextGroups = new Set(groups);
                 if (on && nextGroups.size > 1) nextGroups.delete(g.id);
                 else if (!on) nextGroups.add(g.id);
