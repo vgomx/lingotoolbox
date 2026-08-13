@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { usePrefersReducedMotion } from 'lingo-ds';
 import { STAGE, type Scene } from './sceneKit';
+import { castCallScene } from './scenes/castCall';
 import { greetingScene } from './scenes/greeting';
 import { struggleScene } from './scenes/struggle';
 
@@ -11,7 +12,7 @@ import { struggleScene } from './scenes/struggle';
  * writing a scene file and putting it in here: the player asks a scene only for
  * its duration, the window it paints in, and a frame at a time.
  */
-const SCENES: Scene[] = [greetingScene, struggleScene];
+const SCENES: Scene[] = [greetingScene, castCallScene, struggleScene];
 
 /**
  * The proportion of the box, fixed across every scene.
