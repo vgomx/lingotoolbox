@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Badge, Button, Dialog, Icon, IconButton, Input, SidebarItem, RailTile, StreakPill, Tooltip, useBreakpoint } from 'lingo-ds';
+import { Badge, Button, Dialog, Icon, IconButton, Input, SidebarItem, RailTile, StreakPill, Tooltip, playSound, useBreakpoint } from 'lingo-ds';
 import { useStore } from '../state/store';
 import horizontalLogo from 'lingo-ds/assets/logo/horizontal-duo.svg?raw';
 import { NAV_TOOLS, TOOLS } from '../data/seed';
@@ -73,7 +73,7 @@ const styles: Record<string, React.CSSProperties> = {
  */
 export function AppShell() {
   const { chrome, set } = useChromeState();
-  const { title, titleIcon, parent, sidebar, streakInTopBar, logo } = chrome;
+  const { title, titleIcon, parent, sidebar, streakInTopBar, logo, bareOnMobile } = chrome;
   // Callback ref rather than useRef: <TopRight> portals into this node, and a
   // ref object's mutation would not re-render the consumers waiting for it.
   const [topRightSlot, setTopRightSlot] = React.useState<HTMLElement | null>(null);
@@ -320,9 +320,16 @@ export function AppShell() {
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '6px 8px 12px' }}>
           <div style={{ ...styles.sectionLabel, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>Decks</span>
+            {/* Stays a bare button rather than becoming an IconButton: this sits
+                in an 11px caps label row, and the smallest IconButton is a 28px
+                box — 44 under a finger — which would make the plus heavier than
+                the word it sits beside and push the deck list down. It borrows
+                the sound instead: `tap`, the default an IconButton here would
+                have had, because this is a press that goes and does something
+                rather than one that flips a state. */}
             <button
               type="button"
-              onClick={() => { setDeckName(''); setNaming(true); }}
+              onClick={() => { playSound('tap'); setDeckName(''); setNaming(true); }}
               aria-label="New deck"
               style={{ border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', padding: 0, display: 'grid' }}
             >
@@ -420,6 +427,9 @@ export function AppShell() {
             below and made every action look wedged into it. 56 gives the same
             44 six pixels either side. The token stays as it is: on a desktop
             the bar holds 34px pills and 48 is right for them. */}
+        {/* A screen that carries its own title and its own way out gets the
+            bar's height back on a phone — see Chrome.bareOnMobile. */}
+        {!(isMobile && bareOnMobile) && (
         <header style={{ ...styles.topbar, height: isMobile ? 56 : 'var(--topbar-height)' }}>
           {!isMobile && showSidebar && (
             <Tooltip label={collapsed ? 'Show decks' : 'Hide decks'} shortcut={toggleShortcut}>
@@ -521,6 +531,7 @@ export function AppShell() {
               for that case, and shortcuts do not apply without a keyboard. */}
           {!isMobile && <HelpMenu />}
         </header>
+        )}
         {/* The dock is fixed, so the scroller has to stop short of it — otherwise
             the last card on every screen sits under the bar. */}
         <div style={{ ...styles.body, paddingBottom: isMobile ? `calc(${DOCK_HEIGHT}px + var(--dock-inset))` : undefined }}>

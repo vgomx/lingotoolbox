@@ -1,4 +1,4 @@
-import { playSound } from 'lingo-ds';
+import { Button, playSound } from 'lingo-ds';
 import { CEFR_LEVELS } from '../../data/types';
 import type { CEFRLevel } from '../../data/types';
 
@@ -22,7 +22,10 @@ export interface LevelFilterProps {
 
 export function LevelFilter({ value, onChange, counts }: LevelFilterProps) {
   const toggle = (level: CEFRLevel) => {
-    playSound('tap');
+    // toggle, not tap: this lights a level or puts it out. `tap` is for the
+    // presses that take you somewhere, which is the split the palette makes
+    // and the components now keep to.
+    playSound('toggle');
     const next = new Set(value);
     if (next.has(level)) next.delete(level);
     else next.add(level);
@@ -68,18 +71,14 @@ export function LevelFilter({ value, onChange, counts }: LevelFilterProps) {
           </button>
         );
       })}
+      {/* A ghost Button rather than the hand-rolled one this was: same height,
+          same muted text, and it brings a hover state and its own tap with it.
+          `tap` and not `toggle` — clearing is an action that runs once, not a
+          state you flip back and forth. */}
       {value.size > 0 && (
-        <button
-          type="button"
-          onClick={() => { playSound('tap'); onChange(new Set()); }}
-          style={{
-            height: 32, padding: '0 10px', border: 'none', background: 'transparent',
-            color: 'var(--text-muted)', cursor: 'pointer',
-            fontFamily: 'var(--font-ui)', fontSize: 'var(--fs-12)', fontWeight: 700,
-          }}
-        >
+        <Button variant="ghost" size="sm" style={{ height: 32 }} onClick={() => onChange(new Set())}>
           Clear
-        </button>
+        </Button>
       )}
     </div>
   );

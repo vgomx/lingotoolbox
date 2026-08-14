@@ -49,6 +49,19 @@ export interface Chrome {
    * own title.
    */
   logo?: boolean;
+  /**
+   * Drop the top bar entirely on a phone.
+   *
+   * For a screen that already carries its own way out. The bar exists to say
+   * what you are looking at and how to leave it, and a screen whose first line
+   * is a heading with a close button beside it says both — so the bar becomes a
+   * second title above the real one and a second exit beside the real one, on
+   * the display that can least afford either.
+   *
+   * Phone only, and opt-in. A desktop has room for the bar and uses it for the
+   * crumb, the streak and the help menu, none of which the screen replaces.
+   */
+  bareOnMobile?: boolean;
 }
 
 export const DEFAULT_CHROME: Chrome = { sidebar: false, streakInTopBar: true };
@@ -67,6 +80,7 @@ export const ChromeProvider = ChromeContext.Provider;
 // object literal every render, so identity says nothing about whether it changed.
 const same = (a: Chrome, b: Chrome) =>
   a.title === b.title && a.titleIcon === b.titleIcon
+  && a.bareOnMobile === b.bareOnMobile
   && a.sidebar === b.sidebar && a.streakInTopBar === b.streakInTopBar
   && a.parent?.label === b.parent?.label && a.parent?.to === b.parent?.to
   && a.logo === b.logo;
@@ -99,6 +113,7 @@ export function useChrome(chrome: Partial<Chrome>) {
   const parentLabel = chrome.parent?.label;
   const parentTo = chrome.parent?.to;
   const logo = chrome.logo;
+  const bareOnMobile = chrome.bareOnMobile;
 
   React.useLayoutEffect(() => {
     ctx?.set({
@@ -108,8 +123,9 @@ export function useChrome(chrome: Partial<Chrome>) {
       streakInTopBar,
       parent: parentLabel && parentTo ? { label: parentLabel, to: parentTo } : undefined,
       logo,
+      bareOnMobile,
     });
-  }, [ctx, title, titleIcon, sidebar, streakInTopBar, parentLabel, parentTo, logo]);
+  }, [ctx, title, titleIcon, sidebar, streakInTopBar, parentLabel, parentTo, logo, bareOnMobile]);
 }
 
 /**

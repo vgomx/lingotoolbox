@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { EtymologyNode, Icon } from 'lingo-ds';
+import { EtymologyNode, Icon, playSound } from 'lingo-ds';
 import type { Etymologies } from '../../data/etymology';
 import { langName, langLink, langArticle } from '../../data/etymology';
 import { RELATION, SAME_LANGUAGE, isNamed } from './relations';
@@ -118,7 +118,9 @@ export function WordTree({ word, data, gloss, depth = 0, trail = [], defaultOpen
         {canExpand ? (
           <button
             type="button"
-            onClick={() => setOpen((o) => !o)}
+            // `toggle`: this opens and closes a branch of the tree, which is the
+            // same act as any other panel in the app.
+            onClick={() => { playSound('toggle'); setOpen((o) => !o); }}
             aria-expanded={open}
             style={{
               // flex-start, not center: a word long enough to wrap put the
