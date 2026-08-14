@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Button, Card, Icon, Tag } from 'lingo-ds';
+import { Button, Card, Icon, IconButton, Tag } from 'lingo-ds';
 import { useChrome } from '../../shell/chrome';
 import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
@@ -13,6 +13,25 @@ const page: React.CSSProperties = {
   maxWidth: 780,
   margin: '0 auto',
   padding: 'var(--space-8) var(--space-7) var(--space-10)',
+};
+
+/*
+ * The question sits above the card, not inside it.
+ *
+ * "Where it comes from" is what this screen is for, not a label on one box
+ * among several — and as a card title it was set at the same size as "Words
+ * built from this" and "Cognates" below, which made the main thing look like
+ * the first of a list of equals. Out here it is a heading, at heading size,
+ * and the card beneath it holds only the answer.
+ */
+const sectionHead: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+  gap: 'var(--space-5)', marginBottom: 'var(--space-5)',
+};
+
+const sectionHeading: React.CSSProperties = {
+  margin: 0, fontFamily: 'var(--font-display)', fontSize: 'var(--fs-24)',
+  fontWeight: 800, color: 'var(--text-strong)',
 };
 
 /**
@@ -117,11 +136,28 @@ export function WordDetails() {
   return (
     <LanguageProvider>
     <div style={page}>
-      <Card title="Where it comes from">
-        {/* The meaning goes to the tree rather than this card's subtitle: the
-            card is titled "Where it comes from", and a meaning hung under that
-            reads as a subtitle of the question instead of an answer about the
-            word. It belongs against the headword, which the tree draws. */}
+      <div style={sectionHead}>
+        <h2 style={sectionHeading}>Where it comes from</h2>
+        {/*
+          * Closes rather than goes back, and it is the only way out this screen
+          * offers now.
+          *
+          * It navigates to the Explorer rather than calling history.back(), for
+          * the same reason the crumb does: a word opened from a shared link, or
+          * after a reload, has nothing behind it — and a close button that does
+          * nothing is worse than no close button.
+          */}
+        <Link to="/app/etymology" style={{ textDecoration: 'none', flex: 'none', display: 'flex' }}>
+          <IconButton label="Close">
+            <Icon name="x" size={20} />
+          </IconButton>
+        </Link>
+      </div>
+      <Card>
+        {/* The meaning goes to the tree rather than a subtitle up there: the
+            heading asks where the word comes from, and a meaning hung under
+            that reads as a subtitle of the question instead of an answer about
+            the word. It belongs against the headword, which the tree draws. */}
         <WordTree word={headword} data={data} gloss={meaning} defaultOpen />
       </Card>
 
