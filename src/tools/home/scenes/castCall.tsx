@@ -18,9 +18,6 @@ import { STAGE, clamp, cycle, ease, pop, tween, type Scene } from '../sceneKit';
 
 /** How long one character holds the stage. */
 const SLOT = 1.5;
-/** How many step up in one pass. Four at 1.5s matches the other scenes' 6s. */
-const PER_PASS = 4;
-const TOTAL = PER_PASS * SLOT;
 
 interface Member {
   id: string;
@@ -52,6 +49,18 @@ const CAST: Member[] = [
   { id: 'elf', move: 'nod', lang: 'Finnish', text: 'Metsä muistaa kaiken.', gloss: 'The forest remembers everything.', size: 50, accent: '#B1CC33', parts: ['earL', 'earR'] },
   { id: 'fairy', move: 'float', lang: 'Irish', text: 'Míle fáilte romhat.', gloss: 'A thousand welcomes.', size: 52, accent: '#2ED3A0', parts: ['flapL', 'flapR'] },
 ];
+
+/**
+ * Everyone steps up, every pass.
+ *
+ * This used to be four, chosen so the scene matched the other two at six
+ * seconds and the cast was seen a quartet at a time over several passes. The
+ * cast is the point of the scene, though, and rationing it meant most viewings
+ * showed a quarter of it — so the scene is now as long as it needs to be and
+ * the hero's loop is lopsided on purpose.
+ */
+const PER_PASS = CAST.length;
+const TOTAL = PER_PASS * SLOT;
 
 /* ── the stage ───────────────────────────────────────────────────────────── */
 
@@ -90,11 +99,11 @@ function load(id: string): Promise<void> {
 }
 
 /**
- * Which four step up this time.
+ * Where the line starts this time.
  *
- * Advanced once per mount, so the scene shows a different quartet each time it
- * comes round and all sixteen are seen over a few passes — without making one
- * pass four times as long as the scenes either side of it.
+ * Everyone is in every pass now, so this no longer decides *who* — it decides
+ * who goes first. Advanced by one rather than by a full pass, which would land
+ * back where it started and play the identical order every time.
  */
 let cursor = 0;
 
@@ -306,7 +315,7 @@ function Frame({ t }: { t: number }) {
      cannot swap the character out from under the line they are saying. */
   const [start] = React.useState(() => {
     const s = cursor;
-    cursor = (cursor + PER_PASS) % CAST.length;
+    cursor = (cursor + 1) % CAST.length;
     return s;
   });
   const line = React.useMemo(
