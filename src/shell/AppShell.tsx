@@ -436,22 +436,20 @@ export function AppShell() {
             </Tooltip>
           )}
           {/*
-            * The way back: an arrow everywhere, and a crumb beside it where
-            * there is room.
+            * The way back, as an arrow on a phone and a crumb on a desktop.
             *
-            * The arrow used to be the phone's consolation for a crumb that
-            * cannot fit a 375px bar. On a desktop the crumb was left to do the
-            * job alone, and it is not built for it — 13px of muted text that
-            * has to be hit exactly, and that reads as a label saying where you
-            * are rather than as a control taking you back. The arrow is the
-            * control; the crumb stays as the name of where it goes.
+            * The crumb is hidden on mobile because "Etymology Explorer › venster"
+            * cannot fit a 375px bar — but hiding it left nothing at all, and a
+            * subpage reached from a card had no way back except the dock, which
+            * returns you to the top of a tool rather than to where you were. An
+            * arrow costs one control and says the same thing.
             *
             * It navigates to the parent rather than calling history.back(): a
             * word opened from a shared link, or after a reload, has no history
             * to go back to, and a back button that does nothing is worse than
             * the absence it replaced.
             */}
-          {parent && (
+          {parent && isMobile && (
             <Link to={parent.to} style={{ textDecoration: 'none', flex: 'none', display: 'flex' }}>
               <IconButton label={`Back to ${parent.label}`}>
                 <Icon name="chevron-left" size={20} />
