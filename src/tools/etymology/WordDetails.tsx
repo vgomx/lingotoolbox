@@ -53,6 +53,10 @@ export function WordDetails() {
     title: target,
     titleIcon: 'git-branch',
     parent: { label: 'Etymology Explorer', to: '/app/etymology' },
+    /* On a phone the bar was repeating this screen back at it: the word, which
+       the card below states far more loudly, and an arrow out, which the × on
+       the heading already is. Both go, and the screen starts at its own title. */
+    bareOnMobile: true,
   });
 
   React.useEffect(() => {

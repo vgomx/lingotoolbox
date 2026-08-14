@@ -15,6 +15,16 @@ type Direction = 'none' | 'hub' | 'forward' | 'back';
 
 const depth = (path: string) => path.split('/').filter(Boolean).length;
 
+/**
+ * A word's own page in the Explorer.
+ *
+ * The growth belongs to these and to nothing else. It is a claim about what
+ * just happened — a card on a grid became the whole screen — and the Explorer
+ * hub is the only place in the app where that is what a card is. A deck opening
+ * into its cards is a list leading to a list, and it keeps its slide.
+ */
+const isWordPage = (path: string) => /^\/app\/etymology\/[^/]+$/.test(path);
+
 /** A press just outside the pane still has to grow from somewhere inside it. */
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
@@ -59,8 +69,12 @@ export function usePageTransition() {
    */
   const [seen, setSeen] = React.useState(pathname);
   const [direction, setDirection] = React.useState<Direction>('none');
+  /* Whether this particular move is a card opening or closing — decided here,
+     where both ends of it are still in hand. */
+  const [grows, setGrows] = React.useState(false);
   if (seen !== pathname) {
     const deeper = depth(pathname) - depth(seen);
+    setGrows(isWordPage(pathname) || isWordPage(seen));
     setDirection(
       hubOf(seen) !== hubOf(pathname) ? 'hub'
         : deeper > 0 ? 'forward'
@@ -83,13 +97,14 @@ export function usePageTransition() {
     if (!ms) return undefined;
 
     /*
-     * Going deeper grows; coming back shrinks.
+     * Opening a word grows; closing it shrinks. Everything else still slides.
      *
-     * A slide said "the next thing is over there", which is true of a carousel
-     * and not of opening a word. What actually happens is that one card on a
-     * grid becomes the whole screen, so the screen arrives by growing into
-     * place — and going back is the same move reversed, the page settling down
-     * to card size rather than sliding off the side.
+     * A slide says "the next thing is over there", which is true of a carousel
+     * and not of opening a word: what actually happens there is that one card
+     * on a grid becomes the whole screen. That is a claim about the Explorer
+     * hub specifically — see isWordPage — and applying it to every move deeper
+     * had a deck opening into its cards growing too, which is a list leading to
+     * a list and was never a card becoming anything.
      *
      * Arriving somewhere new still rises. That is a different claim: the hub
      * you land on was not inside anything you were looking at.
@@ -100,8 +115,10 @@ export function usePageTransition() {
      * cent is what makes it read as growth rather than as a flicker.
      */
     const from = direction === 'hub' ? 'translateY(10px)'
-      : direction === 'back' ? 'scale(1.06)'
-      : 'scale(0.90)';
+      : grows && direction === 'back' ? 'scale(1.06)'
+      : grows ? 'scale(0.90)'
+      : direction === 'back' ? 'translateX(-22px)'
+      : 'translateX(22px)';
 
     /*
      * And it grows out of whatever was pressed.
@@ -113,7 +130,7 @@ export function usePageTransition() {
      * with no press behind it — a keyboard, the back button, a redirect.
      */
     const box = el.getBoundingClientRect();
-    const origin = lastPress && direction !== 'hub'
+    const origin = lastPress && grows
       ? `${clamp01((lastPress.x - box.left) / box.width) * 100}% ${clamp01((lastPress.y - box.top) / box.height) * 100}%`
       : '50% 50%';
     el.style.transformOrigin = origin;
@@ -140,7 +157,7 @@ export function usePageTransition() {
       // pane would aim the next animation at the last thing pressed.
       el.style.transformOrigin = '';
     };
-  }, [pathname, direction, reducedMotion]);
+  }, [pathname, direction, grows, reducedMotion]);
 
   return ref;
 }

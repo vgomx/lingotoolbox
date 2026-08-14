@@ -73,7 +73,7 @@ const styles: Record<string, React.CSSProperties> = {
  */
 export function AppShell() {
   const { chrome, set } = useChromeState();
-  const { title, titleIcon, parent, sidebar, streakInTopBar, logo } = chrome;
+  const { title, titleIcon, parent, sidebar, streakInTopBar, logo, bareOnMobile } = chrome;
   // Callback ref rather than useRef: <TopRight> portals into this node, and a
   // ref object's mutation would not re-render the consumers waiting for it.
   const [topRightSlot, setTopRightSlot] = React.useState<HTMLElement | null>(null);
@@ -427,6 +427,9 @@ export function AppShell() {
             below and made every action look wedged into it. 56 gives the same
             44 six pixels either side. The token stays as it is: on a desktop
             the bar holds 34px pills and 48 is right for them. */}
+        {/* A screen that carries its own title and its own way out gets the
+            bar's height back on a phone — see Chrome.bareOnMobile. */}
+        {!(isMobile && bareOnMobile) && (
         <header style={{ ...styles.topbar, height: isMobile ? 56 : 'var(--topbar-height)' }}>
           {!isMobile && showSidebar && (
             <Tooltip label={collapsed ? 'Show decks' : 'Hide decks'} shortcut={toggleShortcut}>
@@ -528,6 +531,7 @@ export function AppShell() {
               for that case, and shortcuts do not apply without a keyboard. */}
           {!isMobile && <HelpMenu />}
         </header>
+        )}
         {/* The dock is fixed, so the scroller has to stop short of it — otherwise
             the last card on every screen sits under the bar. */}
         <div style={{ ...styles.body, paddingBottom: isMobile ? `calc(${DOCK_HEIGHT}px + var(--dock-inset))` : undefined }}>
