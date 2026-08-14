@@ -1,12 +1,13 @@
 import * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Badge, Button, Card, Icon, ProgressBar, StreakPill, Tag, useIsMobile } from 'lingo-ds';
+import { Badge, Button, Card, Icon, ProgressBar, Tag, useIsMobile } from 'lingo-ds';
 import { useChrome } from '../shell/chrome';
 import { useStore } from '../state/store';
 import { HAS_ETYMOLOGY } from '../data/etymology';
 import { NAV_TOOLS } from '../data/seed';
 import { flagUrl } from '../data/illustrations';
 import { HeroScenes } from './home/HeroScenes';
+import { StreakBand } from './home/StreakBand';
 
 /**
  * The dashboard, following ui_kits/app/HomeScreen.jsx.
@@ -161,9 +162,10 @@ export function Home() {
         <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
           <span style={eyebrow}>Workspace</span>
-          {/* Status, not an action. Hidden at zero: "0 days" is a fact nobody
-              needs, and the guide is explicit about not nagging about streaks. */}
-          {streak > 0 && <StreakPill days={streak} size="sm" />}
+          {/* The pill used to sit here. The Streak band below states the same
+              number and shows the fortnight behind it, and one screen does not
+              need to say it twice — the top bar still carries the pill on every
+              other screen, where it is the only place the number appears. */}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', marginTop: 6 }}>
           {/* Decorative, so alt is empty: the name it sits beside is the
@@ -207,6 +209,8 @@ export function Home() {
         </div>
       </header>
       </Card>
+
+      <StreakBand streak={streak} />
 
       {/* ---- Flashcards, everything it owns in one place ------------------- */}
       <section>
