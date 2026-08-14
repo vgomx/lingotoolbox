@@ -316,6 +316,84 @@ const dayKey = (ms: number) => {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 };
 
+/** One day in the window, and what was practised on it. */
+export interface DayPractised {
+  /** The same key `computeStreak` walks. */
+  day: string;
+  /** Any moment inside that day, for formatting. */
+  at: number;
+  tools: PracticeTool[];
+}
+
+/** Local midnight, so two moments on the same day compare equal. */
+const midnight = (ms: number) => {
+  const d = new Date(ms);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+};
+
+/**
+ * The last `days` days, oldest first, each carrying which tools were used.
+ *
+ * The same union of the review log and the practice store that the streak
+ * walks — the streak just throws the tool away, and the tool is the only thing
+ * here a number cannot say. Days with nothing on them are included: a fortnight
+ * is a shape, and leaving the gaps out would draw a different one.
+ */
+export async function practiceDays(days = 14, now: number = Date.now()): Promise<DayPractised[]> {
+  const db = await getDB();
+  const [reviews, practice] = await Promise.all([db.getAll('reviews'), db.getAll('practice')]);
+
+  const byDay = new Map<string, Set<PracticeTool>>();
+  const add = (key: string, tool: PracticeTool) => {
+    const set = byDay.get(key) ?? new Set<PracticeTool>();
+    set.add(tool);
+    byDay.set(key, set);
+  };
+  // A graded card is Flashcards practice; it writes a review row rather than a
+  // practice one, so it is read back the same way computeStreak reads it.
+  for (const r of reviews) add(dayKey(r.reviewedAt), 'cards');
+  for (const p of practice) add(p.day, p.tool);
+
+  const out: DayPractised[] = [];
+  for (let back = days - 1; back >= 0; back -= 1) {
+    const at = new Date(now);
+    at.setDate(at.getDate() - back);
+    const key = dayKey(at.getTime());
+    out.push({ day: key, at: at.getTime(), tools: [...(byDay.get(key) ?? [])] });
+  }
+  return out;
+}
+
+/**
+ * The longest run of consecutive days ever practised.
+ *
+ * Stepped with `setDate` rather than by adding 24 hours: the clocks change
+ * twice a year, and on those two days a fixed day in milliseconds either skips
+ * a date or lands on the same one twice — which would break a run that was
+ * never broken, or extend one that was.
+ */
+export async function longestStreak(): Promise<number> {
+  const db = await getDB();
+  const [reviews, practice] = await Promise.all([db.getAll('reviews'), db.getAll('practice')]);
+  const dayStamps = [
+    ...reviews.map((r) => midnight(r.reviewedAt)),
+    ...practice.map((p) => midnight(p.at)),
+  ];
+  const unique = [...new Set(dayStamps)].sort((a, b) => a - b);
+  if (!unique.length) return 0;
+
+  let longest = 1;
+  let run = 1;
+  for (let i = 1; i < unique.length; i += 1) {
+    const expected = new Date(unique[i - 1]);
+    expected.setDate(expected.getDate() + 1);
+    run = expected.getTime() === unique[i] ? run + 1 : 1;
+    if (run > longest) longest = run;
+  }
+  return longest;
+}
+
 /**
  * Notes that a tool was used for its exercise today.
  *
