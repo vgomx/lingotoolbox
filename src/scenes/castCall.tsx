@@ -82,9 +82,16 @@ const TOTAL = PER_PASS * SLOT;
  * 850, which is what puts a real part of the body behind the card's edge
  * rather than a sliver of it.
  *
- * The bubble stays clear: it ends at 408 and the head starts at 430.
+ * The floor is 630 rather than the piece's 680. Raising the crop's top to fit
+ * the glosses pushed the whole band down and took 40% of the body behind the
+ * card's edge; this lifts the cast back up so more of it is on screen.
+ *
+ * That puts the top of the head at 380, above the bubble's baseline of 408, so
+ * the two overlap — deliberately. The bubble is drawn after the character and
+ * covers it, so a head rises behind the speech rather than colliding with it,
+ * and each turn is over in a second and a half.
  */
-const FLOOR = 680;
+const FLOOR = 630;
 const FIGURE = 500;
 /** The bubble's baseline — its tail sits here and it grows upward. */
 const BUBBLE_BASE = 408;
@@ -423,7 +430,7 @@ export const castCallScene: Scene = {
    * highest reaches 217, and at 250 every one of the sixteen had its top edge
    * cut off. The band has to contain what the scene paints.
    */
-  crop: { left: 210, top: 210, width: 660, height: 720 },
+  crop: { left: 210, top: 210, width: 660, height: 670 },
   /* Mid-turn on the first character, where the line is up and the body is at
      the top of its bow. */
   still: 0.9,
