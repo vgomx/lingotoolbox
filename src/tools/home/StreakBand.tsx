@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Card } from 'lingo-ds';
+import { Card, useIsMobile } from 'lingo-ds';
 import * as db from '../../data/db';
 import type { PracticeTool } from '../../data/types';
 
@@ -123,6 +123,7 @@ function Key({ color, label }: { color: string; label: string }) {
 }
 
 export function StreakBand({ streak }: { streak: number }) {
+  const isMobile = useIsMobile();
   const [days, setDays] = React.useState<db.DayPractised[] | null>(null);
   const [longest, setLongest] = React.useState(0);
 
@@ -166,58 +167,85 @@ export function StreakBand({ streak }: { streak: number }) {
       </div>
 
       <Card>
-        <div
-          role="img"
-          aria-label={`${practised.length} of the last ${DAYS} days practised.${streak > 0 ? ` ${streak === 1 ? '1 day' : `${streak} days`} in a row.` : ''}`}
-          style={{
-            display: 'grid',
-            // Seven across, capped so the marks stay marks on a wide screen
-            // rather than growing into tiles.
-            gridTemplateColumns: 'repeat(7, minmax(0, 44px))',
-            gap: 'var(--space-3)',
-          }}
-        >
-          {days.map((d) => <Mark key={d.day} day={d} today={d.day === todayKey} />)}
-        </div>
-
-        {/* Only the tools actually used. A key to a colour that is not on the
-            board is a legend for something that did not happen. */}
-        <div
-          style={{
-            display: 'flex', gap: 'var(--space-5)', flexWrap: 'wrap',
-            fontSize: 'var(--fs-11)', fontWeight: 700, letterSpacing: 'var(--ls-caps)',
-            textTransform: 'uppercase', color: 'var(--text-muted)',
-          }}
-        >
-          {usedTools.has('cards') && <Key color={TOOL_COLOR.cards} label={TOOL_NAME.cards} />}
-          {usedTools.has('conjugation') && <Key color={TOOL_COLOR.conjugation} label={TOOL_NAME.conjugation} />}
-          {practised.some((d) => d.tools.length > 1) && <Key color={BOTH} label="Both" />}
-          {practised.some((d) => d.repaired) && <Key color={REPAIRED} label="Put back" />}
-        </div>
-
         {/*
-          * The count goes under the calendar, not above it.
+          * The calendar takes the width it needs; the legend and the count take
+          * the rest.
           *
-          * A run of days is the result of practising, so the marks are the
-          * statement and the number is the caption. Longest is only worth
-          * saying while it is still ahead — once the current run is the record,
-          * printing both says the same thing twice.
+          * They used to be stacked under it. The marks cap at 44px so the
+          * fortnight is about 380px wide however wide the card is, and in a
+          * two-thirds column on a desktop that left a third of the card empty
+          * to the right of it while the same card grew taller underneath.
+          * Standing them beside it fills the one and shortens the other, which
+          * is also what brings this card and the points card to a similar
+          * height.
           *
-          * And a broken streak says nothing at all. This printed "0 days in a
-          * row" whenever the run had lapsed but the fortnight still had marks
-          * in it, which is the one sentence the design system rules out by
-          * name: an empty streak is a fact nobody needs, and the calendar above
-          * has already said it without the reproach. The record stays, because
-          * what someone did is worth keeping either way.
+          * Stacked again on a phone, where the card is narrow enough that the
+          * marks are already shrinking to fit and there is no width to take.
           */}
-        <p style={{ margin: 0, fontSize: 'var(--fs-15)', color: 'var(--text-muted)' }}>
-          {streak > 0 && (
-            <strong style={{ color: 'var(--text-strong)', fontWeight: 800 }}>
-              {streak === 1 ? '1 day' : `${streak} days`} in a row
-            </strong>
-          )}
-          {longest > streak && `${streak > 0 ? ' · longest so far ' : 'Longest so far '}${longest}`}
-        </p>
+        <div
+          style={{
+            display: 'flex', flexDirection: isMobile ? 'column' : 'row',
+            alignItems: isMobile ? 'stretch' : 'flex-start',
+            gap: isMobile ? 'var(--gap-stack)' : 'var(--space-7)',
+          }}
+        >
+          <div
+            role="img"
+            aria-label={`${practised.length} of the last ${DAYS} days practised.${streak > 0 ? ` ${streak === 1 ? '1 day' : `${streak} days`} in a row.` : ''}`}
+            style={{
+              display: 'grid',
+              // Seven across, capped so the marks stay marks on a wide screen
+              // rather than growing into tiles.
+              gridTemplateColumns: 'repeat(7, minmax(0, 44px))',
+              gap: 'var(--space-3)',
+              flex: isMobile ? undefined : 'none',
+            }}
+          >
+            {days.map((d) => <Mark key={d.day} day={d} today={d.day === todayKey} />)}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', minWidth: 0 }}>
+            {/* Only the tools actually used. A key to a colour that is not on
+                the board is a legend for something that did not happen. */}
+            <div
+              style={{
+                display: 'flex', flexDirection: isMobile ? 'row' : 'column',
+                gap: isMobile ? 'var(--space-5)' : 'var(--space-3)', flexWrap: 'wrap',
+                fontSize: 'var(--fs-11)', fontWeight: 700, letterSpacing: 'var(--ls-caps)',
+                textTransform: 'uppercase', color: 'var(--text-muted)',
+              }}
+            >
+              {usedTools.has('cards') && <Key color={TOOL_COLOR.cards} label={TOOL_NAME.cards} />}
+              {usedTools.has('conjugation') && <Key color={TOOL_COLOR.conjugation} label={TOOL_NAME.conjugation} />}
+              {practised.some((d) => d.tools.length > 1) && <Key color={BOTH} label="Both" />}
+              {practised.some((d) => d.repaired) && <Key color={REPAIRED} label="Put back" />}
+            </div>
+
+            {/*
+              * The count is the caption, not the headline.
+              *
+              * A run of days is the result of practising, so the marks are the
+              * statement. Longest is only worth saying while it is still ahead
+              * — once the current run is the record, printing both says the
+              * same thing twice.
+              *
+              * And a broken streak says nothing at all. This printed "0 days in
+              * a row" whenever the run had lapsed but the fortnight still had
+              * marks in it, which is the one sentence the design system rules
+              * out by name: an empty streak is a fact nobody needs, and the
+              * calendar has already said it without the reproach. The record
+              * stays, because what someone did is worth keeping either way.
+              */}
+            <p style={{ margin: 0, fontSize: 'var(--fs-15)', color: 'var(--text-muted)', lineHeight: 'var(--lh-relaxed)' }}>
+              {streak > 0 && (
+                <strong style={{ color: 'var(--text-strong)', fontWeight: 800 }}>
+                  {streak === 1 ? '1 day' : `${streak} days`} in a row
+                </strong>
+              )}
+              {longest > streak && `${streak > 0 ? ' · longest so far ' : 'Longest so far '}${longest}`}
+            </p>
+          </div>
+        </div>
       </Card>
     </section>
   );
