@@ -2,12 +2,13 @@ import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { Button, Card, Icon, Select, Switch, playSound, setSoundEnabled } from 'lingo-ds';
 import { useChrome } from '../shell/chrome';
+import { useLanguagePicker } from '../shell/languagePicker';
 import { ConfirmDialog } from '../shell/ConfirmDialog';
 import { useStore } from '../state/store';
 import { InstallAction } from '../shell/InstallSheet';
 import { useInstallState } from '../shell/install';
 import { buildBackup, downloadBackup, parseBackup, restoreBackup, BackupError } from '../data/backup';
-import { WORKSPACES } from '../data/seed';
+import { flagUrl } from '../data/illustrations';
 import { APP_VERSION } from '../legalNotices';
 import { LegalDialog } from './LegalDialog';
 import { FaqDialog } from './FaqDialog';
@@ -32,7 +33,9 @@ const page: React.CSSProperties = {
 };
 
 export function Settings() {
-  const { prefs, setPrefs, reset, reload, cards, decks } = useStore();
+  const { prefs, setPrefs, reset, reload, cards, decks, workspace } = useStore();
+  const openLanguages = useLanguagePicker();
+  const [trackHovered, setTrackHovered] = React.useState(false);
   const [legalOpen, setLegalOpen] = React.useState(false);
   const [resetting, setResetting] = React.useState(false);
   const [faqOpen, setFaqOpen] = React.useState(false);
@@ -96,16 +99,45 @@ export function Settings() {
         </Card>
 
         <Card title="Reviewing">
-          <Select
-            label="Language track"
-            value={prefs.language}
-            // No flag here. It was forced when this was a native <option>,
-            // which renders text and nothing else; now it is a choice. The
-            // picker in the top bar is where the flags live, and the name was
-            // always the identifier anyway.
-            options={WORKSPACES.map((w) => ({ value: w.code, label: w.name }))}
-            onChange={(v) => setPrefs({ language: v as typeof prefs.language })}
-          />
+          {/*
+            * The third way into the language selector, and no longer a second
+            * implementation of it.
+            *
+            * This was a <Select> of names, which made it the one place the
+            * choice was made without a flag — and, worse, it wrote the
+            * preference directly instead of going through setLanguage, so it
+            * skipped the switching overlay the rail and the dock both show and
+            * left whatever screen you were on pointed at the old workspace.
+            * It opens the same dialog now.
+            */}
+          <button
+            type="button"
+            onClick={openLanguages ?? undefined}
+            disabled={!openLanguages}
+            aria-haspopup="dialog"
+            onMouseEnter={() => setTrackHovered(true)}
+            onMouseLeave={() => setTrackHovered(false)}
+            onFocus={() => setTrackHovered(true)}
+            onBlur={() => setTrackHovered(false)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 'var(--space-4)', width: '100%',
+              padding: '10px 12px', cursor: 'pointer', font: 'inherit', textAlign: 'left',
+              borderRadius: 'var(--radius-md)', border: '1px solid var(--border)',
+              background: trackHovered ? 'var(--surface-hover)' : 'var(--surface-sunken)',
+              transition: 'var(--transition-control)',
+            }}
+          >
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: 'block', fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>
+                Language track
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3, color: 'var(--text-strong)', fontSize: 'var(--fs-16)' }}>
+                <img src={flagUrl(workspace.flagHex)} alt="" width={20} height={20} style={{ display: 'block', flex: 'none' }} />
+                {workspace.name}
+              </span>
+            </span>
+            <Icon name="chevron-down" size={18} style={{ color: 'var(--text-muted)', flex: 'none' }} />
+          </button>
           <Select
             label="Cards per session"
             value={String(prefs.sessionLimit)}

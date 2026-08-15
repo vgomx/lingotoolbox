@@ -5,6 +5,7 @@ import { useStore } from '../state/store';
 import horizontalLogo from 'lingo-ds/assets/logo/horizontal-duo.svg?raw';
 import { NAV_TOOLS, TOOLS } from '../data/seed';
 import { LanguageMenu } from './LanguageMenu';
+import { LanguagePickerProvider } from './languagePicker';
 import { ChromeProvider, useChromeState } from './chrome';
 import { usePageTransition } from './usePageTransition';
 import { markAppVisited } from '../data/visit';
@@ -204,6 +205,10 @@ export function AppShell() {
 
   return (
     <ChromeProvider value={chromeValue}>
+    {/* Around everything, so the rail, the dock, Home and Settings all reach
+        the same selector — and so the dialog is mounted once rather than once
+        per entry point. */}
+    <LanguagePickerProvider>
     <div style={styles.frame}>
       {/* No data-theme here any more: the rail takes the page's. It used to
           declare itself dark so that in light mode its foregrounds resolved
@@ -586,6 +591,7 @@ export function AppShell() {
         shorter than the screen and, contrary to spec, deciding where the dock
         went. Out here there is no ancestor left that could do either. */}
     {isMobile && <Dock />}
+    </LanguagePickerProvider>
     </ChromeProvider>
   );
 }
