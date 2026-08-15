@@ -141,18 +141,55 @@ export function usePageTransition() {
      * component on every navigation, and going from one word to another would
      * throw away a screen whose data is already loaded to show a spinner.
      *
-     * `backwards` fill so the first painted frame is the start of the
-     * animation rather than the settled position. No forwards fill: once it
-     * finishes the element must hold no transform at all, because a
-     * transformed ancestor becomes the containing block for fixed-position
-     * descendants.
+     * No forwards fill: once it finishes the element must hold no transform at
+     * all, because a transformed ancestor becomes the containing block for
+     * fixed-position descendants.
      */
+
+    /*
+     * The start state is written onto the element as well as into the
+     * keyframes.
+     *
+     * `fill: 'backwards'` is supposed to make the first painted frame the start
+     * of the animation, and in Chrome it does — measured frame by frame, the
+     * pane is at opacity 0 thirteen milliseconds in. WebKit does not apply it
+     * reliably to an animation created in a layout effect, before the element
+     * has ever painted: on an iPhone every screen arrived already settled and
+     * the animation ran invisibly behind it. Every navigation looked raw, the
+     * Explorer's growth most of all, because a grow that starts at its final
+     * size is nothing at all.
+     *
+     * Saying it in a style removes the question. The first paint is the start
+     * state because the element says so, whatever the fill mode is worth.
+     */
+    el.style.opacity = '0';
+    el.style.transform = from;
+
     const animation = el.animate(
       [{ opacity: 0, transform: from }, { opacity: 1, transform: 'none' }],
       { duration: ms, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'backwards' },
     );
+
+    /*
+     * And taken off again as soon as the animation is really running.
+     *
+     * Without this the pane falls back to the inline `opacity: 0` the instant
+     * the animation ends — a blank screen rather than a settled one. It cannot
+     * be cleared straight away either, because that is exactly the frame the
+     * fill mode is unreliable about; a frame after the animation is ready, it
+     * is driving both properties and the inline copy has done its work.
+     */
+    let raf = 0;
+    const settle = () => {
+      el.style.opacity = '';
+      el.style.transform = '';
+    };
+    void animation.ready.then(() => { raf = requestAnimationFrame(settle); }, () => {});
+
     return () => {
+      cancelAnimationFrame(raf);
       animation.cancel();
+      settle();
       // The origin is inert without a transform, but leaving a stale one on the
       // pane would aim the next animation at the last thing pressed.
       el.style.transformOrigin = '';
