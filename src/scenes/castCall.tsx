@@ -96,6 +96,32 @@ const FIGURE = 500;
 /** The bubble's baseline — its tail sits here and it grows upward. */
 const BUBBLE_BASE = 408;
 
+/**
+ * The same turn, arranged in two columns: the speech at the left, the speaker
+ * at the right, side by side rather than one above the other.
+ *
+ * For a phone, where the stacked arrangement is honest but tall. Standing the
+ * two columns beside each other means the band is as tall as the taller of
+ * them rather than the sum, which is most of the height back.
+ *
+ * It is not free. The bubble loses more than half its width, so the sentence
+ * wraps where the stacked one keeps it on a line, and the figure comes down
+ * from 500 to 400 so that both columns fit inside a crop that has to stay
+ * narrow — a wider crop at a fixed container width just makes everything
+ * smaller, which is the thing being solved.
+ */
+const SIDE = {
+  figure: 400,
+  /** The figure's anchor, right of the stage's centre. */
+  x: 170,
+  floor: 640,
+  /** The bubble's right edge, and the axis it is centred on. */
+  right: -30,
+  mid: 520,
+  /** Narrow enough to leave the speaker a column. The sentence wraps in it. */
+  maxWidth: 380,
+};
+
 /* ── the glyphs ──────────────────────────────────────────────────────────── */
 
 /*
@@ -238,8 +264,8 @@ function body(move: Member['move'], t: number, g: number, phase: number) {
 
 /* ── the pieces ──────────────────────────────────────────────────────────── */
 
-function Character({ spec, u, k, talk, phase }: {
-  spec: Member; u: number; k: number; talk: number; phase: number;
+function Character({ spec, u, k, talk, phase, size = FIGURE }: {
+  spec: Member; u: number; k: number; talk: number; phase: number; size?: number;
 }) {
   const svg = glyphs.get(spec.id);
   if (!svg) return null;
@@ -270,14 +296,14 @@ function Character({ spec, u, k, talk, phase }: {
   return (
     <div
       style={{
-        position: 'absolute', left: -FIGURE / 2, top: -FIGURE / 2, width: FIGURE, height: FIGURE,
+        position: 'absolute', left: -size / 2, top: -size / 2, width: size, height: size,
         transform: `translateY(${(1 - pop01) * 40}px) scale(${0.76 + 0.24 * pop01})`,
         opacity: clamp(pop01 * 1.5, 0, 1),
       }}
     >
       <div
         style={{
-          width: FIGURE, height: FIGURE,
+          width: size, height: size,
           transform: `translate(${dx}px,${dy + syllable}px) rotate(${tilt}deg) scale(${sx * scl},${sy * scl})`,
           // 88% down the box: a body pivots at its feet, not its middle.
           transformOrigin: '50% 88%',
@@ -289,13 +315,23 @@ function Character({ spec, u, k, talk, phase }: {
   );
 }
 
-function Bubble({ spec, k, nudge }: { spec: Member; k: number; nudge: number }) {
+function Bubble({ spec, k, nudge, side = false }: {
+  spec: Member; k: number; nudge: number; side?: boolean;
+}) {
   return (
     <div
       style={{
-        position: 'absolute', left: STAGE / 2, top: BUBBLE_BASE,
-        transform: `translate(-50%,-100%) translateY(${(1 - k) * 22 + nudge}px) scale(${0.9 + 0.1 * clamp(k, 0, 1)})`,
-        transformOrigin: '50% 120%',
+        position: 'absolute',
+        left: side ? STAGE / 2 + SIDE.right : STAGE / 2,
+        top: side ? SIDE.mid : BUBBLE_BASE,
+        /* Stacked, the bubble hangs from its baseline and grows upward. Side by
+           side it is pinned by its right edge and centred on the speaker's
+           head, because it grows to the left and the two have to stay level as
+           the wrapping changes its height from one turn to the next. */
+        transform: side
+          ? `translate(-100%,-50%) translateY(${(1 - k) * 14 + nudge}px) scale(${0.9 + 0.1 * clamp(k, 0, 1)})`
+          : `translate(-50%,-100%) translateY(${(1 - k) * 22 + nudge}px) scale(${0.9 + 0.1 * clamp(k, 0, 1)})`,
+        transformOrigin: side ? '115% 50%' : '50% 120%',
         opacity: clamp(k * 1.4, 0, 1),
       }}
     >
@@ -305,11 +341,15 @@ function Bubble({ spec, k, nudge }: { spec: Member; k: number; nudge: number }) 
         style={{
           position: 'relative', background: 'var(--surface-raised)', borderRadius: 24,
           padding: '16px 26px 19px', display: 'flex', flexDirection: 'column',
-          alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
+          alignItems: 'center', gap: 6,
+          /* The sentence stays on its line in the stacked arrangement, where
+             there is room for the longest of them. In two columns there is not,
+             so it wraps like the gloss already does. */
+          whiteSpace: side ? 'normal' : 'nowrap',
           /* The crop's own width. Nothing may grow the bubble past the band the
              scene is cropped to, or it gets cut off at the edge — the longest
              line measures 643 against this 660, so it is the gloss this holds. */
-          maxWidth: 660,
+          maxWidth: side ? SIDE.maxWidth : 660,
         }}
       >
         {/* 26, not the piece's 12: the piece is a 1080 square played at full
@@ -322,6 +362,8 @@ function Bubble({ spec, k, nudge }: { spec: Member; k: number; nudge: number }) 
           style={{
             fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: spec.size,
             lineHeight: 1.2, letterSpacing: 'var(--ls-tight)', color: 'var(--text-strong)',
+            // A no-op on one line, which is what it is unless the bubble is narrow.
+            textAlign: 'center',
           }}
         >
           {spec.text}
@@ -348,9 +390,15 @@ function Bubble({ spec, k, nudge }: { spec: Member; k: number; nudge: number }) 
         >
           {spec.gloss}
         </div>
+        {/* The tail points at the speaker: down at a head below it, right at a
+            head beside it. */}
         <div
           style={{
-            position: 'absolute', bottom: -9, left: '50%', marginLeft: -10, width: 20, height: 20,
+            position: 'absolute',
+            ...(side
+              ? { right: -9, top: '50%', marginTop: -10 }
+              : { bottom: -9, left: '50%', marginLeft: -10 }),
+            width: 20, height: 20,
             background: 'var(--surface-raised)', borderRadius: 7, transform: 'rotate(45deg)',
           }}
         />
@@ -359,7 +407,7 @@ function Bubble({ spec, k, nudge }: { spec: Member; k: number; nudge: number }) 
   );
 }
 
-function Frame({ t }: { t: number }) {
+function Frame({ t, side = false }: { t: number; side?: boolean }) {
   /* The quartet is chosen once per mount and held, so a re-render mid-pass
      cannot swap the character out from under the line they are saying. */
   const [start] = React.useState(() => {
@@ -402,10 +450,19 @@ function Frame({ t }: { t: number }) {
 
         return (
           <React.Fragment key={spec.id}>
-            <div style={{ position: 'absolute', left: STAGE / 2 + slide, top: FLOOR }}>
-              <Character spec={spec} u={u} k={k} talk={talk} phase={n * 0.61} />
+            <div
+              style={{
+                position: 'absolute',
+                left: STAGE / 2 + (side ? SIDE.x : 0) + slide,
+                top: side ? SIDE.floor : FLOOR,
+              }}
+            >
+              <Character
+                spec={spec} u={u} k={k} talk={talk} phase={n * 0.61}
+                size={side ? SIDE.figure : FIGURE}
+              />
             </div>
-            <Bubble spec={spec} k={k} nudge={cycle(u, 0.9, 4) * clamp(1 - u / 1.1, 0, 1)} />
+            <Bubble spec={spec} k={k} nudge={cycle(u, 0.9, 4) * clamp(1 - u / 1.1, 0, 1)} side={side} />
           </React.Fragment>
         );
       })}
@@ -437,4 +494,32 @@ export const castCallScene: Scene = {
   /* People, not a picture of people — the card's edge takes their legs. */
   bleed: 'bottom',
   Frame,
+};
+
+/**
+ * The same cast, standing beside their speech instead of under it.
+ *
+ * For a phone. The stacked band costs 211px of a 812px screen, most of it the
+ * gap between a bubble and the head it points down at; side by side the band is
+ * as tall as the taller column instead of the sum of both.
+ *
+ * The crop is wider and much shorter, and the two move together: at a fixed
+ * container width the scale is the container over the crop's width, so every
+ * unit added at the sides is paid for in type size. That is why the figure
+ * comes down to 400 and the bubble to 380 — the arrangement only pays if both
+ * columns fit inside a crop that stays narrow.
+ */
+export const castCallSideScene: Scene = {
+  ...castCallScene,
+  id: 'cast-call-side',
+  /*
+   * Fitted to the arrangement rather than guessed at. Measured over 577 samples
+   * across a full pass: the bubble reaches 130 at the left, 516 at the right,
+   * 384 at the top and 657 at the bottom, and the figure's box sits at 510-910
+   * once it has stopped sliding in. So the left edge is the bubble's, the right
+   * is the speaker's, and the band is 345 units tall against the stacked
+   * arrangement's 670.
+   */
+  crop: { left: 120, top: 345, width: 780, height: 345 },
+  Frame: (props) => <Frame {...props} side />,
 };

@@ -7,7 +7,7 @@ import { HAS_ETYMOLOGY } from '../data/etymology';
 import { NAV_TOOLS } from '../data/seed';
 import { flagUrl } from '../data/illustrations';
 import { ScenePlayer } from '../scenes/ScenePlayer';
-import { castCallScene } from '../scenes/castCall';
+import { castCallScene, castCallSideScene } from '../scenes/castCall';
 
 /*
  * Module scope, not an inline literal.
@@ -17,6 +17,17 @@ import { castCallScene } from '../scenes/castCall';
  * changed — which on this screen is every grade, every switch, every tick.
  */
 const HERO_SCENES = [castCallScene];
+/** The phone's arrangement: the same turn, speech beside speaker. */
+const HERO_SCENES_SIDE = [castCallSideScene];
+
+/**
+ * The box for the side-by-side band, against the player's 900 width.
+ *
+ * Its crop is 780 x 345, and a box shows crop.width * band / 900 units of
+ * height — so this is the number that makes the box exactly as tall as the
+ * arrangement, with no empty stage above or below it.
+ */
+const SIDE_BAND = Math.round(345 * 900 / 780);
 import { StreakBand } from './home/StreakBand';
 
 /**
@@ -209,15 +220,51 @@ export function Home() {
         </p>
         </div>
 
-        {/* Shrinks with the viewport all the way down. On a phone this is a
-            small moving thing in the corner rather than anything to read, and
-            it gives width back to the heading: the longest workspace name is
-            "Portuguese", one unbreakable word, and the title is what the page
-            is actually about. */}
-        <div style={{ flex: 'none', width: 'clamp(72px, 22vw, 440px)' }}>
-          <ScenePlayer scenes={HERO_SCENES} />
-        </div>
+        {/* Shrinks with the viewport, but only down to the width where the
+            scene is still worth looking at. Below that it leaves the row
+            entirely — see the band under the header. */}
+        {!isMobile && (
+          <div style={{ flex: 'none', width: 'clamp(220px, 22vw, 440px)' }}>
+            <ScenePlayer scenes={HERO_SCENES} />
+          </div>
+        )}
       </header>
+
+      {/*
+        * On a phone the scene stops sharing the row and takes the whole card.
+        *
+        * It used to sit beside the heading at 22vw, which on a 375px screen is
+        * 83px: the scale is the container over the crop and the crop is 660
+        * units wide, so the sentence rendered at 4.3px and its translation at
+        * 3px. Nothing about that was readable, and it was costing the heading
+        * 83px of a 277px row — enough to wrap the deck count onto a second
+        * line. Full width is 277px, which is 3.3x the size and 14px of text.
+        *
+        * And in the two-column arrangement rather than the stacked one, because
+        * the full-width stack was 211px tall — a quarter of the screen, above
+        * the numbers the screen is for. Most of that was the gap between a
+        * bubble and the head it points down at; standing them side by side
+        * makes the band as tall as the taller column instead of the sum.
+        */}
+      {isMobile && (
+        <div
+          style={{
+            marginTop: 'var(--space-5)',
+            /* Capped at the same 440 the row stops growing at, and centred once
+               it stops. "Mobile" runs to 767px here, and a full-width band on a
+               small tablet would be 700px across and 533px tall — a phone's
+               worth of scene for a screen that has other things to show.
+
+               The explicit width is load-bearing: the card is a flex column, and
+               an auto inline margin on a flex item makes it shrink to its
+               content — which here is a player sized at 100% of it, so the whole
+               band measured zero. */
+            width: '100%', maxWidth: 440, marginInline: 'auto',
+          }}
+        >
+          <ScenePlayer scenes={HERO_SCENES_SIDE} band={SIDE_BAND} />
+        </div>
+      )}
       </Card>
 
       <StreakBand streak={streak} />
