@@ -24,6 +24,14 @@ import { STAGE, type Scene } from './sceneKit';
  * One shape for both surfaces rather than one each: it was chosen to hold the
  * greeting and the faces without either jumping, which is exactly what the
  * landing page now asks of it.
+ *
+ * A shorter box on a phone was measured and rejected. The height is the one
+ * number a bleeding scene ignores — the scale is the container over the crop,
+ * see `fit` — so a shorter box would have shown the same figures at the same
+ * size for less of the page, cut higher up. But the cast is bottom-anchored and
+ * the members are not the same height, so the cut lands on a different part of
+ * each: at 540 it crossed the Punjabi man's mouth, and even 640 took the elf at
+ * the chin. What it bought was 14px of a 369px card. Not a trade worth an API.
  */
 const BOX = { width: 900, height: 685 };
 
