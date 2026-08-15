@@ -272,9 +272,13 @@ export function Home() {
         * The fortnight and what can be done about it, side by side.
         *
         * Two thirds to one: the band is fourteen marks and a legend and wants
-        * the room, while the points are a number and a sentence. `start` rather
-        * than stretch, so the shorter card keeps its own height instead of
-        * growing a field of empty surface to match its neighbour.
+        * the room, while the points are a number and a sentence.
+        *
+        * Stretched rather than `start`. Two cards side by side ending at
+        * different heights read as one unfinished, and neither of them grows a
+        * field of empty surface to manage it: the shorter card distributes what
+        * it holds instead, pushing its last line to the bottom edge — see the
+        * `marginTop: auto` in both.
         *
         * Both cards remove themselves before anything has been practised, so on
         * a fresh install this grid has nothing in it and collapses to nothing.
@@ -283,7 +287,7 @@ export function Home() {
         style={{
           display: 'grid',
           gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 2fr) minmax(0, 1fr)',
-          gap: 'var(--space-5)', alignItems: 'start',
+          gap: 'var(--space-5)', alignItems: 'stretch',
         }}
       >
         <StreakBand streak={streak} />

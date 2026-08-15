@@ -114,7 +114,7 @@ export function PointsCard({ points, offer, onRepair }: {
   };
 
   return (
-    <section>
+    <section style={{ display: 'flex', flexDirection: 'column' }}>
       <div style={{ marginBottom: 'var(--space-5)' }}>
         <h2 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 'var(--fs-24)', fontWeight: 800, color: 'var(--text-strong)' }}>
           Points
@@ -124,7 +124,7 @@ export function PointsCard({ points, offer, onRepair }: {
         </p>
       </div>
 
-      <Card>
+      <Card style={{ flex: 1 }}>
         {/* The balance, with the rule behind it a hover away rather than a
             paragraph under it. */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
@@ -188,7 +188,15 @@ export function PointsCard({ points, offer, onRepair }: {
         {points.repaired > 0 && (
           /* What was done with them, counted in days rather than in points —
              "50 spent" is a number nobody holds in their head. */
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--fs-13)', color: 'var(--text-faint)' }}>
+          <div
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              fontSize: 'var(--fs-13)', color: 'var(--text-faint)',
+              // Sits on the bottom edge when this is the shorter card, for the
+              // same reason the streak's count does.
+              marginTop: touch ? undefined : 'auto',
+            }}
+          >
             <Icon name="rotate-ccw" size={14} style={{ flex: 'none' }} />
             {points.repaired === 1 ? '1 day put back' : `${points.repaired} days put back`}
           </div>

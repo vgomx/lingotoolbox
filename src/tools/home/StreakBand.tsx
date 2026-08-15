@@ -155,7 +155,7 @@ export function StreakBand({ streak }: { streak: number }) {
   const usedTools = new Set(practised.flatMap((d) => d.tools));
 
   return (
-    <section>
+    <section style={{ display: 'flex', flexDirection: 'column' }}>
       <div style={{ marginBottom: 'var(--space-5)' }}>
         <h2 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 'var(--fs-24)', fontWeight: 800, color: 'var(--text-strong)' }}>
           Streak
@@ -166,7 +166,7 @@ export function StreakBand({ streak }: { streak: number }) {
         </p>
       </div>
 
-      <Card>
+      <Card style={{ flex: 1 }}>
         {/*
           * The calendar takes the width it needs; the legend and the count take
           * the rest.
@@ -185,8 +185,14 @@ export function StreakBand({ streak }: { streak: number }) {
         <div
           style={{
             display: 'flex', flexDirection: isMobile ? 'column' : 'row',
-            alignItems: isMobile ? 'stretch' : 'flex-start',
+            // Stretch, not flex-start: the column beside the calendar has to be
+            // as tall as the card for its last line to reach the bottom edge.
+            // The calendar opts out below, since a stretched grid of
+            // aspect-ratio squares would grow them.
+            alignItems: 'stretch',
             gap: isMobile ? 'var(--gap-stack)' : 'var(--space-7)',
+            // Fills the card, so the caption below can reach its bottom edge.
+            flex: 1,
           }}
         >
           <div
@@ -199,12 +205,13 @@ export function StreakBand({ streak }: { streak: number }) {
               gridTemplateColumns: 'repeat(7, minmax(0, 44px))',
               gap: 'var(--space-3)',
               flex: isMobile ? undefined : 'none',
+              alignSelf: 'flex-start',
             }}
           >
             {days.map((d) => <Mark key={d.day} day={d} today={d.day === todayKey} />)}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', minWidth: 0 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', minWidth: 0, flex: 1 }}>
             {/* Only the tools actually used. A key to a colour that is not on
                 the board is a legend for something that did not happen. */}
             <div
@@ -236,7 +243,16 @@ export function StreakBand({ streak }: { streak: number }) {
               * calendar has already said it without the reproach. The record
               * stays, because what someone did is worth keeping either way.
               */}
-            <p style={{ margin: 0, fontSize: 'var(--fs-15)', color: 'var(--text-muted)', lineHeight: 'var(--lh-relaxed)' }}>
+            <p
+              style={{
+                margin: 0, fontSize: 'var(--fs-15)', color: 'var(--text-muted)',
+                lineHeight: 'var(--lh-relaxed)',
+                // The legend stays with the marks it explains; the count drops
+                // to the bottom, which is what makes the card fill its height
+                // by arranging itself rather than by padding.
+                marginTop: isMobile ? undefined : 'auto',
+              }}
+            >
               {streak > 0 && (
                 <strong style={{ color: 'var(--text-strong)', fontWeight: 800 }}>
                   {streak === 1 ? '1 day' : `${streak} days`} in a row
