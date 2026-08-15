@@ -113,7 +113,7 @@ export function Home() {
   const isMobile = useIsMobile();
   const openLanguages = useLanguagePicker();
   const [nameHovered, setNameHovered] = React.useState(false);
-  const { decks, cards, notes, dueCount, streak, points, repairOffer, repair, weeklyReviews, language, workspace, cardsInDeck, dueInDeck } = useStore();
+  const { decks, cards, notes, dueCount, streak, points, buyExtension, weeklyReviews, language, workspace, cardsInDeck, dueInDeck } = useStore();
   const navigate = useNavigate();
 
   const mastered = cards.filter((c) => c.state === 'review' && c.interval >= 21).length;
@@ -338,7 +338,7 @@ export function Home() {
         }}
       >
         <StreakBand streak={streak} />
-        <PointsCard points={points} offer={repairOffer} onRepair={repair} />
+        <PointsCard points={points} onBuy={buyExtension} />
       </div>
 
       {/* ---- Flashcards, everything it owns in one place ------------------- */}

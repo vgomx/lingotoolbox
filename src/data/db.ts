@@ -1,18 +1,18 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { Card, Deck, Direction, Grade, LanguageCode, Note, PracticeDay, PracticeTool, Prefs, RepairedDay, ReviewLogEntry } from './types';
+import type { Card, Deck, Direction, Grade, LanguageCode, Note, PracticeDay, PracticeTool, Prefs, StreakExtension, ReviewLogEntry } from './types';
 import { asLevel } from './types';
 import { buildSeed, buildSeedNotes, WORKSPACES } from './seed';
 import { schedule, scheduleOf, withSchedule } from './scheduler';
 
 const DB_NAME = 'lingo-toolbox';
 /**
- * 2 added the notes store, 3 the practice log, 4 the repaired days. The upgrade
- * below is written to
+ * 2 added the notes store, 3 the practice log, 4 the repaired days, 5 the streak
+ * extensions that replaced them. The upgrade below is written to
  * run from whatever version a reader is on rather than assuming an empty
  * database, which is what version 1's did — it created all three stores
  * unconditionally, which is only correct the first time anyone opens the app.
  */
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 const PREFS_KEY = 'lingo-toolbox:prefs';
 
 interface LingoDB extends DBSchema {
@@ -41,10 +41,20 @@ interface LingoDB extends DBSchema {
     value: PracticeDay;
     indexes: { 'by-day': string };
   };
-  /** Keyed by the day repaired, which is what makes buying one twice a no-op. */
+  /**
+   * Version 4's repaired days. Nothing writes here any more; it is read once by
+   * migrateRepairs and emptied. Kept rather than deleted in the upgrade so the
+   * migration can be an ordinary idempotent function at boot, like
+   * migrateLevels, instead of async work inside a versionchange transaction.
+   */
   repairs: {
     key: string;
-    value: RepairedDay;
+    value: { day: string; at: number; cost: number };
+  };
+  /** Held while `usedOn` is absent, spent once it is set. */
+  extensions: {
+    key: string;
+    value: StreakExtension;
   };
 }
 
@@ -81,6 +91,9 @@ function getDB() {
           // No index: there are at most a handful of these and every reader of
           // them wants the whole set.
           db.createObjectStore('repairs', { keyPath: 'day' });
+        }
+        if (oldVersion < 5) {
+          db.createObjectStore('extensions', { keyPath: 'id' });
         }
       },
     });
@@ -334,8 +347,8 @@ export interface DayPractised {
   /** Any moment inside that day, for formatting. */
   at: number;
   tools: PracticeTool[];
-  /** Bought with points rather than practised. Never both — see repairDay. */
-  repaired?: boolean;
+  /** Held by an extension rather than practised. Never both — see settleExtensions. */
+  extended?: boolean;
 }
 
 /** A day key back to the local midnight it names. Inverse of `dayKey`. */
@@ -349,18 +362,18 @@ const stampOfDay = (key: string) => {
  *
  * Grading writes a review row and nothing else, so flashcards are read out of
  * the log rather than recorded twice with a way to disagree. The drill writes a
- * practice row. A repaired day was bought rather than practised, and counts all
- * the same — that is what buying it means.
+ * practice row. A day an extension covered was not practised at all, and counts
+ * all the same — that is what holding one is for.
  */
 async function practisedDays(): Promise<Set<string>> {
   const db = await getDB();
-  const [reviews, practice, repairs] = await Promise.all([
-    db.getAll('reviews'), db.getAll('practice'), db.getAll('repairs'),
+  const [reviews, practice, extensions] = await Promise.all([
+    db.getAll('reviews'), db.getAll('practice'), db.getAll('extensions'),
   ]);
   return new Set([
     ...reviews.map((r) => dayKey(r.reviewedAt)),
     ...practice.map((p) => p.day),
-    ...repairs.map((r) => r.day),
+    ...extensions.flatMap((e) => (e.usedOn ? [e.usedOn] : [])),
   ]);
 }
 
@@ -403,10 +416,10 @@ const midnight = (ms: number) => {
  */
 export async function practiceDays(days = 14, now: number = Date.now()): Promise<DayPractised[]> {
   const db = await getDB();
-  const [reviews, practice, repairs] = await Promise.all([
-    db.getAll('reviews'), db.getAll('practice'), db.getAll('repairs'),
+  const [reviews, practice, extensions] = await Promise.all([
+    db.getAll('reviews'), db.getAll('practice'), db.getAll('extensions'),
   ]);
-  const bought = new Set(repairs.map((r) => r.day));
+  const covered = new Set(extensions.flatMap((e) => (e.usedOn ? [e.usedOn] : [])));
 
   const byDay = new Map<string, Set<PracticeTool>>();
   const add = (key: string, tool: PracticeTool) => {
@@ -427,9 +440,9 @@ export async function practiceDays(days = 14, now: number = Date.now()): Promise
     out.push({
       day: key, at: at.getTime(), tools: [...(byDay.get(key) ?? [])],
       // Marked, not disguised. The day holds the streak, and the calendar still
-      // says it was bought — a fortnight that draws a repair as practice is a
-      // record of something that did not happen.
-      repaired: bought.has(key) || undefined,
+      // says an extension covered it — a fortnight that draws one as practice
+      // is a record of something that did not happen.
+      extended: covered.has(key) || undefined,
     });
   }
   return out;
@@ -445,14 +458,14 @@ export async function practiceDays(days = 14, now: number = Date.now()): Promise
  */
 export async function longestStreak(): Promise<number> {
   const db = await getDB();
-  const [reviews, practice, repairs] = await Promise.all([
-    db.getAll('reviews'), db.getAll('practice'), db.getAll('repairs'),
+  const [reviews, practice, extensions] = await Promise.all([
+    db.getAll('reviews'), db.getAll('practice'), db.getAll('extensions'),
   ]);
   const dayStamps = [
     ...reviews.map((r) => midnight(r.reviewedAt)),
     ...practice.map((p) => midnight(p.at)),
-    // The day repaired, not the day it was bought on — `at` is the purchase.
-    ...repairs.map((r) => stampOfDay(r.day)),
+    // The day covered, not the day it was bought on — `at` is the purchase.
+    ...extensions.flatMap((e) => (e.usedOn ? [stampOfDay(e.usedOn)] : [])),
   ];
   const unique = [...new Set(dayStamps)].sort((a, b) => a - b);
   if (!unique.length) return 0;
@@ -497,10 +510,10 @@ export async function computeStreak(now: number = Date.now()): Promise<number> {
   return streakFrom(await practisedDays(), now);
 }
 
-/* ── points ──────────────────────────────────────────────────────────────── */
+/* ── points and streak extensions ─────────────────────────────────────────── */
 
 /**
- * What practice is worth, and what a repaired day costs.
+ * What practice is worth, and what an extension costs.
  *
  * Points are not a balance anyone keeps. They are read out of the record of
  * what happened — the review log and the practice store — minus what has been
@@ -512,96 +525,141 @@ export async function computeStreak(now: number = Date.now()): Promise<number> {
  * all: it records the day rather than the answer, so a per-record rule would
  * quietly pay for flashcards only.
  *
- * The day is counted once however many tools were used, and repaired days do
- * not count — a bought day that paid points back would be a loop.
+ * The day is counted once however many tools were used, and a day an extension
+ * covered does not count — a bought day that paid points back would be a loop.
  *
- * The price is set against that. A twenty-card session earns 25, so a repaired
- * day is about two days of real practice: enough that it comes out of something
- * done, and not so much that it is out of reach.
+ * A twenty-card session earns 25, so an extension is about two days of real
+ * practice: enough that it comes out of something done, and not so much that it
+ * is out of reach.
  */
-export const POINTS = { perReview: 1, perDay: 5, repair: 50 } as const;
+export const POINTS = { perReview: 1, perDay: 5, extension: 50 } as const;
+
+/**
+ * How many extensions may be held at once.
+ *
+ * Not a lifetime allowance and not a monthly one. Two is what can be waiting
+ * when a day is missed, and spending one frees the slot to buy another — so
+ * points always have somewhere to go, and nobody can bank a fortnight of
+ * absence. Two consecutive missed days is the most a full inventory covers.
+ */
+export const EXTENSION_CAP = 2;
 
 export interface Points {
   earned: number;
   spent: number;
   balance: number;
-  /** How many days have been put back. A count, not the points it cost. */
-  repaired: number;
+  /** Held, unspent. At most EXTENSION_CAP. */
+  held: number;
+  /** How many days an extension has covered. */
+  used: number;
 }
 
 export async function points(): Promise<Points> {
   const db = await getDB();
-  const [reviews, practice, repairs] = await Promise.all([
-    db.getAll('reviews'), db.getAll('practice'), db.getAll('repairs'),
+  const [reviews, practice, extensions] = await Promise.all([
+    db.getAll('reviews'), db.getAll('practice'), db.getAll('extensions'),
   ]);
   const worked = new Set([
     ...reviews.map((r) => dayKey(r.reviewedAt)),
     ...practice.map((p) => p.day),
   ]);
   const earned = reviews.length * POINTS.perReview + worked.size * POINTS.perDay;
-  const spent = repairs.reduce((n, r) => n + r.cost, 0);
-  return { earned, spent, balance: earned - spent, repaired: repairs.length };
-}
-
-/** A day the reader can put points into, and what the streak would become. */
-export interface RepairOffer {
-  day: string;
-  /** Local midnight of that day, for formatting. */
-  at: number;
-  /** The streak after repairing it — never lower than the streak now. */
-  wouldMake: number;
-  cost: number;
+  const spent = extensions.reduce((n, e) => n + e.cost, 0);
+  return {
+    earned,
+    spent,
+    balance: earned - spent,
+    held: extensions.filter((e) => !e.usedOn).length,
+    used: extensions.filter((e) => e.usedOn).length,
+  };
 }
 
 /**
- * The one day worth repairing, or nothing.
+ * Buys one, if there is a slot for it and the points are there.
  *
- * The first day with nothing on it, walking back from *yesterday*. Today is
- * never offered: the streak already survives an unpractised today until the day
- * is over, so buying it would charge 50 for something a single card does for
- * free — and if the day does end unpractised, tomorrow it is a gap like any
- * other and can be put back then.
- *
- * That leaves the day the current run stops at, which is the gap joining it to
- * whatever came before. There is no day picker because there is no interesting
- * choice: any other empty day leaves the gap where it is and buys a number that
- * does not move.
- *
- * `wouldMake` is simulated rather than reasoned about, so the card can say what
- * the purchase does instead of implying it — and a day that would not reach two
- * is not offered at all. Buying a one-day streak is buying nothing: answering a
- * single card today does the same for free and earns points doing it.
+ * Both checks are made here rather than trusted from the caller: the balance is
+ * derived from stores anything can write to, so a number the UI read a moment
+ * ago is a guess about the present, and the cap is the rule this whole feature
+ * rests on.
  */
-export async function nextRepair(now: number = Date.now(), window = 14): Promise<RepairOffer | null> {
+export async function buyExtension(now: number = Date.now()): Promise<boolean> {
+  const db = await getDB();
+  const { balance, held } = await points();
+  if (held >= EXTENSION_CAP) return false;
+  if (balance < POINTS.extension) return false;
+  await db.put('extensions', { id: `ext-${now}-${held}`, at: now, cost: POINTS.extension });
+  return true;
+}
+
+/**
+ * Spends held extensions on days that were missed, and says how many it spent.
+ *
+ * The whole point of holding one is that someone who forgot to practise cannot
+ * come back and press a button — so this runs on the way to reading the streak
+ * rather than being invoked by anyone, and it writes what it decides so that a
+ * covered day stays covered and the extension is really gone.
+ *
+ * It only spends where spending achieves something. Walking back from
+ * yesterday — today is not lapsed until it is over — it counts the run of
+ * consecutive days with nothing on them:
+ *
+ *   - none, and there is nothing to cover;
+ *   - more than are held, and the streak is broken whatever we do, so nothing
+ *     is spent rather than two extensions burned on a run that ended anyway;
+ *   - otherwise the day before the gap was practised, which is what makes it a
+ *     gap, so covering it joins today to that run.
+ *
+ * The search is bounded at one day past the number held, because that is the
+ * point at which the answer is already no.
+ */
+export async function settleExtensions(now: number = Date.now()): Promise<number> {
+  const db = await getDB();
+  const held = (await db.getAll('extensions')).filter((e) => !e.usedOn);
+  if (!held.length) return 0;
+
   const days = await practisedDays();
+  const gaps: string[] = [];
   const at = new Date(now);
   at.setDate(at.getDate() - 1);
-  for (let back = 1; back <= window; back += 1) {
+  for (let back = 0; back <= held.length; back += 1) {
     const key = dayKey(at.getTime());
-    if (!days.has(key)) {
-      const wouldMake = streakFrom(new Set([...days, key]), now);
-      return wouldMake < 2 ? null : { day: key, at: stampOfDay(key), wouldMake, cost: POINTS.repair };
-    }
+    if (days.has(key)) break;
+    gaps.push(key);
     at.setDate(at.getDate() - 1);
   }
-  return null;
+  // Nothing to bridge, or more to bridge than we can afford.
+  if (!gaps.length || gaps.length > held.length) return 0;
+
+  const tx = db.transaction('extensions', 'readwrite');
+  await Promise.all([
+    ...gaps.map((day, i) => tx.store.put({ ...held[i], usedOn: day })),
+    tx.done,
+  ]);
+  return gaps.length;
 }
 
 /**
- * Buys a day. Silently does nothing if it is already practised or already
- * repaired, and refuses if the points are not there.
+ * Version 4's repaired days, carried into the extensions that replaced them.
  *
- * The balance is checked inside rather than trusted from the caller: it is
- * derived from two stores that anything can write to, so a number the UI read a
- * moment ago is a guess about the present.
+ * Idempotent and it reads before it writes: once the old store is empty there
+ * is nothing to do, which is the case on every boot but the one after this
+ * ships. A repaired day becomes an extension already spent on that day, at the
+ * price that was actually paid, so the ledger and the calendar both come out
+ * where they were.
  */
-export async function repairDay(day: string, now: number = Date.now()): Promise<boolean> {
+export async function migrateRepairs(): Promise<number> {
   const db = await getDB();
-  const [practised, { balance }] = await Promise.all([practisedDays(), points()]);
-  if (practised.has(day)) return false;
-  if (balance < POINTS.repair) return false;
-  await db.put('repairs', { day, at: now, cost: POINTS.repair });
-  return true;
+  const old = await db.getAll('repairs');
+  if (!old.length) return 0;
+  const tx = db.transaction(['repairs', 'extensions'], 'readwrite');
+  await Promise.all([
+    ...old.map((r) => tx.objectStore('extensions').put({
+      id: `repair-${r.day}`, at: r.at, cost: r.cost, usedOn: r.day,
+    })),
+    ...old.map((r) => tx.objectStore('repairs').delete(r.day)),
+    tx.done,
+  ]);
+  return old.length;
 }
 
 /**
@@ -641,18 +699,18 @@ export async function reviewsPerDay(days = 7, now: number = Date.now()): Promise
  */
 export async function exportAll(): Promise<{
   decks: Deck[]; cards: Card[]; reviews: ReviewLogEntry[]; notes: Note[];
-  practice: PracticeDay[]; repairs: RepairedDay[];
+  practice: PracticeDay[]; extensions: StreakExtension[];
 }> {
   const db = await getDB();
-  const [decks, cards, reviews, notes, practice, repairs] = await Promise.all([
+  const [decks, cards, reviews, notes, practice, extensions] = await Promise.all([
     db.getAll('decks'),
     db.getAll('cards'),
     db.getAll('reviews'),
     db.getAll('notes'),
     db.getAll('practice'),
-    db.getAll('repairs'),
+    db.getAll('extensions'),
   ]);
-  return { decks, cards, reviews, notes, practice, repairs };
+  return { decks, cards, reviews, notes, practice, extensions };
 }
 
 export interface ImportCounts {
@@ -679,23 +737,23 @@ export async function importAll(
   // drill existed simply has none, and is still a good backup of what it held.
   data: {
     decks: Deck[]; cards: Card[]; reviews: ReviewLogEntry[];
-    notes?: Note[]; practice?: PracticeDay[]; repairs?: RepairedDay[];
+    notes?: Note[]; practice?: PracticeDay[]; extensions?: StreakExtension[];
   },
 ): Promise<ImportCounts> {
   const db = await getDB();
   const existing = await exportAll();
   const incomingNotes = data.notes ?? [];
   const incomingPractice = data.practice ?? [];
-  // Restoring the practice without the repairs would hand back the points that
-  // were already spent on it, and quietly break every streak they were holding.
-  const incomingRepairs = data.repairs ?? [];
+  // Restoring the practice without the extensions would hand back the points
+  // that were already spent, and quietly break every streak they were holding.
+  const incomingExtensions = data.extensions ?? [];
   const has = {
     decks: new Set(existing.decks.map((d) => d.id)),
     cards: new Set(existing.cards.map((c) => c.id)),
     reviews: new Set(existing.reviews.map((r) => r.id)),
     notes: new Set(existing.notes.map((n) => n.id)),
     practice: new Set(existing.practice.map((p) => p.id)),
-    repairs: new Set(existing.repairs.map((r) => r.day)),
+    extensions: new Set(existing.extensions.map((e) => e.id)),
   };
 
   const fresh = {
@@ -704,17 +762,17 @@ export async function importAll(
     reviews: data.reviews.filter((r) => !has.reviews.has(r.id)),
     notes: incomingNotes.filter((n) => !has.notes.has(n.id)),
     practice: incomingPractice.filter((p) => !has.practice.has(p.id)),
-    repairs: incomingRepairs.filter((r) => !has.repairs.has(r.day)),
+    extensions: incomingExtensions.filter((e) => !has.extensions.has(e.id)),
   };
 
-  const tx = db.transaction(['decks', 'cards', 'reviews', 'notes', 'practice', 'repairs'], 'readwrite');
+  const tx = db.transaction(['decks', 'cards', 'reviews', 'notes', 'practice', 'extensions'], 'readwrite');
   await Promise.all([
     ...fresh.decks.map((d) => tx.objectStore('decks').put(d)),
     ...fresh.cards.map((c) => tx.objectStore('cards').put(c)),
     ...fresh.reviews.map((r) => tx.objectStore('reviews').put(r)),
     ...fresh.notes.map((n) => tx.objectStore('notes').put(n)),
     ...fresh.practice.map((p) => tx.objectStore('practice').put(p)),
-    ...fresh.repairs.map((r) => tx.objectStore('repairs').put(r)),
+    ...fresh.extensions.map((e) => tx.objectStore('extensions').put(e)),
     tx.done,
   ]);
 
@@ -770,7 +828,7 @@ export function savePrefs(prefs: Prefs): void {
 /** Clears every store — used by the "Reset local data" action in Settings. */
 export async function resetAll(): Promise<void> {
   const db = await getDB();
-  const tx = db.transaction(['decks', 'cards', 'reviews', 'notes', 'practice', 'repairs'], 'readwrite');
+  const tx = db.transaction(['decks', 'cards', 'reviews', 'notes', 'practice', 'extensions'], 'readwrite');
   await Promise.all([
     tx.objectStore('decks').clear(),
     tx.objectStore('cards').clear(),
