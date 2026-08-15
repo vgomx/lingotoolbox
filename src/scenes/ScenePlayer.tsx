@@ -25,20 +25,29 @@ import { STAGE, type Scene } from './sceneKit';
  * greeting and the faces without either jumping, which is exactly what the
  * landing page now asks of it.
  *
- * A shorter box on a phone was measured and rejected. The height is the one
- * number a bleeding scene ignores — the scale is the container over the crop,
- * see `fit` — so a shorter box would have shown the same figures at the same
- * size for less of the page, cut higher up. But the cast is bottom-anchored and
- * the members are not the same height, so the cut lands on a different part of
- * each: at 540 it crossed the Punjabi man's mouth, and even 640 took the elf at
- * the chin. What it bought was 14px of a 369px card. Not a trade worth an API.
+ * A caller may override the height, and only the height — see `band`.
  */
 const BOX = { width: 900, height: 685 };
 
 /** How long a scene takes to fade out and the next to fade in. */
 const FADE = 0.45;
 
-export function ScenePlayer({ scenes }: { scenes: Scene[] }) {
+/**
+ * Shortening the box does not shrink a bleeding scene.
+ *
+ * The scale is the container over the crop's width and the height never enters
+ * into it, so a shorter box shows the same figures at the same size and simply
+ * cuts them higher. That was tried on the stacked cast call and rejected: it is
+ * bottom-anchored and its members are not the same height, so the cut landed
+ * somewhere different on each — 540 crossed the Punjabi man's mouth to save
+ * 14px of a 369px card.
+ *
+ * It earns its place with an arrangement composed for it. The side-by-side cast
+ * is two columns in a band a third as tall, and a box at the shared 685 would
+ * pad it with empty stage rather than show more of anything.
+ */
+
+export function ScenePlayer({ scenes, band = BOX.height }: { scenes: Scene[]; band?: number }) {
   const reducedMotion = usePrefersReducedMotion();
   const box = React.useRef<HTMLDivElement>(null);
   const [width, setWidth] = React.useState(0);
@@ -110,9 +119,9 @@ export function ScenePlayer({ scenes }: { scenes: Scene[] }) {
   const unit = width ? width / BOX.width : 0;
   const bleed = scene.bleed === 'bottom';
   const fit = unit
-    ? (bleed ? BOX.width / crop.width : Math.min(BOX.width / crop.width, BOX.height / crop.height)) * unit
+    ? (bleed ? BOX.width / crop.width : Math.min(BOX.width / crop.width, band / crop.height)) * unit
     : 0;
-  const boxHeight = width * (BOX.height / BOX.width);
+  const boxHeight = width * (band / BOX.width);
 
   /* Dip to transparent between scenes, so one does not cut into the next. */
   const time = reducedMotion ? scene.still : t;
@@ -126,7 +135,7 @@ export function ScenePlayer({ scenes }: { scenes: Scene[] }) {
       ref={box}
       aria-hidden
       style={{
-        width: '100%', aspectRatio: `${BOX.width} / ${BOX.height}`,
+        width: '100%', aspectRatio: `${BOX.width} / ${band}`,
         position: 'relative',
         /*
          * A bleeding scene is cut by the card, not by this box — that is the
