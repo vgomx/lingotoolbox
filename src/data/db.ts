@@ -525,6 +525,8 @@ export interface Points {
   earned: number;
   spent: number;
   balance: number;
+  /** How many days have been put back. A count, not the points it cost. */
+  repaired: number;
 }
 
 export async function points(): Promise<Points> {
@@ -538,7 +540,7 @@ export async function points(): Promise<Points> {
   ]);
   const earned = reviews.length * POINTS.perReview + worked.size * POINTS.perDay;
   const spent = repairs.reduce((n, r) => n + r.cost, 0);
-  return { earned, spent, balance: earned - spent };
+  return { earned, spent, balance: earned - spent, repaired: repairs.length };
 }
 
 /** A day the reader can put points into, and what the streak would become. */

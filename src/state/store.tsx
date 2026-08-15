@@ -93,7 +93,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [cards, setCards] = React.useState<Card[]>([]);
   const [notes, setNotes] = React.useState<Note[]>([]);
   const [streak, setStreak] = React.useState(0);
-  const [points, setPoints] = React.useState<db.Points>({ earned: 0, spent: 0, balance: 0 });
+  const [points, setPoints] = React.useState<db.Points>({ earned: 0, spent: 0, balance: 0, repaired: 0 });
   const [repairOffer, setRepairOffer] = React.useState<db.RepairOffer | null>(null);
   const [weeklyReviews, setWeeklyReviews] = React.useState<number[]>(() => Array(7).fill(0));
 

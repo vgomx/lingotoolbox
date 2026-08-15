@@ -36,7 +36,7 @@ const BOTH = 'var(--streak)';
  * the calendar still says what happened. A fortnight that drew a repair as
  * practice would be a record of something nobody did.
  */
-const REPAIRED = 'var(--text-muted)';
+export const REPAIRED = 'var(--text-muted)';
 
 const colorFor = (day: db.DayPractised) =>
   (day.repaired && !day.tools.length ? REPAIRED
@@ -45,32 +45,65 @@ const colorFor = (day: db.DayPractised) =>
 
 const TOOL_NAME: Record<PracticeTool, string> = { cards: 'Flashcards', conjugation: 'Drill' };
 
-function Mark({ day, today }: { day: db.DayPractised; today: boolean }) {
-  const color = colorFor(day);
+/**
+ * One square in the calendar.
+ *
+ * Exported because the Points card shows the day it is offering to put back,
+ * and it has to be the same square: the offer sits beside this fortnight, and
+ * two different drawings of "a day" would be two different ideas of one.
+ *
+ * `filled` is separate from `color` so a day can be coloured without being
+ * claimed — a repair is drawn in outline, and so is the day the card is only
+ * offering.
+ */
+export function DayMark({ label, color, filled = true, ring, size }: {
+  label: React.ReactNode;
+  color: string | null;
+  filled?: boolean;
+  /** A second outline outside the square, for "now" or "this is the one". */
+  ring?: string;
+  /** Fixed px instead of filling its grid cell. */
+  size?: number;
+}) {
   return (
     <span
       aria-hidden
       style={{
         aspectRatio: '1', display: 'grid', placeItems: 'center',
+        width: size, flex: size ? 'none' : undefined,
         borderRadius: 'var(--radius-sm)',
         fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-11)',
         // A day that happened is filled and legible; one that did not is the
         // sunken surface, which reads as an absence rather than as a failure.
-        background: !color || day.repaired
-          ? 'var(--surface-sunken)'
-          : `color-mix(in oklab, ${color} 24%, var(--surface-card))`,
+        background: color && filled
+          ? `color-mix(in oklab, ${color} 24%, var(--surface-card))`
+          : 'var(--surface-sunken)',
         boxShadow: color
           ? `inset 0 0 0 1px color-mix(in oklab, ${color} 55%, transparent)`
           : 'var(--ring-inset)',
         color: color ? 'var(--text-strong)' : 'var(--text-faint)',
-        // Today is outlined rather than filled, so the ring says "now" without
-        // claiming the day has been practised when it has not.
-        outline: today ? `2px solid ${color ?? 'var(--border-strong)'}` : undefined,
+        outline: ring ? `2px solid ${ring}` : undefined,
         outlineOffset: 2,
       }}
     >
-      {new Date(day.at).getDate()}
+      {label}
     </span>
+  );
+}
+
+function Mark({ day, today }: { day: db.DayPractised; today: boolean }) {
+  const color = colorFor(day);
+  return (
+    <DayMark
+      label={new Date(day.at).getDate()}
+      color={color}
+      // A repair holds the streak without having been practised, so it keeps
+      // the outline and not the fill.
+      filled={!day.repaired}
+      // Today is outlined rather than filled, so the ring says "now" without
+      // claiming the day has been practised when it has not.
+      ring={today ? (color ?? 'var(--border-strong)') : undefined}
+    />
   );
 }
 
