@@ -1,6 +1,6 @@
 import { exportAll, importAll, type ImportCounts } from './db';
 import { APP_VERSION } from '../legalNotices';
-import type { Card, Deck, Note, PracticeDay, ReviewLogEntry } from './types';
+import type { Card, Deck, Note, PracticeDay, RepairedDay, ReviewLogEntry } from './types';
 
 /** Identifies the file as ours before anything reads its contents. */
 export const BACKUP_FORMAT = 'lingo-toolbox/backup';
@@ -11,12 +11,13 @@ export const BACKUP_FORMAT = 'lingo-toolbox/backup';
  * forever; that is the point of writing the version down.
  */
 /**
- * 2 added notes, 3 the practice log. An older file has no key at all for what it
+ * 2 added notes, 3 the practice log, 4 the repaired days. An older file has no
+ * key at all for what it
  * predates, which is why the reader treats those as optional rather than as
  * missing fields — an old backup is still a complete backup of everything the
  * app had when it was written.
  */
-export const BACKUP_VERSION = 3;
+export const BACKUP_VERSION = 4;
 
 export interface Backup {
   format: typeof BACKUP_FORMAT;
@@ -29,6 +30,9 @@ export interface Backup {
   notes: Note[];
   /** Which days the reader practised in a tool that keeps no other record. */
   practice: PracticeDay[];
+  /** Which days were bought with points. Restoring without these hands back
+      points that were already spent, and breaks the streaks they were holding. */
+  repairs: RepairedDay[];
 }
 
 /**
@@ -39,7 +43,7 @@ export interface Backup {
  * backup on a laptop should not drag a phone's theme along with it.
  */
 export async function buildBackup(now: number = Date.now()): Promise<Backup> {
-  const { decks, cards, reviews, notes, practice } = await exportAll();
+  const { decks, cards, reviews, notes, practice, repairs } = await exportAll();
   return {
     format: BACKUP_FORMAT,
     version: BACKUP_VERSION,
@@ -50,6 +54,7 @@ export async function buildBackup(now: number = Date.now()): Promise<Backup> {
     reviews,
     notes,
     practice,
+    repairs,
   };
 }
 
@@ -88,6 +93,11 @@ const looksLikeNote = (v: unknown): boolean => isObject(v)
 
 const looksLikePractice = (v: unknown): boolean => isObject(v)
   && typeof v.id === 'string' && typeof v.day === 'string' && typeof v.tool === 'string';
+
+// `cost` checked too: it is what the ledger subtracts, and a repair that
+// arrives without one would be a free day that also balances the books.
+const looksLikeRepair = (v: unknown): boolean => isObject(v)
+  && typeof v.day === 'string' && typeof v.at === 'number' && typeof v.cost === 'number';
 
 const looksLikeDeck = (v: unknown) => isObject(v)
   && typeof v.id === 'string' && typeof v.name === 'string' && typeof v.language === 'string';
@@ -136,6 +146,9 @@ export function parseBackup(text: string): Backup {
   if (raw.practice !== undefined && (!Array.isArray(raw.practice) || !raw.practice.every(looksLikePractice))) {
     throw new BackupError('That backup has a practice day with missing fields.');
   }
+  if (raw.repairs !== undefined && (!Array.isArray(raw.repairs) || !raw.repairs.every(looksLikeRepair))) {
+    throw new BackupError('That backup has a repaired day with missing fields.');
+  }
 
   return {
     format: BACKUP_FORMAT,
@@ -147,6 +160,7 @@ export function parseBackup(text: string): Backup {
     reviews: raw.reviews as ReviewLogEntry[],
     notes: (raw.notes ?? []) as Note[],
     practice: (raw.practice ?? []) as PracticeDay[],
+    repairs: (raw.repairs ?? []) as RepairedDay[],
   };
 }
 
@@ -166,6 +180,7 @@ export async function restoreBackup(backup: Backup): Promise<ImportCounts> {
     reviews: backup.reviews,
     notes: backup.notes,
     practice: backup.practice,
+    repairs: backup.repairs,
   });
 }
 

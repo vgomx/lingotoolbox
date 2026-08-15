@@ -29,13 +29,24 @@ const TOOL_COLOR: Record<PracticeTool, string> = {
 /** A day with more than one tool on it takes the streak's own amber. */
 const BOTH = 'var(--streak)';
 
-const colorFor = (tools: PracticeTool[]) =>
-  (tools.length > 1 ? BOTH : tools.length === 1 ? TOOL_COLOR[tools[0]] : null);
+/**
+ * A day that was bought rather than practised.
+ *
+ * Muted on purpose, and never one of the tool colours: it holds the streak, and
+ * the calendar still says what happened. A fortnight that drew a repair as
+ * practice would be a record of something nobody did.
+ */
+const REPAIRED = 'var(--text-muted)';
+
+const colorFor = (day: db.DayPractised) =>
+  (day.repaired && !day.tools.length ? REPAIRED
+    : day.tools.length > 1 ? BOTH
+      : day.tools.length === 1 ? TOOL_COLOR[day.tools[0]] : null);
 
 const TOOL_NAME: Record<PracticeTool, string> = { cards: 'Flashcards', conjugation: 'Drill' };
 
 function Mark({ day, today }: { day: db.DayPractised; today: boolean }) {
-  const color = colorFor(day.tools);
+  const color = colorFor(day);
   return (
     <span
       aria-hidden
@@ -45,7 +56,9 @@ function Mark({ day, today }: { day: db.DayPractised; today: boolean }) {
         fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-11)',
         // A day that happened is filled and legible; one that did not is the
         // sunken surface, which reads as an absence rather than as a failure.
-        background: color ? `color-mix(in oklab, ${color} 24%, var(--surface-card))` : 'var(--surface-sunken)',
+        background: !color || day.repaired
+          ? 'var(--surface-sunken)'
+          : `color-mix(in oklab, ${color} 24%, var(--surface-card))`,
         boxShadow: color
           ? `inset 0 0 0 1px color-mix(in oklab, ${color} 55%, transparent)`
           : 'var(--ring-inset)',
@@ -91,7 +104,7 @@ export function StreakBand({ streak }: { streak: number }) {
     // Re-read when the streak moves, which is the one thing that changes it.
   }, [streak]);
 
-  const practised = days?.filter((d) => d.tools.length) ?? [];
+  const practised = days?.filter((d) => d.tools.length || d.repaired) ?? [];
 
   /*
    * Absent, not empty.
@@ -122,7 +135,7 @@ export function StreakBand({ streak }: { streak: number }) {
       <Card>
         <div
           role="img"
-          aria-label={`${practised.length} of the last ${DAYS} days practised. ${streak === 1 ? '1 day' : `${streak} days`} in a row.`}
+          aria-label={`${practised.length} of the last ${DAYS} days practised.${streak > 0 ? ` ${streak === 1 ? '1 day' : `${streak} days`} in a row.` : ''}`}
           style={{
             display: 'grid',
             // Seven across, capped so the marks stay marks on a wide screen
@@ -146,6 +159,7 @@ export function StreakBand({ streak }: { streak: number }) {
           {usedTools.has('cards') && <Key color={TOOL_COLOR.cards} label={TOOL_NAME.cards} />}
           {usedTools.has('conjugation') && <Key color={TOOL_COLOR.conjugation} label={TOOL_NAME.conjugation} />}
           {practised.some((d) => d.tools.length > 1) && <Key color={BOTH} label="Both" />}
+          {practised.some((d) => d.repaired) && <Key color={REPAIRED} label="Put back" />}
         </div>
 
         {/*
@@ -155,12 +169,21 @@ export function StreakBand({ streak }: { streak: number }) {
           * statement and the number is the caption. Longest is only worth
           * saying while it is still ahead — once the current run is the record,
           * printing both says the same thing twice.
+          *
+          * And a broken streak says nothing at all. This printed "0 days in a
+          * row" whenever the run had lapsed but the fortnight still had marks
+          * in it, which is the one sentence the design system rules out by
+          * name: an empty streak is a fact nobody needs, and the calendar above
+          * has already said it without the reproach. The record stays, because
+          * what someone did is worth keeping either way.
           */}
         <p style={{ margin: 0, fontSize: 'var(--fs-15)', color: 'var(--text-muted)' }}>
-          <strong style={{ color: 'var(--text-strong)', fontWeight: 800 }}>
-            {streak === 1 ? '1 day' : `${streak} days`} in a row
-          </strong>
-          {longest > streak && ` · longest so far ${longest}`}
+          {streak > 0 && (
+            <strong style={{ color: 'var(--text-strong)', fontWeight: 800 }}>
+              {streak === 1 ? '1 day' : `${streak} days`} in a row
+            </strong>
+          )}
+          {longest > streak && `${streak > 0 ? ' · longest so far ' : 'Longest so far '}${longest}`}
         </p>
       </Card>
     </section>

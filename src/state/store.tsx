@@ -46,6 +46,12 @@ interface StoreValue {
   streak: number;
   /** Reviews graded per day over the last week, oldest first, ending today. */
   weeklyReviews: number[];
+  /** Earned by practising, spent on repaired days. Derived, never stored. */
+  points: db.Points;
+  /** The one day worth buying, and what the streak would become. Null if none. */
+  repairOffer: db.RepairOffer | null;
+  /** Buys the offered day. False if it was already covered or unaffordable. */
+  repair: (day: string) => Promise<boolean>;
 
   grade: (card: Card, direction: Direction, grade: Grade) => Promise<Card>;
   /** Notes that a tool was used for its exercise today. Cheap to call on every answer. */
@@ -87,6 +93,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [cards, setCards] = React.useState<Card[]>([]);
   const [notes, setNotes] = React.useState<Note[]>([]);
   const [streak, setStreak] = React.useState(0);
+  const [points, setPoints] = React.useState<db.Points>({ earned: 0, spent: 0, balance: 0 });
+  const [repairOffer, setRepairOffer] = React.useState<db.RepairOffer | null>(null);
   const [weeklyReviews, setWeeklyReviews] = React.useState<number[]>(() => Array(7).fill(0));
 
   // `tick` exists only to re-run the due derivations as minute-scale cards come
@@ -113,18 +121,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refresh = React.useCallback(async (language: LanguageCode) => {
-    const [nextDecks, nextCards, nextNotes, nextStreak, nextWeek] = await Promise.all([
+    const [nextDecks, nextCards, nextNotes, nextStreak, nextWeek, nextPoints, nextOffer] = await Promise.all([
       db.listDecks(language),
       db.listCardsForLanguage(language),
       db.listNotes(language),
       db.computeStreak(),
       db.reviewsPerDay(),
+      db.points(),
+      db.nextRepair(),
     ]);
     setDecks(nextDecks);
     setCards(nextCards);
     setNotes(nextNotes);
     setStreak(nextStreak);
     setWeeklyReviews(nextWeek);
+    setPoints(nextPoints);
+    setRepairOffer(nextOffer);
   }, []);
 
   React.useEffect(() => {
@@ -298,6 +310,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     await refresh(prefs.language);
   }, [prefs.language, refresh]);
 
+  /*
+   * Buys a day, then re-reads everything.
+   *
+   * A full refresh rather than a local patch: one purchase moves the streak,
+   * the balance, the fortnight and the next offer, and three of those are
+   * walks over the same records rather than numbers to adjust.
+   */
+  const repair = React.useCallback(async (day: string) => {
+    const done = await db.repairDay(day);
+    if (done) await refresh(prefs.language);
+    return done;
+  }, [prefs.language, refresh]);
+
   /**
    * Takes back the most recent grade, and says which card it was.
    *
@@ -378,6 +403,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     dueInDeck,
     dueCount,
     streak,
+    points,
+    repairOffer,
+    repair,
     weeklyReviews,
     practise,
     grade,

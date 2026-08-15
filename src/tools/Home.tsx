@@ -29,6 +29,7 @@ const HERO_SCENES_SIDE = [castCallSideScene];
  */
 const SIDE_BAND = Math.round(345 * 900 / 780);
 import { StreakBand } from './home/StreakBand';
+import { PointsCard } from './home/PointsCard';
 
 /**
  * The dashboard, following ui_kits/app/HomeScreen.jsx.
@@ -109,7 +110,7 @@ function WeekChart({ counts }: { counts: number[] }) {
 
 export function Home() {
   const isMobile = useIsMobile();
-  const { decks, cards, notes, dueCount, streak, weeklyReviews, language, workspace, cardsInDeck, dueInDeck } = useStore();
+  const { decks, cards, notes, dueCount, streak, points, repairOffer, repair, weeklyReviews, language, workspace, cardsInDeck, dueInDeck } = useStore();
   const navigate = useNavigate();
 
   const mastered = cards.filter((c) => c.state === 'review' && c.interval >= 21).length;
@@ -267,7 +268,27 @@ export function Home() {
       )}
       </Card>
 
-      <StreakBand streak={streak} />
+      {/*
+        * The fortnight and what can be done about it, side by side.
+        *
+        * Two thirds to one: the band is fourteen marks and a legend and wants
+        * the room, while the points are a number and a sentence. `start` rather
+        * than stretch, so the shorter card keeps its own height instead of
+        * growing a field of empty surface to match its neighbour.
+        *
+        * Both cards remove themselves before anything has been practised, so on
+        * a fresh install this grid has nothing in it and collapses to nothing.
+        */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 2fr) minmax(0, 1fr)',
+          gap: 'var(--space-5)', alignItems: 'start',
+        }}
+      >
+        <StreakBand streak={streak} />
+        <PointsCard points={points} offer={repairOffer} onRepair={repair} />
+      </div>
 
       {/* ---- Flashcards, everything it owns in one place ------------------- */}
       <section>

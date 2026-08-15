@@ -225,6 +225,22 @@ export interface PracticeDay {
   at: number;
 }
 
+/**
+ * A day the reader put points into rather than practice.
+ *
+ * Keyed by the day itself, so buying the same day twice is the same record and
+ * there is no way to be charged for it again. `cost` is stored rather than
+ * recomputed because it is what was actually paid: the price may change, and a
+ * ledger that reprices history cannot be reconciled against a balance.
+ */
+export interface RepairedDay {
+  /** The same `${year}-${month}-${date}` key the streak walks. */
+  day: string;
+  /** When it was bought, not the day it repairs. */
+  at: number;
+  cost: number;
+}
+
 export interface ReviewLogEntry {
   id: string;
   cardId: string;
