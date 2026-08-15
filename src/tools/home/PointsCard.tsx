@@ -1,91 +1,74 @@
 import * as React from 'react';
 import { Button, Card, Icon, ProgressBar, Tooltip, playSound, useIsTouch } from 'lingo-ds';
 import * as db from '../../data/db';
-import { DayMark, REPAIRED } from './StreakBand';
 
 /**
- * Points, and the one thing they buy.
+ * Points, and the one thing they buy: a streak extension.
  *
  * The balance is not a score. It is the same practice the streak already counts,
  * read a second way — a point a card, five for the day — so nothing new has to
  * be tracked and there is no number that can disagree with the history behind
  * it. See db.points.
  *
- * The whole feature exists to make a missed day repairable. The design system's
- * rule is that repair is fine and pressure is not: this card says what has been
- * earned and what it would do, once, without a countdown, without asking, and
- * without ever mentioning what is about to be lost. It offers a single day
- * because a single day is the only one worth buying — see db.nextRepair.
+ * An extension is held, not applied. It covers a day that goes by unpractised,
+ * on its own, because someone who forgot to practise is by definition not there
+ * to press anything — see db.settleExtensions. Two is the most that can be held
+ * at once, and spending one frees the slot, so points always have somewhere to
+ * go and nobody can bank a fortnight of absence.
  *
- * Shown rather than described. The first draft was four stacked sentences — a
- * price, a date, a shortfall and a total — which is a lot of prose for four
- * numbers. The day being offered is now drawn as the same square the calendar
- * beside it uses, the shortfall is the gap left in a bar, and the earning rule
- * has moved into a tooltip on the mark, since it is a thing to look up once and
- * never read again.
+ * This replaces a retroactive repair that reached back into the calendar and
+ * bought a specific missed day. Same intent, wrong moment: it asked people to
+ * notice and act, which is the thing that had already gone wrong.
+ *
+ * The design system's rule is that repair is fine and pressure is not. So the
+ * card says what is held and what it would cost to hold another, once, with no
+ * countdown, nothing that asks, and no mention of what is about to be lost.
  */
 
 /** What the number is for. Read once, then never again — hence the tooltip. */
 const HELP = 'Earned by practising: a point a card, and five for the day.';
 
 /**
- * "Thu" and "13", split so the square can hold the number and the label the day.
+ * The slots, drawn.
  *
- * Pinned to en-GB rather than left to the reader's locale. The app's copy is
- * English, and `undefined` takes the browser's: on a Dutch machine the button
- * came out "Put za 15 back", which is neither language.
+ * A filled flame for each extension in hand and an empty ring for each slot
+ * that is not, so the whole state of the thing is one glance: how many are
+ * waiting, and whether there is room for another.
  */
-const weekday = (at: number) => new Date(at).toLocaleDateString('en-GB', { weekday: 'short' });
-const dayLabel = (at: number) => `${weekday(at)} ${new Date(at).getDate()}`;
-
-/**
- * The offer, drawn: this day goes back, and the run becomes this long.
- *
- * The square is the calendar's own — see DayMark — in the muted tone a repaired
- * day takes there, so what the card is proposing and what the fortnight would
- * show afterwards are visibly the same thing.
- */
-function Offer({ offer }: { offer: db.RepairOffer }) {
+function Slots({ held }: { held: number }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-        {/* Ringed, as the calendar rings today: it means "this is the one",
-            not "this is done". The square stays unfilled, because it is being
-            offered rather than held — at 40px the 1px inset alone was too
-            quiet to read as anything but an empty box. */}
-        <DayMark
-          label={new Date(offer.at).getDate()}
-          color={REPAIRED}
-          filled={false}
-          ring={REPAIRED}
-          size={40}
-        />
-        <span style={{ fontSize: 'var(--fs-11)', color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
-          {weekday(offer.at)}
-        </span>
-      </div>
-
-      <Icon name="arrow-right" size={16} style={{ color: 'var(--text-faint)', flex: 'none' }} />
-
-      {/* The result, in the streak's own flame and amber. Stated as what the
-          run becomes, never as what it would otherwise have been. */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-        <Icon name="flame" size={18} style={{ color: 'var(--streak)', flex: 'none' }} />
-        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--fs-24)', color: 'var(--text-strong)', lineHeight: 1 }}>
-          {offer.wouldMake}
-        </span>
-        <span style={{ fontSize: 'var(--fs-13)', color: 'var(--text-muted)' }}>
-          {offer.wouldMake === 1 ? 'day' : 'days'}
-        </span>
-      </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }} aria-hidden>
+      {Array.from({ length: db.EXTENSION_CAP }, (_, i) => {
+        const full = i < held;
+        return (
+          <span
+            key={i}
+            style={{
+              display: 'grid', placeItems: 'center', width: 40, height: 40, flex: 'none',
+              borderRadius: 'var(--radius-md)',
+              background: full
+                ? 'color-mix(in oklab, var(--streak) 20%, var(--surface-card))'
+                : 'var(--surface-sunken)',
+              boxShadow: full
+                ? 'inset 0 0 0 1px color-mix(in oklab, var(--streak) 55%, transparent)'
+                : 'var(--ring-inset)',
+            }}
+          >
+            <Icon
+              name="flame"
+              size={20}
+              style={{ color: full ? 'var(--streak)' : 'var(--text-faint)', opacity: full ? 1 : 0.5 }}
+            />
+          </span>
+        );
+      })}
     </div>
   );
 }
 
-export function PointsCard({ points, offer, onRepair }: {
+export function PointsCard({ points, onBuy }: {
   points: db.Points;
-  offer: db.RepairOffer | null;
-  onRepair: (day: string) => Promise<boolean>;
+  onBuy: () => Promise<boolean>;
 }) {
   const [busy, setBusy] = React.useState(false);
   /* A tooltip needs a pointer. On a touch screen the rule would simply be
@@ -101,13 +84,14 @@ export function PointsCard({ points, offer, onRepair }: {
    */
   if (!points.earned) return null;
 
-  const affordable = offer !== null && points.balance >= offer.cost;
+  const room = points.held < db.EXTENSION_CAP;
+  const affordable = points.balance >= db.POINTS.extension;
 
   const buy = async () => {
-    if (!offer || busy) return;
+    if (busy) return;
     setBusy(true);
-    const done = await onRepair(offer.day);
-    // The same cue a grade gets. Nothing celebratory: a repaired day is a day
+    const done = await onBuy();
+    // The same cue a grade gets. Nothing celebratory: an extension is a day
     // held, not an achievement.
     if (done) playSound('toggle');
     setBusy(false);
@@ -119,8 +103,9 @@ export function PointsCard({ points, offer, onRepair }: {
         <h2 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 'var(--fs-24)', fontWeight: 800, color: 'var(--text-strong)' }}>
           Points
         </h2>
+        {/* States what they are for. Not what happens without them. */}
         <p style={{ margin: '2px 0 0', fontSize: 'var(--fs-14)', color: 'var(--text-muted)' }}>
-          They can put a day back.
+          They buy streak extensions.
         </p>
       </div>
 
@@ -155,50 +140,53 @@ export function PointsCard({ points, offer, onRepair }: {
           </p>
         )}
 
-        {offer && (
-          <>
-            <Offer offer={offer} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+          <Slots held={points.held} />
+          {/* The rule, once, beside the thing it is about — and phrased as what
+              an extension does rather than as what happens without one. */}
+          <p style={{ margin: 0, fontSize: 'var(--fs-13)', color: 'var(--text-muted)', lineHeight: 'var(--lh-relaxed)', minWidth: 0 }}>
+            {points.held === 0
+              ? `An extension covers a day you miss. Hold up to ${db.EXTENSION_CAP}.`
+              : points.held === 1
+                ? 'One in hand. It covers the next day you miss.'
+                : `${points.held} in hand, covering the next ${points.held} days you miss.`}
+          </p>
+        </div>
 
-            {affordable ? (
-              <Button variant="secondary" onClick={buy} disabled={busy}>
-                {busy ? 'Putting it back…' : `Put ${dayLabel(offer.at)} back`}
-              </Button>
-            ) : (
-              /*
-               * The shortfall as a bar rather than a sentence.
-               *
-               * An earlier draft refused a meter here on the grounds that it
-               * would be pressure. It is the wrong shape for that: it fills by
-               * practising rather than emptying with time, it cannot go
-               * backwards, and it is not on the screen at all unless there is a
-               * gap worth putting back. What it replaces — "34 more to do
-               * that" — was the same fact with more reading.
-               */
-              <ProgressBar
-                label="Toward that"
-                valueLabel={`${points.balance} / ${offer.cost}`}
-                value={points.balance}
-                max={offer.cost}
-                color="var(--brand)"
-              />
-            )}
-          </>
-        )}
+        {room && (affordable ? (
+          <Button variant="secondary" onClick={buy} disabled={busy}>
+            {busy ? 'Buying…' : `Buy one for ${db.POINTS.extension}`}
+          </Button>
+        ) : (
+          /*
+           * The shortfall as a bar rather than a sentence.
+           *
+           * It fills by practising rather than emptying with time, and it
+           * cannot go backwards — which is what makes it a record of what has
+           * been done rather than a countdown.
+           */
+          <ProgressBar
+            label="Toward the next one"
+            valueLabel={`${points.balance} / ${db.POINTS.extension}`}
+            value={points.balance}
+            max={db.POINTS.extension}
+            color="var(--brand)"
+          />
+        ))}
 
-        {points.repaired > 0 && (
-          /* What was done with them, counted in days rather than in points —
-             "50 spent" is a number nobody holds in their head. */
+        {points.used > 0 && (
+          /* What they have done, counted in days rather than in points — "100
+             spent" is a number nobody holds in their head. Sits on the bottom
+             edge so this card and the streak's finish on the same line. */
           <div
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               fontSize: 'var(--fs-13)', color: 'var(--text-faint)',
-              // Sits on the bottom edge when this is the shorter card, for the
-              // same reason the streak's count does.
               marginTop: touch ? undefined : 'auto',
             }}
           >
-            <Icon name="rotate-ccw" size={14} style={{ flex: 'none' }} />
-            {points.repaired === 1 ? '1 day put back' : `${points.repaired} days put back`}
+            <Icon name="flame" size={14} style={{ flex: 'none' }} />
+            {points.used === 1 ? '1 day covered so far' : `${points.used} days covered so far`}
           </div>
         )}
       </Card>

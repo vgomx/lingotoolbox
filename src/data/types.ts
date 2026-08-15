@@ -226,19 +226,28 @@ export interface PracticeDay {
 }
 
 /**
- * A day the reader put points into rather than practice.
+ * One streak extension: bought with points, later spent on a day that was
+ * missed.
  *
- * Keyed by the day itself, so buying the same day twice is the same record and
- * there is no way to be charged for it again. `cost` is stored rather than
- * recomputed because it is what was actually paid: the price may change, and a
- * ledger that reprices history cannot be reconciled against a balance.
+ * Held and spent are the same record with and without `usedOn`, rather than two
+ * stores that have to agree on how many there are. `cost` is what was actually
+ * paid at the time — the price may change, and a ledger that reprices history
+ * cannot be reconciled against a balance.
+ *
+ * This replaces RepairedDay, which was keyed by the day it repaired. That shape
+ * could not hold an unspent one, because an extension nobody has used yet is
+ * not about any day.
  */
-export interface RepairedDay {
-  /** The same `${year}-${month}-${date}` key the streak walks. */
-  day: string;
-  /** When it was bought, not the day it repairs. */
+export interface StreakExtension {
+  id: string;
+  /** When it was bought. */
   at: number;
   cost: number;
+  /**
+   * The day it went on, once it has been spent — the same `${year}-${month}-${date}`
+   * key the streak walks. Absent while it is still held.
+   */
+  usedOn?: string;
 }
 
 export interface ReviewLogEntry {

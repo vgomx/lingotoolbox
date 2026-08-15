@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Card } from 'lingo-ds';
+import { Card, Icon } from 'lingo-ds';
 import * as db from '../../data/db';
 import type { PracticeTool } from '../../data/types';
 
@@ -30,16 +30,16 @@ const TOOL_COLOR: Record<PracticeTool, string> = {
 const BOTH = 'var(--streak)';
 
 /**
- * A day that was bought rather than practised.
+ * A day an extension covered rather than one that was practised.
  *
  * Muted on purpose, and never one of the tool colours: it holds the streak, and
- * the calendar still says what happened. A fortnight that drew a repair as
+ * the calendar still says what happened. A fortnight that drew an extension as
  * practice would be a record of something nobody did.
  */
-export const REPAIRED = 'var(--text-muted)';
+export const EXTENDED = 'var(--text-muted)';
 
 const colorFor = (day: db.DayPractised) =>
-  (day.repaired && !day.tools.length ? REPAIRED
+  (day.extended && !day.tools.length ? EXTENDED
     : day.tools.length > 1 ? BOTH
       : day.tools.length === 1 ? TOOL_COLOR[day.tools[0]] : null);
 
@@ -53,8 +53,7 @@ const TOOL_NAME: Record<PracticeTool, string> = { cards: 'Flashcards', conjugati
  * two different drawings of "a day" would be two different ideas of one.
  *
  * `filled` is separate from `color` so a day can be coloured without being
- * claimed — a repair is drawn in outline, and so is the day the card is only
- * offering.
+ * claimed — an extended day is drawn in outline rather than filled in.
  */
 export function DayMark({ label, color, filled = true, ring, size }: {
   label: React.ReactNode;
@@ -95,11 +94,23 @@ function Mark({ day, today }: { day: db.DayPractised; today: boolean }) {
   const color = colorFor(day);
   return (
     <DayMark
-      label={new Date(day.at).getDate()}
+      /*
+       * A flame instead of the date on a day an extension covered.
+       *
+       * As an outlined square with its number it was all but the empty day
+       * beside it — one hairline apart, and the hairline was the only thing
+       * saying the streak had been held there. The glyph is the same one the
+       * slots in the points card use, so what was spent and where it went are
+       * visibly the same thing, and the grid position still says which date it
+       * is.
+       */
+      label={day.extended
+        ? <Icon name="flame" size={14} style={{ display: 'block' }} />
+        : new Date(day.at).getDate()}
       color={color}
-      // A repair holds the streak without having been practised, so it keeps
-      // the outline and not the fill.
-      filled={!day.repaired}
+      // An extension holds the streak without anything having been practised,
+      // so it keeps the outline and not the fill.
+      filled={!day.extended}
       // Today is outlined rather than filled, so the ring says "now" without
       // claiming the day has been practised when it has not.
       ring={today ? (color ?? 'var(--border-strong)') : undefined}
@@ -113,10 +124,22 @@ function Key({ color, label }: { color: string; label: string }) {
       <span
         style={{
           width: 10, height: 10, borderRadius: 3, flex: 'none',
+          display: 'grid', placeItems: 'center',
           background: `color-mix(in oklab, ${color} 24%, var(--surface-card))`,
           boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${color} 55%, transparent)`,
         }}
       />
+      {label}
+    </span>
+  );
+}
+
+/* The extended key carries the mark's own glyph rather than a colour chip —
+   the square it explains has a flame in it and no colour to speak of. */
+function FlameKey({ label }: { label: string }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      <Icon name="flame" size={12} style={{ color: 'var(--text-muted)', flex: 'none' }} />
       {label}
     </span>
   );
@@ -180,7 +203,7 @@ export function StreakBand({ streak }: { streak: number }) {
     // Re-read when the streak moves, which is the one thing that changes it.
   }, [streak]);
 
-  const practised = days?.filter((d) => d.tools.length || d.repaired) ?? [];
+  const practised = days?.filter((d) => d.tools.length || d.extended) ?? [];
 
   /*
    * Absent, not empty.
@@ -268,7 +291,7 @@ export function StreakBand({ streak }: { streak: number }) {
               {usedTools.has('cards') && <Key color={TOOL_COLOR.cards} label={TOOL_NAME.cards} />}
               {usedTools.has('conjugation') && <Key color={TOOL_COLOR.conjugation} label={TOOL_NAME.conjugation} />}
               {practised.some((d) => d.tools.length > 1) && <Key color={BOTH} label="Both" />}
-              {practised.some((d) => d.repaired) && <Key color={REPAIRED} label="Put back" />}
+              {practised.some((d) => d.extended) && <FlameKey label="Extended" />}
             </div>
 
             {/*
