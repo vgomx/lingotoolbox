@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Card, useIsMobile } from 'lingo-ds';
+import { Card } from 'lingo-ds';
 import * as db from '../../data/db';
 import type { PracticeTool } from '../../data/types';
 
@@ -122,10 +122,52 @@ function Key({ color, label }: { color: string; label: string }) {
   );
 }
 
+/**
+ * How wide the card has to be before the legend can stand beside the calendar.
+ *
+ * Measured on the card's content box, not the window. The fortnight is 7 marks
+ * capped at 44 with three-unit gaps, so 380 whatever happens; the gap is 32;
+ * and the legend and the count want the rest, enough for "2 days in a row ·
+ * longest so far 4" to stay on one line. Under this they go back under the
+ * marks, where they have the whole width.
+ *
+ * 640 rather than the 580 the arithmetic suggests: swept across the window
+ * sizes, 580 was wide enough to avoid clipping but not wide enough to keep the
+ * caption off a second line, which is the wrap this layout was meant to end.
+ */
+const SIDE_BY_SIDE = 640;
+
 export function StreakBand({ streak }: { streak: number }) {
-  const isMobile = useIsMobile();
   const [days, setDays] = React.useState<db.DayPractised[] | null>(null);
   const [longest, setLongest] = React.useState(0);
+
+  /*
+   * The card's own width, not the viewport's.
+   *
+   * This asked useIsMobile, which is a question about the screen rather than
+   * about the room this card has. The card sits in a two-thirds column, so at
+   * any window between the tablet breakpoint and a wide desktop the legend was
+   * still being stood beside the calendar with about 90px to do it in:
+   * "Flashcards" clipped at the card's edge and "1 day in a row" broken over
+   * four lines.
+   */
+  const card = React.useRef<HTMLDivElement>(null);
+  /* On the layout box inside the card rather than on Card itself: Card is a
+     plain function component on React 18, so a ref handed to it is dropped with
+     a warning rather than forwarded. Its width is the card's content box, which
+     is what the threshold is written against. */
+  const [width, setWidth] = React.useState(0);
+  React.useLayoutEffect(() => {
+    const el = card.current;
+    if (!el) return undefined;
+    const ro = new ResizeObserver(([e]) => setWidth(e.contentRect.width));
+    ro.observe(el);
+    setWidth(el.getBoundingClientRect().width);
+    return () => ro.disconnect();
+  }, [days]);
+  /* Until it has been measured, stacked — which fits at any width, so the first
+     paint is never the broken one. */
+  const beside = width >= SIDE_BY_SIDE;
 
   React.useEffect(() => {
     let live = true;
@@ -183,14 +225,15 @@ export function StreakBand({ streak }: { streak: number }) {
           * marks are already shrinking to fit and there is no width to take.
           */}
         <div
+          ref={card}
           style={{
-            display: 'flex', flexDirection: isMobile ? 'column' : 'row',
+            display: 'flex', flexDirection: beside ? 'row' : 'column',
             // Stretch, not flex-start: the column beside the calendar has to be
             // as tall as the card for its last line to reach the bottom edge.
             // The calendar opts out below, since a stretched grid of
             // aspect-ratio squares would grow them.
             alignItems: 'stretch',
-            gap: isMobile ? 'var(--gap-stack)' : 'var(--space-7)',
+            gap: beside ? 'var(--space-7)' : 'var(--gap-stack)',
             // Fills the card, so the caption below can reach its bottom edge.
             flex: 1,
           }}
@@ -204,7 +247,7 @@ export function StreakBand({ streak }: { streak: number }) {
               // rather than growing into tiles.
               gridTemplateColumns: 'repeat(7, minmax(0, 44px))',
               gap: 'var(--space-3)',
-              flex: isMobile ? undefined : 'none',
+              flex: beside ? 'none' : undefined,
               alignSelf: 'flex-start',
             }}
           >
@@ -216,8 +259,8 @@ export function StreakBand({ streak }: { streak: number }) {
                 the board is a legend for something that did not happen. */}
             <div
               style={{
-                display: 'flex', flexDirection: isMobile ? 'row' : 'column',
-                gap: isMobile ? 'var(--space-5)' : 'var(--space-3)', flexWrap: 'wrap',
+                display: 'flex', flexDirection: beside ? 'column' : 'row',
+                gap: beside ? 'var(--space-3)' : 'var(--space-5)', flexWrap: 'wrap',
                 fontSize: 'var(--fs-11)', fontWeight: 700, letterSpacing: 'var(--ls-caps)',
                 textTransform: 'uppercase', color: 'var(--text-muted)',
               }}
@@ -250,7 +293,7 @@ export function StreakBand({ streak }: { streak: number }) {
                 // The legend stays with the marks it explains; the count drops
                 // to the bottom, which is what makes the card fill its height
                 // by arranging itself rather than by padding.
-                marginTop: isMobile ? undefined : 'auto',
+                marginTop: beside ? 'auto' : undefined,
               }}
             >
               {streak > 0 && (
