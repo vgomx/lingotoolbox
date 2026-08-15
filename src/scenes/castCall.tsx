@@ -82,9 +82,16 @@ const TOTAL = PER_PASS * SLOT;
  * 850, which is what puts a real part of the body behind the card's edge
  * rather than a sliver of it.
  *
- * The bubble stays clear: it ends at 408 and the head starts at 430.
+ * The floor is 630 rather than the piece's 680. Raising the crop's top to fit
+ * the glosses pushed the whole band down and took 40% of the body behind the
+ * card's edge; this lifts the cast back up so more of it is on screen.
+ *
+ * That puts the top of the head at 380, above the bubble's baseline of 408, so
+ * the two overlap — deliberately. The bubble is drawn after the character and
+ * covers it, so a head rises behind the speech rather than colliding with it,
+ * and each turn is over in a second and a half.
  */
-const FLOOR = 680;
+const FLOOR = 630;
 const FIGURE = 500;
 /** The bubble's baseline — its tail sits here and it grows upward. */
 const BUBBLE_BASE = 408;
@@ -299,6 +306,10 @@ function Bubble({ spec, k, nudge }: { spec: Member; k: number; nudge: number }) 
           position: 'relative', background: 'var(--surface-raised)', borderRadius: 24,
           padding: '16px 26px 19px', display: 'flex', flexDirection: 'column',
           alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
+          /* The crop's own width. Nothing may grow the bubble past the band the
+             scene is cropped to, or it gets cut off at the edge — the longest
+             line measures 643 against this 660, so it is the gloss this holds. */
+          maxWidth: 660,
         }}
       >
         {/* 26, not the piece's 12: the piece is a 1080 square played at full
@@ -307,9 +318,6 @@ function Bubble({ spec, k, nudge }: { spec: Member; k: number; nudge: number }) 
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 26, letterSpacing: 'var(--ls-caps)', textTransform: 'uppercase', color: spec.accent }}>
           {spec.lang}
         </div>
-        {/* The English gloss the piece carries is gone for the same reason, and
-            it is no loss here: the greeting scene next door does not translate
-            its hellos either. The meaning is in the character saying it. */}
         <div
           style={{
             fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: spec.size,
@@ -317,6 +325,28 @@ function Bubble({ spec, k, nudge }: { spec: Member; k: number; nudge: number }) 
           }}
         >
           {spec.text}
+        </div>
+        {/*
+          * The piece's English gloss, back again.
+          *
+          * Scaled like the label rather than like the line: at the piece's own
+          * 16 it would arrive at four pixels in this crop, which is the same
+          * arithmetic that took the 12px label to 26.
+          *
+          * It wraps where the line does not. Several glosses are longer than
+          * the sentence they translate — "The forest remembers everything." is
+          * half again the length of "Metsä muistaa kaiken." — so left on one
+          * line they would push the bubble past the crop and be cut off at the
+          * edge of it.
+          */}
+        <div
+          style={{
+            fontFamily: 'var(--font-ui)', fontWeight: 400, fontSize: 24,
+            lineHeight: 1.3, color: 'var(--text-muted)', textAlign: 'center',
+            whiteSpace: 'normal',
+          }}
+        >
+          {spec.gloss}
         </div>
         <div
           style={{
@@ -394,8 +424,13 @@ export const castCallScene: Scene = {
    * a pass, the longest line comes out 643 units wide against these 660, so
    * there is nothing to reclaim at the sides and the way to make the cast
    * bigger is to draw it bigger, not to crop in.
+   *
+   * The top is 210 rather than 250 because the gloss made the bubbles taller
+   * and they grow upward from a fixed baseline: measured across a pass, the
+   * highest reaches 217, and at 250 every one of the sixteen had its top edge
+   * cut off. The band has to contain what the scene paints.
    */
-  crop: { left: 210, top: 250, width: 660, height: 680 },
+  crop: { left: 210, top: 210, width: 660, height: 670 },
   /* Mid-turn on the first character, where the line is up and the body is at
      the top of its bow. */
   still: 0.9,
