@@ -47,7 +47,20 @@ const FADE = 0.45;
  * pad it with empty stage rather than show more of anything.
  */
 
-export function ScenePlayer({ scenes, band = BOX.height }: { scenes: Scene[]; band?: number }) {
+export function ScenePlayer({ scenes, band = BOX.height, once = false }: {
+  scenes: Scene[];
+  band?: number;
+  /**
+   * Run the list through once and hold the last frame, instead of looping.
+   *
+   * For a scene that is about something that just happened. The hero loops
+   * because it is wallpaper with a cast in it; a celebration that comes round
+   * again every seven seconds is not a celebration, it is a screensaver — and
+   * the pieces written this way already end where they should be left, on a
+   * shut mouth and a settled pose.
+   */
+  once?: boolean;
+}) {
   const reducedMotion = usePrefersReducedMotion();
   const box = React.useRef<HTMLDivElement>(null);
   const [width, setWidth] = React.useState(0);
@@ -74,12 +87,24 @@ export function ScenePlayer({ scenes, band = BOX.height }: { scenes: Scene[]; ba
     /* Kept in a ref rather than read from state: the callback is created once
        and would otherwise close over the first scene forever. */
     let current = 0;
+    /* Declared before `tick`, which closes over it. */
+    let finished = false;
 
     const tick = (now: number) => {
       if (!started) started = now;
       const elapsed = (now - started) / 1000;
       const scene = scenes[current];
       if (elapsed >= scene.duration) {
+        const last = current === scenes.length - 1;
+        if (once && last) {
+          // Held, not stopped mid-air: the final frame is the pose the piece
+          // was composed to end on. Latched, so glancing away and back does not
+          // replay a celebration for something that happened minutes ago.
+          finished = true;
+          setT(scene.duration);
+          raf = 0;
+          return;
+        }
         current = (current + 1) % scenes.length;
         started = now;
         setIndex(current);
@@ -90,7 +115,7 @@ export function ScenePlayer({ scenes, band = BOX.height }: { scenes: Scene[]; ba
       raf = requestAnimationFrame(tick);
     };
     const run = () => {
-      if (raf || !visible || document.hidden) return;
+      if (raf || finished || !visible || document.hidden) return;
       // Resume where the scene was rather than restarting it, so glancing away
       // does not send the reader back to the first beat every time.
       started = 0;
@@ -104,7 +129,7 @@ export function ScenePlayer({ scenes, band = BOX.height }: { scenes: Scene[]; ba
     document.addEventListener('visibilitychange', onVisibility);
 
     return () => { stop(); io.disconnect(); document.removeEventListener('visibilitychange', onVisibility); };
-  }, [reducedMotion, scenes]);
+  }, [reducedMotion, scenes, once]);
 
   const scene = scenes[index];
   const { crop } = scene;
@@ -123,11 +148,18 @@ export function ScenePlayer({ scenes, band = BOX.height }: { scenes: Scene[]; ba
     : 0;
   const boxHeight = width * (band / BOX.width);
 
-  /* Dip to transparent between scenes, so one does not cut into the next. */
+  /*
+   * Dip to transparent between scenes, so one does not cut into the next.
+   *
+   * The dip out is a handover to whatever comes next, so a one-shot on its last
+   * scene does not do it: the frame it is left holding is the end of the piece,
+   * and fading it to nothing would leave an empty box where the pose should be.
+   */
   const time = reducedMotion ? scene.still : t;
+  const holds = once && index === scenes.length - 1;
   const fade = reducedMotion ? 1 : Math.min(
     Math.min(time, FADE) / FADE,
-    Math.min(scene.duration - time, FADE) / FADE,
+    holds ? 1 : Math.min(scene.duration - time, FADE) / FADE,
   );
 
   return (

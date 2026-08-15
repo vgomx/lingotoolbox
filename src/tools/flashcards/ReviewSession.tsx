@@ -2,6 +2,8 @@ import * as React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Button, Dialog, Flashcard, Icon, IconButton, ProgressBar, ReviewRating, Tag, Toast, Tooltip, playSound, useIsMobile } from 'lingo-ds';
 import { TopRight, useChrome } from '../../shell/chrome';
+import { ScenePlayer } from '../../scenes/ScenePlayer';
+import { toolboxTongueScene } from '../../scenes/toolboxTongue';
 import { useStore } from '../../state/store';
 import { EmptyTool } from '../EmptyTool';
 import { NoteCard } from '../grammar/NoteCard';
@@ -36,6 +38,28 @@ const page: React.CSSProperties = {
   flexDirection: 'column',
   gap: 'var(--space-7)',
 };
+
+/**
+ * The celebration, sized for the space above a heading.
+ *
+ * Module scope for the list, because the player takes it as a prop and watches
+ * it — a fresh array each render would restart the piece on every tick of the
+ * screen behind it.
+ *
+ * The band is the crop's own shape (900 tall against 1160 wide, scaled to the
+ * player's 900) so the box is exactly the window the scene declares and adds no
+ * empty stage of its own on top of the margins already in it.
+ */
+const SESSION_SCENES = [toolboxTongueScene];
+const SESSION_BAND = Math.round((900 * 900) / 1160);
+
+function SessionArt() {
+  return (
+    <div style={{ width: 'clamp(260px, 68vw, 420px)' }}>
+      <ScenePlayer scenes={SESSION_SCENES} band={SESSION_BAND} once />
+    </div>
+  );
+}
 
 export function ReviewSession() {
   const { deckId } = useParams();
@@ -281,6 +305,15 @@ export function ReviewSession() {
           <EmptyTool
             icon="circle-check"
             accent="var(--success)"
+            /*
+             * The toolbox, pleased with itself.
+             *
+             * The app's own mark given a face, and the one screen in the app
+             * that is about something having gone well — so it plays once and
+             * settles rather than looping, and it is the only place this piece
+             * appears. A celebration you can find any time is decoration.
+             */
+            art={<SessionArt />}
             title="Session complete"
             description={`${graded} ${graded === 1 ? 'card' : 'cards'} graded${again ? `, ${again} coming back sooner` : ''}. Everything else is scheduled.`}
             action={
