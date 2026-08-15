@@ -97,16 +97,46 @@ export function AppShell() {
    * where the shell had run out. So the shell is sized from the screen while the
    * two disagree, and from the viewport once they agree — which they do from the
    * first interaction onward, and always do everywhere else.
+   *
+   * The test is that the gap *is* the inset, not merely that there is one.
+   * `standalone && screen.height > innerHeight` is also true of every installed
+   * app on a desktop, where the window is simply smaller than the display and
+   * legitimately so: a macOS dock app in an 837px window on a 956px screen was
+   * being given a 956px shell, and the 119px of overflow scrolled the whole
+   * frame, rail included. In a browser it never fired, which is why it only
+   * showed up installed.
+   *
+   * A desktop reports no top inset at all, so the equality alone rules it out —
+   * and it stays true to the case this was written for, where the shortfall is
+   * the status bar to the pixel.
    */
   React.useEffect(() => {
+    /*
+     * env() resolved to a number.
+     *
+     * It cannot be read off a custom property: a variable holding `env(...)`
+     * substitutes the text unresolved, and getPropertyValue hands back the
+     * function rather than the pixels. A real property on a real element is
+     * computed, so this asks one.
+     */
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;'
+      + 'padding-top:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none';
+    document.body.appendChild(probe);
+
     const apply = () => {
       const standalone = window.matchMedia('(display-mode: standalone)').matches
         || (window.navigator as unknown as { standalone?: boolean }).standalone === true;
       const reported = window.innerHeight;
-      // Only ever upward, and only when installed: a browser's viewport is
-      // legitimately shorter than the screen, and must be left alone.
-      const height = standalone && window.screen.height > reported ? window.screen.height : reported;
-      document.documentElement.style.setProperty('--app-height', `${height}px`);
+      const inset = parseFloat(getComputedStyle(probe).paddingTop) || 0;
+      const shortfall = window.screen.height - reported;
+      // Only ever upward, only when installed, and only when the screen is
+      // taller by exactly the inset — a pixel of slack for fractional scaling.
+      const corrigible = standalone && inset > 0 && Math.abs(shortfall - inset) <= 1;
+      document.documentElement.style.setProperty(
+        '--app-height',
+        `${corrigible ? window.screen.height : reported}px`,
+      );
     };
     apply();
     const vv = window.visualViewport;
@@ -119,6 +149,7 @@ export function AppShell() {
       window.removeEventListener('orientationchange', apply);
       window.removeEventListener('pageshow', apply);
       vv?.removeEventListener('resize', apply);
+      probe.remove();
     };
   }, []);
 
