@@ -92,7 +92,7 @@ interface SeedDeck {
  * A starter workspace so the app is never empty on first open. Everything here is
  * ordinary vocabulary; the user can delete the decks and add their own.
  */
-const SEED: Record<LanguageCode, SeedDeck[]> = {
+export const SEED: Record<LanguageCode, SeedDeck[]> = {
   EN: [
     {
       id: 'en-phrasal',
@@ -468,6 +468,50 @@ const id = (deckId: string, index: number) => `${deckId}-${index}`;
  * Builds the starter decks and cards. Cards are staggered so the first session has
  * a realistic mix rather than everything arriving new at once.
  */
+/**
+ * One seeded deck, turned into records.
+ *
+ * Split out of buildSeed so a pack added from the catalogue months later is
+ * built by the same rule as one that shipped with the app — the alternative is
+ * two places that decide what a new deck's cards look like, which drift.
+ */
+export function buildDeck(language: LanguageCode, seedDeck: SeedDeck, now: number): { deck: Deck; cards: Card[] } {
+  const deck: Deck = {
+    id: seedDeck.id,
+    language,
+    name: seedDeck.name,
+    accent: seedDeck.accent,
+    reversed: seedDeck.reversed,
+    tags: seedDeck.tags,
+    createdAt: now,
+  };
+  const cards: Card[] = seedDeck.cards.map((c, i) => {
+    // Roughly half of each deck starts as review cards already due, so the
+    // first session isn't a wall of brand-new words.
+    const seeded = i % 2 === 0 && i < 6;
+    return {
+      id: id(seedDeck.id, i),
+      deckId: seedDeck.id,
+      front: c.front,
+      back: c.back,
+      phonetic: c.phonetic,
+      illustration: c.illustration,
+      tags: c.tags,
+      level: c.level,
+      // The deck's answer, unless the card carries its own.
+      reversed: c.reversed ?? seedDeck.reversed,
+      createdAt: now,
+      state: seeded ? 'review' : 'new',
+      due: seeded ? now - (i + 1) * 60 * 60 * 1000 : now,
+      interval: seeded ? 1 + i : 0,
+      ease: START_EASE,
+      reps: seeded ? 1 + i : 0,
+      lapses: 0,
+    };
+  });
+  return { deck, cards };
+}
+
 export function buildSeed(now: number = Date.now()): { decks: Deck[]; cards: Card[] } {
   const decks: Deck[] = [];
   const cards: Card[] = [];
@@ -534,7 +578,7 @@ interface SeedNote {
  * Each is short on purpose. A rule you have to scroll is one you will not read
  * halfway through a review, which is the moment this exists for.
  */
-const SEED_NOTES: Record<LanguageCode, SeedNote[]> = {
+export const SEED_NOTES: Record<LanguageCode, SeedNote[]> = {
   EN: [
     {
       id: 'en-phrasal-split',

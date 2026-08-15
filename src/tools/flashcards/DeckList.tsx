@@ -7,6 +7,8 @@ import { levelRange } from '../../data/types';
 import type { CEFRLevel } from '../../data/types';
 import { LevelFilter } from './LevelFilter';
 import { EmptyTool } from '../EmptyTool';
+import { PackCatalogue } from './PackCatalogue';
+import { packsFor } from '../../data/packs';
 import { isDue } from '../../data/scheduler';
 
 const page: React.CSSProperties = {
@@ -16,8 +18,12 @@ const page: React.CSSProperties = {
 };
 
 export function DeckList() {
+  const [catalogue, setCatalogue] = React.useState(false);
   const isMobile = useIsMobile();
-  const { decks, cardsInDeck, dueCount, workspace } = useStore();
+  const { decks, cardsInDeck, dueCount, workspace, language, installed } = useStore();
+  /* How many packs this workspace still has to offer. Both the button and the
+     empty state are about this number, so it is worked out once. */
+  const remaining = packsFor(language).filter((p) => !installed.has(p.id)).length;
   const navigate = useNavigate();
 
   const totalCards = decks.reduce((n, d) => n + cardsInDeck(d.id).length, 0);
@@ -116,14 +122,34 @@ export function DeckList() {
               <LevelFilter value={levels} onChange={setLevels} counts={counts} />
             </div>
           )}
+
+          {/* The way in to the catalogue, and only while there is something in
+              it to add. A door to an empty room teaches you to stop opening
+              it. */}
+          {remaining > 0 && (
+            <div style={{ marginTop: 'var(--space-6)' }}>
+              <Button variant="secondary" onClick={() => setCatalogue(true)} iconLeft={<Icon name="circle-plus" size={16} />}>
+                Add packs
+              </Button>
+            </div>
+          )}
         </header>
+
+        <PackCatalogue open={catalogue} onClose={() => setCatalogue(false)} />
 
         {decks.length === 0 ? (
           <EmptyTool
             icon="layers"
             accent="var(--tool-flashcards)"
             title="No decks yet"
-            description="A deck holds the words you are practising. Add one from the plus in the sidebar."
+            description={`A pack is a rule, the words that exercise it, and the verbs to drill it on. There ${remaining === 1 ? 'is 1' : `are ${remaining}`} for ${workspace.name}.`}
+            action={
+              <div style={{ display: 'flex', gap: 'var(--gap-inline)', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <Button onClick={() => setCatalogue(true)} iconLeft={<Icon name="circle-plus" size={16} />}>
+                  Browse packs
+                </Button>
+              </div>
+            }
           />
         ) : (
           // A guard rather than a state you can reach: a chip with no cards

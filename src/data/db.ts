@@ -1,18 +1,20 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { Card, Deck, Direction, Grade, LanguageCode, Note, PracticeDay, PracticeTool, Prefs, StreakExtension, ReviewLogEntry } from './types';
 import { asLevel } from './types';
-import { buildSeed, buildSeedNotes, WORKSPACES } from './seed';
+import { buildDeck, SEED, SEED_NOTES, WORKSPACES } from './seed';
+import { packById, starterFor, type Pack } from './packs';
 import { schedule, scheduleOf, withSchedule } from './scheduler';
 
 const DB_NAME = 'lingo-toolbox';
 /**
  * 2 added the notes store, 3 the practice log, 4 the repaired days, 5 the streak
- * extensions that replaced them. The upgrade below is written to
+ * extensions that replaced them, 6 the installed packs. The upgrade below is
+ * written to
  * run from whatever version a reader is on rather than assuming an empty
  * database, which is what version 1's did — it created all three stores
  * unconditionally, which is only correct the first time anyone opens the app.
  */
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 const PREFS_KEY = 'lingo-toolbox:prefs';
 
 interface LingoDB extends DBSchema {
@@ -56,6 +58,19 @@ interface LingoDB extends DBSchema {
     key: string;
     value: StreakExtension;
   };
+  /**
+   * Which catalogue packs a reader has added.
+   *
+   * The decks and notes a pack installs are ordinary records and could be read
+   * back to guess at this, but a guess is all it would be: a deck can be
+   * renamed, emptied or deleted, and none of that means the pack was never
+   * added. This says what was chosen, which is a different fact from what
+   * survives of it.
+   */
+  packs: {
+    key: string;
+    value: { id: string; language: LanguageCode; at: number };
+  };
 }
 
 let dbPromise: Promise<IDBPDatabase<LingoDB>> | null = null;
@@ -94,6 +109,9 @@ function getDB() {
         }
         if (oldVersion < 5) {
           db.createObjectStore('extensions', { keyPath: 'id' });
+        }
+        if (oldVersion < 6) {
+          db.createObjectStore('packs', { keyPath: 'id' });
         }
       },
     });
@@ -150,23 +168,86 @@ export async function migrateLevels(): Promise<{ cards: number; decks: number }>
  */
 let seeding: Promise<void> | null = null;
 
-export function ensureSeeded(): Promise<void> {
+/* ── the catalogue ───────────────────────────────────────────────────────── */
+
+/** Which packs have been added, newest first. */
+export async function installedPacks(): Promise<{ id: string; language: LanguageCode; at: number }[]> {
+  const db = await getDB();
+  return (await db.getAll('packs')).sort((a, b) => b.at - a.at);
+}
+
+/**
+ * Adds a pack: its deck, its cards, its notes, and the record that it was
+ * chosen.
+ *
+ * Idempotent in the way that matters. The deck and its cards are keyed by ids
+ * derived from the pack's own content, so adding a pack twice writes the same
+ * rows rather than a second copy — but a deck already there is left exactly as
+ * it is, because the reader has been grading it and a re-add must not reset
+ * their schedule. Notes are the same: present is left alone.
+ */
+export async function installPack(pack: Pack, now: number = Date.now()): Promise<void> {
+  const db = await getDB();
+  const seedDeck = SEED[pack.language].find((d) => d.id === pack.deck);
+  if (!seedDeck) return;
+
+  const existingDeck = await db.get('decks', pack.deck);
+  const existingNotes = new Set((await db.getAll('notes')).map((n) => n.id));
+
+  const { deck, cards } = buildDeck(pack.language, seedDeck, now);
+  const notes = SEED_NOTES[pack.language]
+    .filter((n) => pack.notes.includes(n.id) && !existingNotes.has(n.id))
+    .map((n) => ({ ...n, language: pack.language, createdAt: now }));
+
+  const tx = db.transaction(['decks', 'cards', 'notes', 'packs'], 'readwrite');
+  await Promise.all([
+    ...(existingDeck ? [] : [tx.objectStore('decks').put(deck)]),
+    ...(existingDeck ? [] : cards.map((c) => tx.objectStore('cards').put(c))),
+    ...notes.map((n) => tx.objectStore('notes').put(n)),
+    tx.objectStore('packs').put({ id: pack.id, language: pack.language, at: now }),
+    tx.done,
+  ]);
+}
+
+/**
+ * The verbs the drill should favour, from the packs a reader has added.
+ *
+ * Empty means no opinion, and the drill asks about the whole language — which
+ * is what it did before packs existed and what it should keep doing for anyone
+ * whose packs name no verbs.
+ */
+export async function focusVerbs(language: LanguageCode): Promise<string[]> {
+  const installed = await installedPacks();
+  const verbs = installed
+    .filter((p) => p.language === language)
+    .flatMap((p) => packById(p.id)?.verbs ?? []);
+  return [...new Set(verbs)];
+}
+
+/**
+ * A fresh install arrives with one pack, in the language it opens in.
+ *
+ * It used to arrive with everything: twenty-two decks and a hundred and
+ * sixty-five cards across all four workspaces, most of them in languages the
+ * reader had not chosen and would never see. That is the opposite of a
+ * catalogue — there is nothing to add when everything is already there, and no
+ * way to tell what you picked from what you were given.
+ *
+ * Guarded on the database being empty, so nobody who already has decks loses
+ * them or gains a starter beside them.
+ */
+export function ensureSeeded(language: LanguageCode = 'NL'): Promise<void> {
   if (!seeding) {
     seeding = (async () => {
       const db = await getDB();
       if (await db.count('decks')) return;
-
-      const { decks, cards } = buildSeed();
-      const tx = db.transaction(['decks', 'cards'], 'readwrite');
-      await Promise.all([
-        ...decks.map((d) => tx.objectStore('decks').put(d)),
-        ...cards.map((c) => tx.objectStore('cards').put(c)),
-        tx.done,
-      ]);
+      const starter = starterFor(language);
+      if (starter) await installPack(starter);
     })().catch((err) => {
       // Let a failed seed be retried rather than caching the rejection forever.
       seeding = null;
       throw err;
+
     });
   }
   return seeding;
@@ -322,12 +403,19 @@ export async function deleteNote(id: string): Promise<void> {
  * emptiness check would mean the starter notes only ever reached people who
  * installed after they existed.
  */
+/**
+ * Notes arrive with the pack that explains them, not in a heap at install.
+ *
+ * This used to write all twenty-four of them — every rule in every language —
+ * the first time the app opened. Under a catalogue that is the same mistake the
+ * deck seed was making: the notes *are* the grammar themes, so handing them all
+ * over at once gives away the thing the packs are offering.
+ *
+ * Kept as a no-op rather than deleted so that a database seeded by an older
+ * build is left exactly as it is. Nobody loses a note they already have.
+ */
 export async function ensureNotesSeeded(): Promise<void> {
-  const db = await getDB();
-  if (await db.count('notes')) return;
-  const notes = buildSeedNotes();
-  const tx = db.transaction('notes', 'readwrite');
-  await Promise.all([...notes.map((n: Note) => tx.store.put(n)), tx.done]);
+  /* Intentionally empty — see above. */
 }
 
 export async function reviewsSince(since: number): Promise<ReviewLogEntry[]> {
@@ -700,17 +788,19 @@ export async function reviewsPerDay(days = 7, now: number = Date.now()): Promise
 export async function exportAll(): Promise<{
   decks: Deck[]; cards: Card[]; reviews: ReviewLogEntry[]; notes: Note[];
   practice: PracticeDay[]; extensions: StreakExtension[];
+  packs: { id: string; language: LanguageCode; at: number }[];
 }> {
   const db = await getDB();
-  const [decks, cards, reviews, notes, practice, extensions] = await Promise.all([
+  const [decks, cards, reviews, notes, practice, extensions, packs] = await Promise.all([
     db.getAll('decks'),
     db.getAll('cards'),
     db.getAll('reviews'),
     db.getAll('notes'),
     db.getAll('practice'),
     db.getAll('extensions'),
+    db.getAll('packs'),
   ]);
-  return { decks, cards, reviews, notes, practice, extensions };
+  return { decks, cards, reviews, notes, practice, extensions, packs };
 }
 
 export interface ImportCounts {
@@ -738,6 +828,7 @@ export async function importAll(
   data: {
     decks: Deck[]; cards: Card[]; reviews: ReviewLogEntry[];
     notes?: Note[]; practice?: PracticeDay[]; extensions?: StreakExtension[];
+    packs?: { id: string; language: LanguageCode; at: number }[];
   },
 ): Promise<ImportCounts> {
   const db = await getDB();
@@ -747,6 +838,11 @@ export async function importAll(
   // Restoring the practice without the extensions would hand back the points
   // that were already spent, and quietly break every streak they were holding.
   const incomingExtensions = data.extensions ?? [];
+  /* Which packs were chosen. A restore can rebuild the decks from the file and
+     still lose this, and then the catalogue offers back what the reader already
+     picked — the deck-on-the-shelf fallback covers most of it, but not a pack
+     whose deck was later deleted. */
+  const incomingPacks = data.packs ?? [];
   const has = {
     decks: new Set(existing.decks.map((d) => d.id)),
     cards: new Set(existing.cards.map((c) => c.id)),
@@ -754,6 +850,7 @@ export async function importAll(
     notes: new Set(existing.notes.map((n) => n.id)),
     practice: new Set(existing.practice.map((p) => p.id)),
     extensions: new Set(existing.extensions.map((e) => e.id)),
+    packs: new Set(existing.packs.map((p) => p.id)),
   };
 
   const fresh = {
@@ -763,9 +860,10 @@ export async function importAll(
     notes: incomingNotes.filter((n) => !has.notes.has(n.id)),
     practice: incomingPractice.filter((p) => !has.practice.has(p.id)),
     extensions: incomingExtensions.filter((e) => !has.extensions.has(e.id)),
+    packs: incomingPacks.filter((p) => !has.packs.has(p.id)),
   };
 
-  const tx = db.transaction(['decks', 'cards', 'reviews', 'notes', 'practice', 'extensions'], 'readwrite');
+  const tx = db.transaction(['decks', 'cards', 'reviews', 'notes', 'practice', 'extensions', 'packs'], 'readwrite');
   await Promise.all([
     ...fresh.decks.map((d) => tx.objectStore('decks').put(d)),
     ...fresh.cards.map((c) => tx.objectStore('cards').put(c)),
@@ -773,6 +871,7 @@ export async function importAll(
     ...fresh.notes.map((n) => tx.objectStore('notes').put(n)),
     ...fresh.practice.map((p) => tx.objectStore('practice').put(p)),
     ...fresh.extensions.map((e) => tx.objectStore('extensions').put(e)),
+    ...fresh.packs.map((p) => tx.objectStore('packs').put(p)),
     tx.done,
   ]);
 
@@ -828,7 +927,7 @@ export function savePrefs(prefs: Prefs): void {
 /** Clears every store — used by the "Reset local data" action in Settings. */
 export async function resetAll(): Promise<void> {
   const db = await getDB();
-  const tx = db.transaction(['decks', 'cards', 'reviews', 'notes', 'practice', 'extensions'], 'readwrite');
+  const tx = db.transaction(['decks', 'cards', 'reviews', 'notes', 'practice', 'extensions', 'packs'], 'readwrite');
   await Promise.all([
     tx.objectStore('decks').clear(),
     tx.objectStore('cards').clear(),
