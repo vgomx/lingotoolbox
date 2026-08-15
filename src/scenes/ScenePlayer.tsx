@@ -1,18 +1,16 @@
 import * as React from 'react';
 import { usePrefersReducedMotion } from 'lingo-ds';
 import { STAGE, type Scene } from './sceneKit';
-import { castCallScene } from './scenes/castCall';
-import { greetingScene } from './scenes/greeting';
-import { struggleScene } from './scenes/struggle';
 
 /**
- * The hero's animations, played one after another.
+ * Plays a list of scenes, one after another, forever.
  *
- * A list rather than a single piece, because more are expected. Adding one is
- * writing a scene file and putting it in here: the player asks a scene only for
- * its duration, the window it paints in, and a frame at a time.
+ * The list comes from the caller rather than living here, because the same
+ * player now runs in two places that want different pieces: the dashboard hero
+ * shows the cast call, and the landing page closes with the two face loops. A
+ * scene is asked only for its duration, the window it paints in, and a frame at
+ * a time, so neither caller needs to know anything else about it.
  */
-const SCENES: Scene[] = [greetingScene, castCallScene, struggleScene];
 
 /**
  * The proportion of the box, fixed across every scene.
@@ -20,15 +18,19 @@ const SCENES: Scene[] = [greetingScene, castCallScene, struggleScene];
  * Each scene is composed as a square and crops to the band it actually uses,
  * and those bands are not the same shape — the greeting is wide and short, the
  * faces nearly square. Letting the box follow each scene's crop would make the
- * hero change height every few seconds and shove the page around underneath it.
- * So the box holds one shape and each scene is fitted inside it.
+ * surface change height every few seconds and shove the page around underneath
+ * it. So the box holds one shape and each scene is fitted inside it.
+ *
+ * One shape for both surfaces rather than one each: it was chosen to hold the
+ * greeting and the faces without either jumping, which is exactly what the
+ * landing page now asks of it.
  */
 const BOX = { width: 900, height: 685 };
 
 /** How long a scene takes to fade out and the next to fade in. */
 const FADE = 0.45;
 
-export function HeroScenes() {
+export function ScenePlayer({ scenes }: { scenes: Scene[] }) {
   const reducedMotion = usePrefersReducedMotion();
   const box = React.useRef<HTMLDivElement>(null);
   const [width, setWidth] = React.useState(0);
@@ -59,9 +61,9 @@ export function HeroScenes() {
     const tick = (now: number) => {
       if (!started) started = now;
       const elapsed = (now - started) / 1000;
-      const scene = SCENES[current];
+      const scene = scenes[current];
       if (elapsed >= scene.duration) {
-        current = (current + 1) % SCENES.length;
+        current = (current + 1) % scenes.length;
         started = now;
         setIndex(current);
         setT(0);
@@ -85,9 +87,9 @@ export function HeroScenes() {
     document.addEventListener('visibilitychange', onVisibility);
 
     return () => { stop(); io.disconnect(); document.removeEventListener('visibilitychange', onVisibility); };
-  }, [reducedMotion]);
+  }, [reducedMotion, scenes]);
 
-  const scene = SCENES[index];
+  const scene = scenes[index];
   const { crop } = scene;
 
   /*

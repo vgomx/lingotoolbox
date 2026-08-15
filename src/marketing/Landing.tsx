@@ -4,6 +4,12 @@ import { useIsMobile } from 'lingo-ds';
 import { Badge, Button, Card, EtymologyNode, Flashcard, Icon, ProgressBar, ReviewRating, StreakPill, Tag } from 'lingo-ds';
 import wordmarkViolet from 'lingo-ds/assets/logo/logo-wordmark-violet.svg';
 import wordmarkWhite from 'lingo-ds/assets/logo/logo-wordmark-white.svg';
+import { ScenePlayer } from '../scenes/ScenePlayer';
+import { greetingScene } from '../scenes/greeting';
+import { struggleScene } from '../scenes/struggle';
+
+/** Stable for the same reason Home's is — see the note there. */
+const CLOSING_SCENES = [greetingScene, struggleScene];
 
 /**
  * The light-theme landing page. There is deliberately no pricing surface anywhere —
@@ -341,6 +347,30 @@ function OpenSource() {
   );
 }
 
+/**
+ * The two face loops, as a sign-off.
+ *
+ * They were in the dashboard hero, sharing a rotation with the cast call, which
+ * meant a reader saw one of the three at random and the marketing page — the
+ * one surface whose whole job is to show what the app is like — had none of
+ * them at all. Here they are the last thing before the footer, and the hero is
+ * left to the cast call alone.
+ *
+ * No heading and no copy. The page has just finished saying it is free and
+ * yours to fork; this is a beat rather than another claim, and the scenes are
+ * a greeting in a dozen languages and the moment a phrase lands, which is the
+ * product's argument made without a sentence.
+ */
+function ClosingScenes() {
+  return (
+    <section style={{ ...section, paddingTop: 0 }} aria-hidden>
+      <div style={{ maxWidth: 460, margin: '0 auto' }}>
+        <ScenePlayer scenes={CLOSING_SCENES} />
+      </div>
+    </section>
+  );
+}
+
 function Footer() {
   const isMobile = useIsMobile();
   return (
@@ -415,6 +445,7 @@ export function Landing() {
       <EtymologyBand />
       <FlashcardsBand />
       <OpenSource />
+      <ClosingScenes />
       <Footer />
     </div>
   );

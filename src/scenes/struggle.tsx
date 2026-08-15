@@ -1,9 +1,9 @@
 import * as React from 'react';
-import { flagUrl } from '../../../data/illustrations';
+import { flagUrl } from '../data/illustrations';
 import {
   AMBER, BLUE, LINE, MOUTH_IN, YELLOW, clamp, cycle, ease, pop, stroke, tween,
   type Scene,
-} from '../sceneKit';
+} from './sceneKit';
 
 /*
  * Eight faces failing to understand things, and then one of them getting it.
