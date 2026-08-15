@@ -1,9 +1,9 @@
 import * as React from 'react';
-import { flagUrl } from '../../../data/illustrations';
+import { flagUrl } from '../data/illustrations';
 import {
   LINE, MOUTH_IN, YELLOW, clamp, cycle, ease, pop, stroke, tween,
   type Scene,
-} from '../sceneKit';
+} from './sceneKit';
 
 /*
  * Two faces greeting each other, the reply cycling one hello through several

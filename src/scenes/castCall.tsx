@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { STAGE, clamp, cycle, ease, pop, tween, type Scene } from '../sceneKit';
+import { STAGE, clamp, cycle, ease, pop, tween, type Scene } from './sceneKit';
 
 /*
  * A cast call: characters step up one at a time and deliver one line in their

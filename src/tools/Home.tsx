@@ -6,7 +6,17 @@ import { useStore } from '../state/store';
 import { HAS_ETYMOLOGY } from '../data/etymology';
 import { NAV_TOOLS } from '../data/seed';
 import { flagUrl } from '../data/illustrations';
-import { HeroScenes } from './home/HeroScenes';
+import { ScenePlayer } from '../scenes/ScenePlayer';
+import { castCallScene } from '../scenes/castCall';
+
+/*
+ * Module scope, not an inline literal.
+ *
+ * The player takes the list as a prop and watches it, so a fresh array on every
+ * render would tear the animation down and start it again each time the store
+ * changed — which on this screen is every grade, every switch, every tick.
+ */
+const HERO_SCENES = [castCallScene];
 import { StreakBand } from './home/StreakBand';
 
 /**
@@ -205,7 +215,7 @@ export function Home() {
             "Portuguese", one unbreakable word, and the title is what the page
             is actually about. */}
         <div style={{ flex: 'none', width: 'clamp(72px, 22vw, 440px)' }}>
-          <HeroScenes />
+          <ScenePlayer scenes={HERO_SCENES} />
         </div>
       </header>
       </Card>
