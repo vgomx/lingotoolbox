@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Badge, Button, Card, Icon, ProgressBar, Tag, useIsMobile } from 'lingo-ds';
 import { useChrome } from '../shell/chrome';
+import { useLanguagePicker } from '../shell/languagePicker';
 import { useStore } from '../state/store';
 import { HAS_ETYMOLOGY } from '../data/etymology';
 import { NAV_TOOLS } from '../data/seed';
@@ -29,6 +30,7 @@ const HERO_SCENES_SIDE = [castCallSideScene];
  */
 const SIDE_BAND = Math.round(345 * 900 / 780);
 import { StreakBand } from './home/StreakBand';
+import { PointsCard } from './home/PointsCard';
 
 /**
  * The dashboard, following ui_kits/app/HomeScreen.jsx.
@@ -109,7 +111,9 @@ function WeekChart({ counts }: { counts: number[] }) {
 
 export function Home() {
   const isMobile = useIsMobile();
-  const { decks, cards, notes, dueCount, streak, weeklyReviews, language, workspace, cardsInDeck, dueInDeck } = useStore();
+  const openLanguages = useLanguagePicker();
+  const [nameHovered, setNameHovered] = React.useState(false);
+  const { decks, cards, notes, dueCount, streak, points, repairOffer, repair, weeklyReviews, language, workspace, cardsInDeck, dueInDeck } = useStore();
   const navigate = useNavigate();
 
   const mastered = cards.filter((c) => c.state === 'review' && c.interval >= 21).length;
@@ -188,7 +192,40 @@ export function Home() {
               need to say it twice — the top bar still carries the pill on every
               other screen, where it is the only place the number appears. */}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', marginTop: 6 }}>
+        {/*
+          * The name of the workspace is also the way out of it.
+          *
+          * It reads as the thing you would press to change the language, and
+          * until now it was not pressable — the way in was the rail's flag or
+          * three taps into Settings. A chevron is the whole affordance: no
+          * chrome around the title, no button fill, nothing that would make the
+          * page's own heading look like a control at rest.
+          *
+          * The h1 stays the h1. Wrapping it in the button rather than putting a
+          * button inside it keeps the document's outline as it was, and keeps
+          * the flag inside the target — which is what people aim at.
+          */}
+        <button
+          type="button"
+          onClick={openLanguages ?? undefined}
+          disabled={!openLanguages}
+          aria-haspopup="dialog"
+          aria-label={`${workspace.name} — switch language track`}
+          onMouseEnter={() => setNameHovered(true)}
+          onMouseLeave={() => setNameHovered(false)}
+          onFocus={() => setNameHovered(true)}
+          onBlur={() => setNameHovered(false)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 'var(--space-4)', marginTop: 6,
+            // Pulled back by its own padding, so the title sits exactly where it
+            // did and only the hover fill is inset from the card's edge.
+            margin: '6px 0 0 -10px', padding: '4px 10px',
+            border: 'none', background: nameHovered ? 'var(--surface-hover)' : 'transparent',
+            borderRadius: 'var(--radius-md)', cursor: openLanguages ? 'pointer' : 'default',
+            font: 'inherit', textAlign: 'left', minWidth: 0, maxWidth: '100%',
+            transition: 'var(--transition-control)',
+          }}
+        >
           {/* Decorative, so alt is empty: the name it sits beside is the
               identifier, and types.ts is explicit that a flag never carries a
               workspace on its own. Announcing "flag: Netherlands" here would
@@ -210,7 +247,18 @@ export function Home() {
           <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: isMobile ? 'var(--fs-24)' : 'var(--fs-40)', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1.05, letterSpacing: 'var(--ls-tight)', minWidth: 0, overflowWrap: 'anywhere' }}>
             {workspace.name}
           </h1>
-        </div>
+          {/* Muted at rest and only fully lit under the pointer: at the title's
+              weight a full-strength chevron competes with the word. */}
+          <Icon
+            name="chevron-down"
+            size={isMobile ? 18 : 24}
+            style={{
+              flex: 'none',
+              color: nameHovered ? 'var(--text-strong)' : 'var(--text-muted)',
+              transition: 'color var(--dur-fast) var(--ease-out)',
+            }}
+          />
+        </button>
         <p style={{ margin: '8px 0 0', fontSize: 'var(--fs-16)', color: 'var(--text-muted)', maxWidth: 520, lineHeight: 'var(--lh-relaxed)' }}>
           {[
             `${decks.length} ${decks.length === 1 ? 'deck' : 'decks'}`,
@@ -267,7 +315,31 @@ export function Home() {
       )}
       </Card>
 
-      <StreakBand streak={streak} />
+      {/*
+        * The fortnight and what can be done about it, side by side.
+        *
+        * Two thirds to one: the band is fourteen marks and a legend and wants
+        * the room, while the points are a number and a sentence.
+        *
+        * Stretched rather than `start`. Two cards side by side ending at
+        * different heights read as one unfinished, and neither of them grows a
+        * field of empty surface to manage it: the shorter card distributes what
+        * it holds instead, pushing its last line to the bottom edge — see the
+        * `marginTop: auto` in both.
+        *
+        * Both cards remove themselves before anything has been practised, so on
+        * a fresh install this grid has nothing in it and collapses to nothing.
+        */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 2fr) minmax(0, 1fr)',
+          gap: 'var(--space-5)', alignItems: 'stretch',
+        }}
+      >
+        <StreakBand streak={streak} />
+        <PointsCard points={points} offer={repairOffer} onRepair={repair} />
+      </div>
 
       {/* ---- Flashcards, everything it owns in one place ------------------- */}
       <section>
