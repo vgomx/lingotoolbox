@@ -4,6 +4,7 @@ import { Button, Card, Icon, Input, ProgressBar, Tabs, Tag, playSound, usePrefer
 import { useChrome } from '../../shell/chrome';
 import { DOCK_HEIGHT } from '../../shell/Dock';
 import { useStore } from '../../state/store';
+import { packsFor } from '../../data/packs';
 import { EmptyTool } from '../EmptyTool';
 import {
   HAS_CONJUGATION, cellName, groupsOf, loadConjugation, mark,
@@ -51,11 +52,25 @@ function pick(
   language: Parameters<typeof cellName>[0],
   misses: Record<string, number>,
   avoid: string | null,
+  focus: string[] = [],
 ): Question | null {
   const cells = data.cells.filter((c) => groups.has(cellName(language, c).group));
   if (!cells.length) return null;
 
-  const words = Object.keys(data.words);
+  /*
+   * The verbs the packs you have added are about, where there are any.
+   *
+   * The table holds every verb Wiktionary had — thousands of them — and asking
+   * across all of it is right for someone with no packs and wrong for someone
+   * who added Separable verbs this morning. So a focus narrows the pool rather
+   * than reweighting it: the point of the pack is that it is *these* verbs.
+   *
+   * Filtered against the table rather than trusted, and dropped entirely if
+   * nothing survives — a focus list that matched no verb would leave the drill
+   * with nothing to ask, which is worse than asking broadly.
+   */
+  const focused = focus.filter((w) => data.words[w]);
+  const words = focused.length ? focused : Object.keys(data.words);
   const pool: { word: string; cell: string; weight: number }[] = [];
   for (const word of words) {
     const table = data.words[word].c;
@@ -90,7 +105,8 @@ function pick(
     options.push(siblings.splice(Math.floor(Math.random() * siblings.length), 1)[0]);
   }
   while (options.length < 4) {
-    const other = data.words[words[Math.floor(Math.random() * words.length)]].c[chosen.cell];
+    const all = Object.keys(data.words);
+    const other = data.words[all[Math.floor(Math.random() * all.length)]].c[chosen.cell];
     if (other && !options.includes(other)) options.push(other);
     else break;
   }
@@ -325,7 +341,18 @@ function QuestionCard({
 }
 
 export function ConjugationDrill() {
-  const { language, workspace, prefs, practise } = useStore();
+  const { language, workspace, prefs, practise, installed } = useStore();
+
+  /*
+   * The verbs this workspace's added packs are about.
+   *
+   * Module-scope stable: it is a dependency of the picker, and a fresh array
+   * every render would be a new one on every keystroke of an answer.
+   */
+  const focus = React.useMemo(
+    () => [...new Set(packsFor(language).filter((p) => installed.has(p.id)).flatMap((p) => p.verbs ?? []))],
+    [language, installed],
+  );
   const [data, setData] = React.useState<Conjugations | null>(null);
   const [state, setState] = React.useState<'loading' | 'ready' | 'unavailable'>('loading');
 
@@ -408,14 +435,14 @@ export function ConjugationDrill() {
 
   const next = React.useCallback((avoid: string | null = null) => {
     if (!data) return;
-    setQuestion(pick(data, groups, language, misses, avoid));
+    setQuestion(pick(data, groups, language, misses, avoid, focus));
     setTyped(''); setVerdict(null);
   }, [data, groups, language, misses]);
 
   // A new question whenever the scope changes, so the screen is never showing a
   // cell the reader has just switched off.
   React.useEffect(() => {
-    if (state === 'ready' && data && groups.size) setQuestion((q) => q ?? pick(data, groups, language, misses, null));
+    if (state === 'ready' && data && groups.size) setQuestion((q) => q ?? pick(data, groups, language, misses, null, focus));
   }, [state, data, groups, language, misses]);
 
   React.useEffect(() => {
@@ -456,7 +483,7 @@ export function ConjugationDrill() {
     setOutgoing(null);
     setTyped('');
     setVerdict(null);
-    if (data) setQuestion(pick(data, groups, language, misses, null));
+    if (data) setQuestion(pick(data, groups, language, misses, null, focus));
   };
 
   /** Freeze what is on screen, then ask the next one — the two overlap. */
@@ -658,7 +685,7 @@ export function ConjugationDrill() {
                 else if (!on) nextGroups.add(g.id);
                 setGroups(nextGroups);
                 save(GROUP_KEY, [...nextGroups]);
-                setQuestion(pick(data, nextGroups, language, misses, null));
+                setQuestion(pick(data, nextGroups, language, misses, null, focus));
                 setTyped(''); setVerdict(null); setOutgoing(null);
                 // From the top: a run half-answered in one set of tenses and
                 // half in another is not a score of anything.

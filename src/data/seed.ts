@@ -92,7 +92,7 @@ interface SeedDeck {
  * A starter workspace so the app is never empty on first open. Everything here is
  * ordinary vocabulary; the user can delete the decks and add their own.
  */
-const SEED: Record<LanguageCode, SeedDeck[]> = {
+export const SEED: Record<LanguageCode, SeedDeck[]> = {
   EN: [
     {
       id: 'en-phrasal',
@@ -109,6 +109,14 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
         { front: 'call off', back: 'to cancel something already arranged', illustration: '274C', level: 'B1', tags: ['verb'] },
         { front: 'take on', back: 'to accept work or responsibility', illustration: '1F4AA', level: 'B2', tags: ['verb'] },
         { front: 'come across', back: 'to find by chance, or to give an impression', illustration: '1F440', level: 'B2', tags: ['verb'] },
+        { front: 'put up with', back: 'to tolerate', level: 'B2', tags: ['verb'] },
+        { front: 'get over', back: 'to recover from', level: 'B1', tags: ['verb'] },
+        { front: 'turn down', back: 'to refuse, or to lower', illustration: '274C', level: 'B1', tags: ['verb'] },
+        { front: 'work out', back: 'to figure out — and to exercise', illustration: '1F4AA', level: 'B1', tags: ['verb'] },
+        { front: 'run out of', back: 'to have none left', level: 'A2', tags: ['verb'] },
+        { front: 'bring about', back: 'to cause to happen', level: 'B2', tags: ['verb'] },
+        { front: 'sort out', back: 'to fix or organise', level: 'B1', tags: ['verb'] },
+        { front: 'go over', back: 'to review something carefully', illustration: '1F440', level: 'B1', tags: ['verb'] },
       ],
     },
     {
@@ -125,6 +133,12 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
         { front: 'ambiguous', back: 'open to more than one reading', phonetic: '/æmˈbɪɡjuəs/', illustration: '1F914', level: 'B2', tags: ['adj'] },
         { front: 'pragmatic', back: 'guided by what works rather than by theory', phonetic: '/præɡˈmætɪk/', level: 'B2', tags: ['adj'] },
         { front: 'succinct', back: 'said in few words', phonetic: '/səkˈsɪŋkt/', illustration: '2702', level: 'C1', tags: ['adj'] },
+        { front: 'tenuous', back: 'so slight it barely holds', level: 'C1', tags: ['adj'] },
+        { front: 'scrupulous', back: 'careful to do the right thing', level: 'C1', tags: ['adj'] },
+        { front: 'innocuous', back: 'harmless, and duller than it looks', level: 'C1', tags: ['adj'] },
+        { front: 'volatile', back: 'liable to change without warning', illustration: '1F525', level: 'B2', tags: ['adj'] },
+        { front: 'astute', back: 'quick to see what matters', illustration: '1F440', level: 'C1', tags: ['adj'] },
+        { front: 'redundant', back: 'more than is needed', level: 'B2', tags: ['adj'] },
       ],
     },
     {
@@ -139,6 +153,10 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
         { front: 'cut corners', back: 'to do something cheaply or carelessly', illustration: '2702', level: 'B2', tags: ['idiom'] },
         { front: 'on the fence', back: 'undecided between two options', level: 'B2', tags: ['idiom'] },
         { front: 'a blessing in disguise', back: 'something bad that turns out well', illustration: '1F3AD', level: 'B2', tags: ['idiom'] },
+        { front: 'the last straw', back: 'the small thing that finally breaks it', level: 'B2', tags: ['idiom'] },
+        { front: 'bite the bullet', back: 'to get an unpleasant thing over with', level: 'B2', tags: ['idiom'] },
+        { front: 'hit the sack', back: 'to go to bed', illustration: '1F634', level: 'B1', tags: ['idiom'] },
+        { front: 'call it a day', back: 'to stop working for now', illustration: '23F0', level: 'B1', tags: ['idiom'] },
       ],
     },
     {
@@ -156,6 +174,14 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
         { front: 'to miss a train', back: 'to arrive after it has already gone', illustration: '1F682', level: 'A2', tags: ['verb'] },
         { front: 'to change at', back: 'to get off and take another line partway', level: 'A2', tags: ['verb'] },
         { front: 'timetable', back: 'the printed list of departure times', illustration: '23F0', level: 'A2', tags: ['noun'] },
+        { front: 'head towards', back: 'to go in the direction of', level: 'A2', tags: ['phrase'] },
+        { front: 'on your left', back: 'to your left', level: 'A1', tags: ['phrase'] },
+        { front: 'the far end', back: 'the end furthest from here', level: 'B1', tags: ['phrase'] },
+        { front: 'a dead end', back: 'a road with no way through', illustration: '274C', level: 'B1', tags: ['noun'] },
+        { front: 'the crossing', back: 'where you walk across the road', level: 'A2', tags: ['noun'] },
+        { front: 'two stops away', back: 'two stops from here', illustration: '1F68C', level: 'A2', tags: ['phrase'] },
+        { front: 'the platform', back: 'where you wait for the train', illustration: '1F686', level: 'A2', tags: ['noun'] },
+        { front: "it's a short walk", back: "it isn't far on foot", illustration: '1F45F', level: 'A2', tags: ['phrase'] },
       ],
     },
     {
@@ -173,6 +199,12 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
         { front: 'to sign off on', back: 'to give something formal approval', level: 'B2', tags: ['verb'] },
         { front: 'a backlog', back: 'work that has piled up while you were elsewhere', level: 'B2', tags: ['noun'] },
         { front: 'to run something by someone', back: 'to check an idea with them before acting', level: 'B2', tags: ['verb'] },
+        { front: 'the deliverable', back: 'the thing you owe by the deadline', illustration: '23F0', level: 'B2', tags: ['noun'] },
+        { front: 'to loop someone in', back: 'to add them to the conversation', illustration: '1F4AC', level: 'B2', tags: ['phrase'] },
+        { front: 'a blocker', back: 'the thing stopping the work', illustration: '274C', level: 'B2', tags: ['noun'] },
+        { front: 'to follow up', back: 'to come back to it later', level: 'B1', tags: ['phrase'] },
+        { front: 'the takeaway', back: 'the one thing worth remembering', illustration: '1F4DD', level: 'B2', tags: ['noun'] },
+        { front: 'out of office', back: 'away, and not answering', illustration: '1F3E0', level: 'A2', tags: ['phrase'] },
       ],
     },
     // Abstract by nature, so no illustrations — see the note on SeedCard.
@@ -191,6 +223,12 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
         { front: 'hence', back: 'from this it follows', level: 'C1', tags: ['adverb'] },
         { front: 'albeit', back: 'although — before a short phrase, not a clause', level: 'C1', tags: ['conjunction'] },
         { front: 'notwithstanding', back: 'despite, in spite of', level: 'C1', tags: ['preposition'] },
+        { front: 'provided that', back: 'as long as', level: 'B2', tags: ['linking'] },
+        { front: 'in other words', back: 'put another way', level: 'B1', tags: ['linking'] },
+        { front: 'even so', back: 'despite that', level: 'B2', tags: ['linking'] },
+        { front: 'as a result', back: 'so, therefore', level: 'B1', tags: ['linking'] },
+        { front: 'on the other hand', back: 'looking at the opposite side', level: 'B1', tags: ['linking'] },
+        { front: 'that said', back: 'having admitted that', level: 'B2', tags: ['linking'] },
       ],
     },
   ],
@@ -208,6 +246,15 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
         { front: 'tá tudo bem', back: 'everything is fine — está, worn down in speech', illustration: '1F44D', level: 'A1', tags: ['phrase'] },
         { front: 'sei lá', back: 'I dunno — a shrug with words', illustration: '1F914', level: 'A2', tags: ['phrase'] },
         { front: 'dar um jeitinho', back: 'to find a way around it, improvised', phonetic: '/daʁ ũ ʒejˈtʃĩɲu/', illustration: '1F527', level: 'B1', tags: ['phrase'] },
+        { front: 'tudo bem?', back: 'everything good? — the standard hello', illustration: '1F44B', level: 'A1', tags: ['phrase'] },
+        { front: 'valeu', back: 'cheers, thanks — informal', illustration: '1F44D', level: 'A2', tags: ['phrase'] },
+        { front: 'nossa!', back: 'wow — from Nossa Senhora, and said constantly', level: 'A2', tags: ['phrase'] },
+        { front: 'com licença', back: 'excuse me — when passing or leaving', level: 'A1', tags: ['phrase'] },
+        { front: 'desculpa', back: 'sorry', illustration: '1F64F', level: 'A1', tags: ['phrase'] },
+        { front: 'tá bom', back: 'alright, fine', level: 'A1', tags: ['phrase'] },
+        { front: 'daqui a pouco', back: 'in a little while', illustration: '23F0', level: 'A2', tags: ['phrase'] },
+        { front: 'de nada', back: "you're welcome", level: 'A1', tags: ['phrase'] },
+        { front: 'beleza?', back: 'all good? — literally beauty', level: 'B1', tags: ['phrase'] },
       ],
     },
     {
@@ -222,6 +269,10 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
         { front: 'livraria', back: 'bookshop — a library is a biblioteca', phonetic: '/livɾaˈɾia/', illustration: '1F4DA', level: 'A2', tags: ['noun'] },
         { front: 'pasta', back: 'folder or briefcase — the food is massa', illustration: '1F45C', level: 'A2', tags: ['noun'] },
         { front: 'êxito', back: 'success — not an exit', illustration: '1F3C6', level: 'B1', tags: ['noun'] },
+        { front: 'assistir', back: 'to watch — not to assist', illustration: '1F440', level: 'A2', tags: ['verb'] },
+        { front: 'costume', back: 'habit — not a costume', level: 'B1', tags: ['noun'] },
+        { front: 'realizar', back: 'to carry out — only sometimes to realise', level: 'B1', tags: ['verb'] },
+        { front: 'atualmente', back: 'currently — not actually', level: 'B1', tags: ['adv'] },
       ],
     },
     {
@@ -239,6 +290,13 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
         { front: 'um suco de laranja', back: 'an orange juice — suco, where Portugal says sumo', illustration: '1F34A', level: 'A1', tags: ['noun'] },
         { front: 'um copo de água', back: 'a glass of water', illustration: '1F4A7', level: 'A1', tags: ['phrase'] },
         { front: 'a conta, por favor', back: 'the bill, please', level: 'A1', tags: ['phrase'] },
+        { front: 'um pastel', back: 'a fried pastry, savoury', level: 'A2', tags: ['noun'] },
+        { front: 'uma coxinha', back: 'a teardrop of shredded chicken in dough', level: 'A2', tags: ['noun'] },
+        { front: 'um misto quente', back: 'a toasted ham and cheese', illustration: '1F9C0', level: 'A2', tags: ['noun'] },
+        { front: 'sem açúcar', back: 'without sugar', level: 'A1', tags: ['phrase'] },
+        { front: 'para viagem', back: 'to take away', level: 'A2', tags: ['phrase'] },
+        { front: 'uma água com gás', back: 'sparkling water', level: 'A1', tags: ['noun'] },
+        { front: 'está ótimo', back: "it's great", illustration: '1F60A', level: 'A1', tags: ['phrase'] },
       ],
     },
     {
@@ -256,6 +314,11 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
         { front: 'dar certo', back: 'to work out, to come off', level: 'B1', tags: ['verb'] },
         { front: 'estar a fim de', back: 'to be up for something', level: 'B1', tags: ['verb'] },
         { front: 'se dar bem', back: 'to get on well with someone', level: 'B1', tags: ['verb'] },
+        { front: 'dar', back: 'to give — and half the idioms in the language', level: 'A1', tags: ['verb'] },
+        { front: 'conseguir', back: 'to manage to, to pull off', illustration: '1F4AA', level: 'B1', tags: ['verb'] },
+        { front: 'precisar', back: 'to need', level: 'A1', tags: ['verb'] },
+        { front: 'achar', back: 'to think, to reckon — and to find', illustration: '1F914', level: 'A2', tags: ['verb'] },
+        { front: 'deixar', back: 'to leave something, to let', level: 'A2', tags: ['verb'] },
       ],
     },
     {
@@ -272,6 +335,14 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
         { front: 'que saco', back: 'what a drag', illustration: '1F644', level: 'B1', tags: ['phrase'] },
         { front: 'não aguento mais', back: 'I cannot take any more of it', illustration: '1F612', level: 'B1', tags: ['phrase'] },
         { front: 'estou de boa', back: 'I am fine — relaxed, nothing wrong', illustration: '1F60C', level: 'B1', tags: ['phrase'] },
+        { front: 'com sono', back: 'sleepy', illustration: '1F634', level: 'A1', tags: ['phrase'] },
+        { front: 'com pressa', back: 'in a hurry', illustration: '23F0', level: 'A2', tags: ['phrase'] },
+        { front: 'com raiva', back: 'angry', illustration: '1F620', level: 'A2', tags: ['phrase'] },
+        { front: 'com saudade', back: 'missing someone or somewhere', illustration: '1F614', level: 'B1', tags: ['phrase'] },
+        { front: 'chateado', back: 'annoyed, upset', level: 'B1', tags: ['adj'] },
+        { front: 'animado', back: 'excited, up for it', illustration: '1F389', level: 'A2', tags: ['adj'] },
+        { front: 'cansado', back: 'tired', illustration: '1F634', level: 'A1', tags: ['adj'] },
+        { front: 'tranquilo', back: 'relaxed — and also no worries', illustration: '1F642', level: 'A2', tags: ['adj'] },
       ],
     },
   ],
@@ -288,6 +359,15 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
         { front: 'alsjeblieft', back: 'please — and also here you go', phonetic: '/ɑlsjəˈblift/', illustration: '1F64F', level: 'A1', tags: ['phrase'] },
         { front: 'doe maar normaal', back: 'just act normal — a whole national attitude', illustration: '1F610', level: 'B1', tags: ['phrase'] },
         { front: 'afspraak', back: 'an appointment or an agreement', phonetic: '/ˈɑfspraːk/', illustration: '23F0', level: 'A2', tags: ['noun'] },
+        { front: 'even', back: 'just, for a moment — softens any request', level: 'A1', tags: ['adv'] },
+        { front: 'hoor', back: 'a tag that takes the edge off what you just said', level: 'A2', tags: ['particle'] },
+        { front: 'het maakt niet uit', back: "it doesn't matter", level: 'A2', tags: ['phrase'] },
+        { front: 'ik snap het', back: 'I get it', illustration: '1F642', level: 'A1', tags: ['phrase'] },
+        { front: 'geen probleem', back: 'no problem', illustration: '1F44D', level: 'A1', tags: ['phrase'] },
+        { front: 'tot straks', back: 'see you later today', illustration: '1F44B', level: 'A1', tags: ['phrase'] },
+        { front: 'sorry, hoor', back: 'sorry — the hoor makes it lighter, not heavier', level: 'A2', tags: ['phrase'] },
+        { front: 'dat is jammer', back: "that's a shame", illustration: '1F614', level: 'A2', tags: ['phrase'] },
+        { front: 'weet je wat', back: 'you know what — the way a suggestion starts', level: 'B1', tags: ['phrase'] },
       ],
     },
     {
@@ -303,6 +383,14 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
         { front: 'uitgaan', back: 'to go out — ik ga uit', phonetic: '/ˈœytɣaːn/', illustration: '1F6AA', level: 'A2', tags: ['verb'] },
         { front: 'afspreken', back: 'to arrange to meet — ik spreek af', phonetic: '/ˈɑfspreːkə(n)/', illustration: '1F91D', level: 'B1', tags: ['verb'] },
         { front: 'meevallen', back: 'to turn out better than feared', illustration: '1F605', level: 'B1', tags: ['verb'] },
+        { front: 'weggaan', back: 'to leave — ik ga weg', illustration: '1F6AA', level: 'A2', tags: ['verb'] },
+        { front: 'terugkomen', back: 'to come back — ik kom terug', level: 'A2', tags: ['verb'] },
+        { front: 'opgeven', back: 'to give up — ik geef op', level: 'B1', tags: ['verb'] },
+        { front: 'uitnodigen', back: 'to invite — ik nodig uit', illustration: '1F389', level: 'B1', tags: ['verb'] },
+        { front: 'ophouden', back: 'to stop — hou op!', illustration: '274C', level: 'B1', tags: ['verb'] },
+        { front: 'aanraken', back: 'to touch — raak niet aan', level: 'B1', tags: ['verb'] },
+        { front: 'uitzoeken', back: 'to figure out, to pick out — ik zoek uit', illustration: '1F440', level: 'B2', tags: ['verb'] },
+        { front: 'opschieten', back: 'to hurry up — schiet op!', illustration: '23F0', level: 'B1', tags: ['verb'] },
       ],
     },
     {
@@ -320,6 +408,15 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
         { front: 'lekker', back: 'tasty — and by extension, good in general', illustration: '1F60B', level: 'A1', tags: ['adj'] },
         { front: 'mag ik...?', back: 'may I have...?', level: 'A1', tags: ['phrase'] },
         { front: 'de rekening', back: 'the bill', level: 'A2', tags: ['noun'] },
+        { front: 'de kip', back: 'chicken', level: 'A1', tags: ['noun'] },
+        { front: 'het ei', back: 'egg', illustration: '1F95A', level: 'A1', tags: ['noun'] },
+        { front: 'de vis', back: 'fish', illustration: '1F41F', level: 'A1', tags: ['noun'] },
+        { front: 'de wortel', back: 'carrot', illustration: '1F955', level: 'A1', tags: ['noun'] },
+        { front: 'het pond', back: '500 grams — what a Dutch market means by a pound', level: 'A2', tags: ['noun'] },
+        { front: 'een onsje', back: '100 grams, roughly — always asked for in the diminutive', level: 'B1', tags: ['noun'] },
+        { front: 'vers', back: 'fresh', level: 'A1', tags: ['adj'] },
+        { front: 'goedkoop', back: 'cheap', illustration: '1F4B0', level: 'A1', tags: ['adj'] },
+        { front: 'mag het ietsje meer zijn', back: 'can it be slightly more — the question every counter asks', level: 'B1', tags: ['phrase'] },
       ],
     },
     {
@@ -337,6 +434,9 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
         { front: 'thuiswerken', back: 'to work from home', illustration: '1F3E0', level: 'A2', tags: ['verb'] },
         { front: 'het rooster', back: 'the schedule, the rota', illustration: '23F0', level: 'B1', tags: ['noun'] },
         { front: 'het overleg', back: 'talking it through together before deciding', level: 'B1', tags: ['noun'] },
+        { front: 'de deadline', back: 'the deadline — borrowed whole', illustration: '23F0', level: 'A2', tags: ['noun'] },
+        { front: 'even bellen', back: 'to give someone a quick call', level: 'A2', tags: ['phrase'] },
+        { front: 'ik ben er even niet', back: "I'm away for a bit", level: 'B1', tags: ['phrase'] },
       ],
     },
     // Dutch particles: the hardest thing to look up and the easiest to drill.
@@ -354,6 +454,12 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
         { front: 'gezellig', back: 'warm, companionable, good to be in', level: 'B1', tags: ['adj'] },
         { front: 'maar', back: 'go on, help yourself — not the "but" you know', level: 'B2', tags: ['particle'] },
         { front: 'eens', back: 'sometime — turns an order into a suggestion', level: 'B2', tags: ['particle'] },
+        { front: 'zeg', back: 'hey, say — tacked on to get attention', level: 'B1', tags: ['particle'] },
+        { front: 'dus', back: 'so — often just a filler on the way to the point', level: 'A2', tags: ['particle'] },
+        { front: 'echt waar', back: 'really? — said back to something surprising', illustration: '1F440', level: 'A2', tags: ['phrase'] },
+        { front: 'eigenlijk', back: 'actually, when you think about it', illustration: '1F914', level: 'A2', tags: ['adv'] },
+        { front: 'gewoon', back: 'just, simply — and also ordinary', level: 'A2', tags: ['adv'] },
+        { front: 'misschien', back: 'maybe', level: 'A1', tags: ['adv'] },
       ],
     },
   ],
@@ -373,6 +479,14 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
         { front: 'a fuego lento', back: 'on a low heat', phonetic: '/a ˈfwe.ɣo ˈlen.to/', illustration: '1F525', level: 'B1', tags: ['phrase'] },
         { front: 'el aliño', back: 'the dressing', phonetic: '/el aˈli.ɲo/', illustration: '1F957', level: 'B1', tags: ['noun'] },
         { front: 'soso', back: 'bland, under-salted', phonetic: '/ˈso.so/', illustration: '1F615', level: 'B1', tags: ['adj'] },
+        { front: 'el horno', back: 'the oven', illustration: '1F525', level: 'A1', tags: ['noun'] },
+        { front: 'la olla', back: 'the pot', level: 'A1', tags: ['noun'] },
+        { front: 'el cuchillo', back: 'the knife', level: 'A1', tags: ['noun'] },
+        { front: 'probar', back: 'to taste — and to try anything', level: 'A2', tags: ['verb'] },
+        { front: 'aliñar', back: 'to dress a salad', level: 'B1', tags: ['verb'] },
+        { front: 'el aceite de oliva', back: 'olive oil', level: 'A1', tags: ['noun'] },
+        { front: 'a la plancha', back: 'cooked on the griddle', level: 'A2', tags: ['phrase'] },
+        { front: 'está riquísimo', back: "it's delicious — the -ísimo does the work", illustration: '1F60A', level: 'A2', tags: ['phrase'] },
       ],
     },
     {
@@ -387,6 +501,10 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
         { front: 'no tener pelos en la lengua', back: 'to speak bluntly', phonetic: '/no teˈneɾ ˈpe.los/', illustration: '1F624', level: 'C1', tags: ['idiom'] },
         { front: 'echar de menos', back: 'to miss someone', phonetic: '/eˈtʃaɾ de ˈme.nos/', illustration: '1F494', level: 'B1', tags: ['idiom'] },
         { front: 'dar en el clavo', back: 'to hit the nail on the head', phonetic: '/daɾ en el ˈkla.βo/', illustration: '1F528', level: 'B2', tags: ['idiom'] },
+        { front: 'costar un ojo de la cara', back: 'to cost an eye from your face', illustration: '1F440', level: 'B2', tags: ['idiom'] },
+        { front: 'estar como una cabra', back: 'to be completely mad', level: 'B2', tags: ['idiom'] },
+        { front: 'ponerse las pilas', back: 'to get your act together — put your batteries in', illustration: '1F4AA', level: 'B1', tags: ['idiom'] },
+        { front: 'tirar la toalla', back: 'to throw in the towel', level: 'B1', tags: ['idiom'] },
       ],
     },
     {
@@ -403,6 +521,12 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
         { front: 'poder', back: 'to be able — yo puedo', phonetic: '/poˈðeɾ/', illustration: '1F4AA', level: 'A1', tags: ['verb'] },
         { front: 'huir', back: 'to flee — yo huyo', phonetic: '/wiɾ/', illustration: '1F3C3', level: 'B1', tags: ['verb'] },
         { front: 'valer', back: 'to be worth — yo valgo', phonetic: '/baˈleɾ/', illustration: '1F4B0', level: 'B1', tags: ['verb'] },
+        { front: 'venir', back: 'to come — vengo, vienes, viene', level: 'A1', tags: ['verb'] },
+        { front: 'poner', back: 'to put — pongo, and puse in the preterite', level: 'A2', tags: ['verb'] },
+        { front: 'salir', back: 'to leave, to go out — salgo', illustration: '1F6AA', level: 'A1', tags: ['verb'] },
+        { front: 'conocer', back: 'to know a person or place — conozco', illustration: '1F91D', level: 'A2', tags: ['verb'] },
+        { front: 'pedir', back: 'to ask for — pido, pidió', level: 'A2', tags: ['verb'] },
+        { front: 'dormir', back: 'to sleep — duermo, durmió', illustration: '1F634', level: 'A1', tags: ['verb'] },
       ],
     },
     {
@@ -420,6 +544,11 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
         { front: 'el horario', back: 'the timetable', illustration: '23F0', level: 'A2', tags: ['noun'] },
         { front: 'perder el tren', back: 'to miss the train', illustration: '1F682', level: 'A2', tags: ['verb'] },
         { front: 'hacer transbordo', back: 'to change lines partway', level: 'B1', tags: ['verb'] },
+        { front: 'la vuelta', back: 'the change, and the return', level: 'A2', tags: ['noun'] },
+        { front: 'perderse', back: 'to get lost', level: 'A2', tags: ['verb'] },
+        { front: 'a la vuelta de la esquina', back: 'just around the corner', level: 'B1', tags: ['phrase'] },
+        { front: '¿está lejos?', back: 'is it far?', level: 'A1', tags: ['phrase'] },
+        { front: 'todo recto', back: 'straight ahead', level: 'A1', tags: ['phrase'] },
       ],
     },
     {
@@ -436,6 +565,13 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
         { front: 'me hace ilusión', back: 'I am looking forward to it', illustration: '1F929', level: 'B1', tags: ['phrase'] },
         { front: 'estoy hecho polvo', back: 'I am shattered — literally, turned to dust', illustration: '1F62A', level: 'B1', tags: ['phrase'] },
         { front: 'me da corte', back: 'it makes me self-conscious', illustration: '1FAE2', level: 'B1', tags: ['phrase'] },
+        { front: 'tener ganas de', back: 'to feel like doing something', level: 'A2', tags: ['phrase'] },
+        { front: 'estar harto', back: 'to be fed up', illustration: '1F624', level: 'B1', tags: ['phrase'] },
+        { front: 'darle vergüenza', back: 'to be embarrassed — the shame gives itself to you', illustration: '1F971', level: 'B1', tags: ['phrase'] },
+        { front: 'estar agobiado', back: 'to be overwhelmed', illustration: '1F630', level: 'B1', tags: ['adj'] },
+        { front: 'qué rabia', back: 'how annoying', illustration: '1F620', level: 'B1', tags: ['phrase'] },
+        { front: 'estar ilusionado', back: 'to be excited about something coming', illustration: '1F389', level: 'B1', tags: ['adj'] },
+        { front: 'tener sueño', back: 'to be sleepy', illustration: '1F634', level: 'A1', tags: ['phrase'] },
       ],
     },
     {
@@ -453,6 +589,9 @@ const SEED: Record<LanguageCode, SeedDeck[]> = {
         { front: 'a pesar de', back: 'in spite of', level: 'B2', tags: ['phrase'] },
         { front: 'no obstante', back: 'nevertheless', level: 'C1', tags: ['phrase'] },
         { front: 'de ahí que', back: 'hence, and that is why', level: 'C1', tags: ['phrase'] },
+        { front: 'en cambio', back: 'whereas, on the other hand', level: 'B1', tags: ['linking'] },
+        { front: 'o sea', back: 'that is to say — and a filler everywhere', level: 'B1', tags: ['linking'] },
+        { front: 'de hecho', back: 'in fact', level: 'B1', tags: ['linking'] },
       ],
     },
   ],
@@ -468,6 +607,50 @@ const id = (deckId: string, index: number) => `${deckId}-${index}`;
  * Builds the starter decks and cards. Cards are staggered so the first session has
  * a realistic mix rather than everything arriving new at once.
  */
+/**
+ * One seeded deck, turned into records.
+ *
+ * Split out of buildSeed so a pack added from the catalogue months later is
+ * built by the same rule as one that shipped with the app — the alternative is
+ * two places that decide what a new deck's cards look like, which drift.
+ */
+export function buildDeck(language: LanguageCode, seedDeck: SeedDeck, now: number): { deck: Deck; cards: Card[] } {
+  const deck: Deck = {
+    id: seedDeck.id,
+    language,
+    name: seedDeck.name,
+    accent: seedDeck.accent,
+    reversed: seedDeck.reversed,
+    tags: seedDeck.tags,
+    createdAt: now,
+  };
+  const cards: Card[] = seedDeck.cards.map((c, i) => {
+    // Roughly half of each deck starts as review cards already due, so the
+    // first session isn't a wall of brand-new words.
+    const seeded = i % 2 === 0 && i < 6;
+    return {
+      id: id(seedDeck.id, i),
+      deckId: seedDeck.id,
+      front: c.front,
+      back: c.back,
+      phonetic: c.phonetic,
+      illustration: c.illustration,
+      tags: c.tags,
+      level: c.level,
+      // The deck's answer, unless the card carries its own.
+      reversed: c.reversed ?? seedDeck.reversed,
+      createdAt: now,
+      state: seeded ? 'review' : 'new',
+      due: seeded ? now - (i + 1) * 60 * 60 * 1000 : now,
+      interval: seeded ? 1 + i : 0,
+      ease: START_EASE,
+      reps: seeded ? 1 + i : 0,
+      lapses: 0,
+    };
+  });
+  return { deck, cards };
+}
+
 export function buildSeed(now: number = Date.now()): { decks: Deck[]; cards: Card[] } {
   const decks: Deck[] = [];
   const cards: Card[] = [];
@@ -534,7 +717,7 @@ interface SeedNote {
  * Each is short on purpose. A rule you have to scroll is one you will not read
  * halfway through a review, which is the moment this exists for.
  */
-const SEED_NOTES: Record<LanguageCode, SeedNote[]> = {
+export const SEED_NOTES: Record<LanguageCode, SeedNote[]> = {
   EN: [
     {
       id: 'en-phrasal-split',

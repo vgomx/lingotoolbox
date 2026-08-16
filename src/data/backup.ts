@@ -1,6 +1,6 @@
 import { exportAll, importAll, type ImportCounts } from './db';
 import { APP_VERSION } from '../legalNotices';
-import type { Card, Deck, Note, PracticeDay, StreakExtension, ReviewLogEntry } from './types';
+import type { Card, Deck, LanguageCode, Note, PracticeDay, StreakExtension, ReviewLogEntry } from './types';
 
 /** Identifies the file as ours before anything reads its contents. */
 export const BACKUP_FORMAT = 'lingo-toolbox/backup';
@@ -12,13 +12,13 @@ export const BACKUP_FORMAT = 'lingo-toolbox/backup';
  */
 /**
  * 2 added notes, 3 the practice log, 4 the repaired days, 5 the extensions that
- * replaced them. A version 4 file's repairs are read as extensions already spent
+ * replaced them, 6 the packs. A version 4 file's repairs are read as extensions already spent
  * on the day they repaired. An older file has no key at all for what it
  * predates, which is why the reader treats those as optional rather than as
  * missing fields — an old backup is still a complete backup of everything the
  * app had when it was written.
  */
-export const BACKUP_VERSION = 5;
+export const BACKUP_VERSION = 6;
 
 export interface Backup {
   format: typeof BACKUP_FORMAT;
@@ -34,6 +34,8 @@ export interface Backup {
   /** Streak extensions, held and spent. Restoring without these hands back
       points that were already spent, and breaks the streaks they were holding. */
   extensions: StreakExtension[];
+  /** Which catalogue packs were added. */
+  packs: { id: string; language: LanguageCode; at: number }[];
 }
 
 /**
@@ -44,7 +46,7 @@ export interface Backup {
  * backup on a laptop should not drag a phone's theme along with it.
  */
 export async function buildBackup(now: number = Date.now()): Promise<Backup> {
-  const { decks, cards, reviews, notes, practice, extensions } = await exportAll();
+  const { decks, cards, reviews, notes, practice, extensions, packs } = await exportAll();
   return {
     format: BACKUP_FORMAT,
     version: BACKUP_VERSION,
@@ -56,6 +58,7 @@ export async function buildBackup(now: number = Date.now()): Promise<Backup> {
     notes,
     practice,
     extensions,
+    packs,
   };
 }
 
@@ -102,6 +105,9 @@ const looksLikeExtension = (v: unknown): boolean => isObject(v)
   && typeof v.id === 'string' && typeof v.at === 'number' && typeof v.cost === 'number';
 
 /** Version 4's shape, so a backup written by it can still be read. */
+const looksLikePack = (v: unknown): boolean => isObject(v)
+  && typeof v.id === 'string' && typeof v.language === 'string' && typeof v.at === 'number';
+
 const looksLikeRepair = (v: unknown): boolean => isObject(v)
   && typeof v.day === 'string' && typeof v.at === 'number' && typeof v.cost === 'number';
 
@@ -155,6 +161,9 @@ export function parseBackup(text: string): Backup {
   if (raw.extensions !== undefined && (!Array.isArray(raw.extensions) || !raw.extensions.every(looksLikeExtension))) {
     throw new BackupError('That backup has a streak extension with missing fields.');
   }
+  if (raw.packs !== undefined && (!Array.isArray(raw.packs) || !raw.packs.every(looksLikePack))) {
+    throw new BackupError('That backup has an added deck with missing fields.');
+  }
   if (raw.repairs !== undefined && (!Array.isArray(raw.repairs) || !raw.repairs.every(looksLikeRepair))) {
     throw new BackupError('That backup has a repaired day with missing fields.');
   }
@@ -180,6 +189,7 @@ export function parseBackup(text: string): Backup {
       ...((raw.repairs ?? []) as { day: string; at: number; cost: number }[])
         .map((r) => ({ id: `repair-${r.day}`, at: r.at, cost: r.cost, usedOn: r.day })),
     ],
+    packs: (raw.packs ?? []) as { id: string; language: LanguageCode; at: number }[],
   };
 }
 
@@ -200,6 +210,7 @@ export async function restoreBackup(backup: Backup): Promise<ImportCounts> {
     notes: backup.notes,
     practice: backup.practice,
     extensions: backup.extensions,
+    packs: backup.packs,
   });
 }
 

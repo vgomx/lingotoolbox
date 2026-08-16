@@ -4,6 +4,7 @@ import type { Card, Deck, Direction, Grade, LanguageCode, Note, PracticeTool, Pr
 import * as db from '../data/db';
 import { dueDirections } from '../data/scheduler';
 import { WORKSPACES } from '../data/seed';
+import { PACKS, type Pack } from '../data/packs';
 
 interface StoreValue {
   ready: boolean;
@@ -50,6 +51,10 @@ interface StoreValue {
   points: db.Points;
   /** Buys one extension. False if the slots are full or the points are short. */
   buyExtension: () => Promise<boolean>;
+  /** Catalogue packs added in this workspace, by pack id. */
+  installed: Set<string>;
+  /** Adds a pack — its deck, its cards and its notes — then re-reads. */
+  addPack: (pack: Pack) => Promise<void>;
 
   grade: (card: Card, direction: Direction, grade: Grade) => Promise<Card>;
   /** Notes that a tool was used for its exercise today. Cheap to call on every answer. */
@@ -92,6 +97,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [notes, setNotes] = React.useState<Note[]>([]);
   const [streak, setStreak] = React.useState(0);
   const [points, setPoints] = React.useState<db.Points>({ earned: 0, spent: 0, balance: 0, held: 0, used: 0 });
+  const [installed, setInstalled] = React.useState<Set<string>>(new Set());
   const [weeklyReviews, setWeeklyReviews] = React.useState<number[]>(() => Array(7).fill(0));
 
   // `tick` exists only to re-run the due derivations as minute-scale cards come
@@ -128,13 +134,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
      * after the first one those days are covered.
      */
     await db.settleExtensions();
-    const [nextDecks, nextCards, nextNotes, nextStreak, nextWeek, nextPoints] = await Promise.all([
+    const [nextDecks, nextCards, nextNotes, nextStreak, nextWeek, nextPoints, nextPacks] = await Promise.all([
       db.listDecks(language),
       db.listCardsForLanguage(language),
       db.listNotes(language),
       db.computeStreak(),
       db.reviewsPerDay(),
       db.points(),
+      db.installedPacks(),
     ]);
     setDecks(nextDecks);
     setCards(nextCards);
@@ -142,12 +149,27 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setStreak(nextStreak);
     setWeeklyReviews(nextWeek);
     setPoints(nextPoints);
+    /*
+     * Added, or already here.
+     *
+     * The packs store only knows about choices made since the catalogue
+     * existed. Anyone using the app before it shipped has all twenty-two decks
+     * from the old seed and no pack records at all, so the catalogue would
+     * offer them everything they already own. A pack whose deck is on the shelf
+     * counts as added — which is a weaker claim than the store's, and exactly
+     * the right one for the case it covers.
+     */
+    const here = new Set(nextDecks.map((d) => d.id));
+    setInstalled(new Set([
+      ...nextPacks.map((p) => p.id),
+      ...PACKS.filter((p) => here.has(p.deck)).map((p) => p.id),
+    ]));
   }, []);
 
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
-      await db.ensureSeeded();
+      await db.ensureSeeded(prefs.language);
       if (cancelled) return;
       // Its own gate, so a reader who already had decks still gets the notes.
       await db.ensureNotesSeeded();
@@ -327,6 +349,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
    * already been missed — which is a walk over the same records rather than a
    * number to adjust.
    */
+  /* A pack writes a deck, its cards and its notes, so everything the screens
+     read has moved — a full re-read rather than three local patches. */
+  const addPack = React.useCallback(async (pack: Pack) => {
+    await db.installPack(pack);
+    await refresh(prefs.language);
+  }, [prefs.language, refresh]);
+
   const buyExtension = React.useCallback(async () => {
     const done = await db.buyExtension();
     if (done) await refresh(prefs.language);
@@ -370,8 +399,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const reset = React.useCallback(async () => {
     await db.resetAll();
-    await db.ensureSeeded();
-    await db.ensureNotesSeeded();
+    // The workspace they are standing in, so a reset lands them where a fresh
+    // install would rather than back in Dutch.
+    await db.ensureSeeded(prefs.language);
     await refresh(prefs.language);
   }, [prefs.language, refresh]);
 
@@ -415,6 +445,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     streak,
     points,
     buyExtension,
+    installed,
+    addPack,
     weeklyReviews,
     practise,
     grade,

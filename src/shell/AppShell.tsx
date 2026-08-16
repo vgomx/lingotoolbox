@@ -215,6 +215,8 @@ export function AppShell() {
    * all, and the error went nowhere because the handler was async.
    */
   const [naming, setNaming] = React.useState(false);
+  /* Flashcards and everything under it — a deck, a card, a session. */
+  const onCards = location.pathname.startsWith('/app/cards') || location.pathname.startsWith('/app/review');
   const [deckName, setDeckName] = React.useState('');
 
   const newDeck = async () => {
@@ -354,23 +356,10 @@ export function AppShell() {
         </div>
 
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '6px 8px 12px' }}>
-          <div style={{ ...styles.sectionLabel, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          {/* Just the label now. The plus that used to sit at its right has
+              moved to the top bar, where a phone can reach it too. */}
+          <div style={styles.sectionLabel}>
             <span>Decks</span>
-            {/* Stays a bare button rather than becoming an IconButton: this sits
-                in an 11px caps label row, and the smallest IconButton is a 28px
-                box — 44 under a finger — which would make the plus heavier than
-                the word it sits beside and push the deck list down. It borrows
-                the sound instead: `tap`, the default an IconButton here would
-                have had, because this is a press that goes and does something
-                rather than one that flips a state. */}
-            <button
-              type="button"
-              onClick={() => { playSound('tap'); setDeckName(''); setNaming(true); }}
-              aria-label="New deck"
-              style={{ border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', padding: 0, display: 'grid' }}
-            >
-              <Icon name="plus" size={14} />
-            </button>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -390,7 +379,7 @@ export function AppShell() {
             })}
             {!visibleDecks.length && (
               <span style={{ padding: '8px', fontSize: 'var(--fs-12)', color: 'var(--text-muted)', lineHeight: 'var(--lh-normal)' }}>
-                {search ? 'No deck matches that.' : 'No decks yet. Add one with the plus above.'}
+                {search ? 'No deck matches that.' : 'No decks yet. Add one with the plus in the bar.'}
               </span>
             )}
           </div>
@@ -543,6 +532,29 @@ export function AppShell() {
             <span style={styles.topTitleText}>{title}</span>
           </span>
           <span style={{ flex: 1 }} />
+          {/*
+            * New deck, in the bar rather than in the deck sidebar's header.
+            *
+            * It lived beside the word "Decks" in that sidebar, which a phone
+            * never shows — so the one way to write your own deck was reachable
+            * on a desktop and nowhere else, on an app whose whole point is the
+            * cards you write. The bar is on every screen and every size.
+            *
+            * Only inside Flashcards, though. It is an action on decks, and a
+            * button that makes one while you are reading an etymology is a
+            * control that has wandered away from what it acts on.
+            */}
+          {onCards && (
+            <Tooltip label="New deck">
+              <IconButton
+                label="New deck"
+                size={isMobile ? 'lg' : 'md'}
+                onClick={() => { playSound('tap'); setDeckName(''); setNaming(true); }}
+              >
+                <Icon name="plus" size={18} />
+              </IconButton>
+            </Tooltip>
+          )}
           {/* Filled by whichever screen renders <TopRight>; empty otherwise. */}
           <span ref={setTopRightSlot} style={{ display: 'contents' }} />
           {/* Parts the screen's own actions from the streak and the help menu.
