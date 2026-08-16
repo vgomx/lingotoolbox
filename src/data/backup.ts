@@ -162,7 +162,7 @@ export function parseBackup(text: string): Backup {
     throw new BackupError('That backup has a streak extension with missing fields.');
   }
   if (raw.packs !== undefined && (!Array.isArray(raw.packs) || !raw.packs.every(looksLikePack))) {
-    throw new BackupError('That backup has a pack with missing fields.');
+    throw new BackupError('That backup has an added deck with missing fields.');
   }
   if (raw.repairs !== undefined && (!Array.isArray(raw.repairs) || !raw.repairs.every(looksLikeRepair))) {
     throw new BackupError('That backup has a repaired day with missing fields.');

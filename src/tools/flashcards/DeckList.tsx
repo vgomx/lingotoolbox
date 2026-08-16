@@ -129,7 +129,7 @@ export function DeckList() {
           {remaining > 0 && (
             <div style={{ marginTop: 'var(--space-6)' }}>
               <Button variant="secondary" onClick={() => setCatalogue(true)} iconLeft={<Icon name="circle-plus" size={16} />}>
-                Add packs
+                Add decks
               </Button>
             </div>
           )}
@@ -142,11 +142,16 @@ export function DeckList() {
             icon="layers"
             accent="var(--tool-flashcards)"
             title="No decks yet"
-            description={`A pack is a rule, the words that exercise it, and the verbs to drill it on. There ${remaining === 1 ? 'is 1' : `are ${remaining}`} for ${workspace.name}.`}
+            /* Both ways in, because the catalogue is a starting point rather
+               than the only source of cards. Writing your own has always been
+               the plus in the sidebar, and an empty state that only offered the
+               catalogue made it look like the app's decks were the app's to
+               give. */
+            description={`Add one of the ${remaining} ready-made ${workspace.name} decks — a rule, the words that exercise it, and the verbs to drill it on — or write your own from the plus in the sidebar.`}
             action={
               <div style={{ display: 'flex', gap: 'var(--gap-inline)', flexWrap: 'wrap', justifyContent: 'center' }}>
                 <Button onClick={() => setCatalogue(true)} iconLeft={<Icon name="circle-plus" size={16} />}>
-                  Browse packs
+                  Browse decks
                 </Button>
               </div>
             }

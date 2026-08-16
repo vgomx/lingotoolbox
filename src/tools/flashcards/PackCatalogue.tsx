@@ -8,6 +8,13 @@ import { HAS_CONJUGATION } from '../../data/conjugation';
 /**
  * The catalogue: grammar themes you can add to this workspace.
  *
+ * Called decks to the reader and packs in the code, deliberately. What arrives
+ * is a deck — the word the app already uses for a set of cards you practise —
+ * and inventing a second one for the thing that becomes a deck would make
+ * people learn a word for something they can already name. The code cannot
+ * borrow it: `Deck` is the record this installs, so `Pack` stays as the name
+ * for the offer rather than for the thing offered.
+ *
  * Content used to be pushed. Every install wrote twenty-two decks across four
  * languages whether or not the reader would ever open them, which left nothing
  * to choose and no way to tell what you had picked from what you had been
@@ -126,10 +133,10 @@ export function PackCatalogue({ open, onClose }: { open: boolean; onClose: () =>
     <Dialog
       open={open}
       onClose={onClose}
-      title={`${workspace.name} packs`}
+      title={`${workspace.name} decks`}
       description={
         left === 0
-          ? 'Every pack in this workspace has been added.'
+          ? 'Every deck in this workspace has been added.'
           : 'A rule, the words that exercise it, and the verbs to drill it on.'
       }
       width={620}
